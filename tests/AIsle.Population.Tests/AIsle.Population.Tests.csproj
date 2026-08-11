@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AIsle.Contracts\AIsle.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\AIsle.Simulation\AIsle.Simulation.csproj" />
+    <Reference Include="GeneticSharp.Domain">
+      <HintPath>..\..\src\AIsle.Simulation\Plugins\GeneticSharp.Domain.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
