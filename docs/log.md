@@ -124,3 +124,13 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Kiểm tra: Remote refs sau fetch không thay đổi; working tree/index chính vẫn ở local `main` và chưa bị stage.
 - Nên làm tiếp theo: Tạo merge commit bằng index tạm, push lên `origin/test`, kiểm tra `origin/main` là ancestor của `origin/test` và xác minh không còn merge conflict.
 - Phạm vi đồng bộ: Chỉ cập nhật log local; chưa push bản sửa conflict; không push `main`.
+
+## 2026-08-11 12:23 (UTC+07:00) — Codex
+
+- Lý do sửa: Ghi nhận kết quả khắc phục conflict giữa `main` và `test` do nhánh `test` trước đó dùng orphan history.
+- Đã sửa/đã làm: Tạo và push merge commit `132f7af9a27282d59eb8f1d6a58eae5c5af6f8fa` lên `origin/test`; parent thứ nhất là `test` cũ `0122a19d9554beef2f13a3dceb03cb24b5d219f5`, parent thứ hai là `main` `225985ec48393f18a4f55a14dc99c557c469b38c`. Tree vẫn là snapshot app trên `test`, không lấy lại nội dung cũ của `main` và không thay đổi nhánh `main`.
+- Đối chiếu Result_Plan.md: Không đổi sản phẩm hoặc phạm vi triển khai; chỉ sửa ancestry Git để quy trình branch/PR hoạt động bình thường.
+- Trạng thái: Đạt. `main` hiện là ancestor của `test`, nên Git có merge base hợp lệ và việc merge `test` vào `main` không còn lỗi unrelated histories/conflict do thiếu tổ tiên chung.
+- Kiểm tra: Remote `test` trả đúng hash `132f7af9a27282d59eb8f1d6a58eae5c5af6f8fa`; `git merge-base origin/main origin/test` bằng chính `225985ec48393f18a4f55a14dc99c557c469b38c`; kiểm tra ancestor thành công.
+- Nên làm tiếp theo: Đẩy bản ghi này lên `origin/test`; sau đó có thể mở lại compare/PR từ `test` sang `main` để GitHub làm mới trạng thái.
+- Phạm vi đồng bộ: Bản sửa ancestry đã push lên `origin/test`; bản ghi hoàn tất này chưa push; không push `main`.
