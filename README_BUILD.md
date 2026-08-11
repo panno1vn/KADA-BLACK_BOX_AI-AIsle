@@ -1,6 +1,8 @@
-# AIsle Store Simulator
+# AIsle Web Prototype — Baseline Build Guide
 
 Ứng dụng mô phỏng cửa hàng chạy bằng JavaScript live engine và Canvas 2D. Không cần cài npm package.
+
+> Tài liệu này chỉ dành cho web prototype được giữ làm baseline/reference trong quá trình chuyển sang Unity desktop app. Kiến trúc và phạm vi chính thức nằm trong `docs/Result_Plan.md`; Unity app skeleton nằm tại `UnityApp/`.
 
 ## Chạy web
 

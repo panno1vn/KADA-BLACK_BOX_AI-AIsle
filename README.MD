@@ -1,6 +1,8 @@
-# AIsle Store Simulator
+# AIsle Desktop Store Simulator
 
 AIsle là hệ thống mô phỏng hành vi khách hàng trong cửa hàng tiện lợi. Dự án kết hợp dữ liệu quan sát từ video thực tế, ngữ cảnh cửa hàng, quần thể NPC sinh bằng Genetic Algorithm và Utility AI lấy cảm hứng từ *The Sims*.
+
+> **Trạng thái chuyển đổi:** hướng sản phẩm chính thức là Unity desktop application theo [`docs/Result_Plan.md`](docs/Result_Plan.md). `UnityApp/` hiện là app skeleton; UI/UX và simulation core sẽ được triển khai ở giai đoạn sau. Web hiện tại được giữ làm baseline/reference, không còn là kiến trúc đích.
 
 Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chính sách bán hàng trong môi trường mô phỏng trước khi áp dụng vào cửa hàng thật. Hệ thống tập trung vào khả năng quan sát, replay và giải thích nguyên nhân dẫn đến kết quả; không tự động tuyên bố một layout là “tối ưu”.
 
@@ -99,13 +101,24 @@ Shelf là smart object quảng bá category, sản phẩm và valence. NPC chấ
 
 ## Chạy ứng dụng
 
-### Yêu cầu
+### Unity desktop app — hướng chính thức
+
+Yêu cầu:
+
+- Windows.
+- Unity Hub và Unity Editor phù hợp.
+
+Thêm hoặc mở thư mục `UnityApp/` bằng Unity Hub. Hiện project mới ở mức skeleton kiến trúc nên chưa có UI/UX hoặc simulation core để chạy sản phẩm hoàn chỉnh. Nếu máy mới chỉ có Unity Hub, cần cài Unity Editor trước khi xác minh project trong Editor.
+
+### Web prototype — baseline/reference
+
+Yêu cầu:
 
 - Windows.
 - Node.js 22 trở lên.
 - Không cần cài npm package.
 
-### Khởi động
+Khởi động baseline bằng cách nhấp đúp:
 
 Nhấp đúp:
 
@@ -113,12 +126,17 @@ Nhấp đúp:
 run.bat
 ```
 
-Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web bằng trình duyệt mặc định.
+Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web bằng trình duyệt mặc định. Luồng này chỉ dùng để tham chiếu hành vi, regression test và chuẩn bị golden tests trong quá trình port sang app.
 
 ## Cấu trúc chính
 
 ```text
 .
+├── UnityApp/                 # Unity desktop app skeleton và presentation boundary
+├── src/                      # ranh giới module C#/.NET-compatible; core chưa triển khai
+├── services/VideoAnalytics/ # khung dịch vụ Reality Analytics
+├── models/                   # khung model assets/configuration
+├── data/                     # cấu trúc dữ liệu mục tiêu
 ├── run.bat
 ├── backend/
 │   ├── server.mjs
@@ -135,12 +153,16 @@ Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web 
 └── docs/
 ```
 
+- `UnityApp`: ứng dụng đích; hiện mới có cấu trúc và metadata tối thiểu.
+- `src`: các module Domain, Application, Simulation, Analytics, Contracts và Infrastructure dành cho giai đoạn core sau.
 - `web/live-engine.js`: simulation core độc lập với DOM.
 - `web/app.js`: editor, Canvas renderer và live controls.
 - `web/sim-result.js`: schema dùng chung cho export/history.
 - `backend/routes`: quy tắc HTTP API.
 - `backend/storage`: lưu project và history.
 - `runtime`: layout, catalog và dữ liệu sinh ra khi chạy.
+- `docs/Result_Plan.md`: kế hoạch chính thức.
+- `docs/log.md`: nhật ký tiến trình bắt buộc, chỉ ghi nối tiếp.
 
 ## Input và output
 

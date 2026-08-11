@@ -1,8 +1,23 @@
 # AIsle — Implementation Plan v2
 
-> **Trạng thái:** kế hoạch kiến trúc tạm chốt để triển khai và benchmark.
+> **Trạng thái:** kế hoạch chính thức của dự án để triển khai và benchmark.
 >
 > **Mục tiêu:** chuyển AIsle từ web prototype hiện tại sang desktop application bằng Unity/C#, giữ lại simulation logic đã có, nâng cấp NPC theo hướng tự nhiên hơn, hỗ trợ mật độ NPC cao, Spine 2D animation, replay/analytics và nhánh so sánh **NPC Simulator ↔ hành vi khách hàng thực tế từ video/POS**.
+
+## Phạm vi triển khai hiện tại
+
+Ở mốc hiện tại chỉ thực hiện hai nhiệm vụ nền tảng:
+
+1. Tái thiết cấu trúc repository theo kiến trúc mục tiêu tại mục 4.
+2. Chuyển hướng sản phẩm từ web prototype sang Unity desktop application bằng cách tạo Unity app skeleton; web prototype được giữ nguyên làm baseline/reference.
+
+Chưa triển khai trong mốc này:
+
+- UI/UX, scene, dashboard, map editor và presentation hoàn chỉnh.
+- Simulation core C#, contracts nghiệp vụ, DOTS/ECS, Burst/Jobs và Spine runtime.
+- Video analytics, calibration và Sim-to-Real.
+
+Mọi hoạt động của mốc này chỉ thực hiện trên máy local. Không commit hoặc push lên GitHub nếu chưa có yêu cầu và kiểm tra riêng của chủ dự án. Tiến trình phải được ghi nối tiếp trong `docs/log.md` theo quy tắc bắt buộc của file đó.
 
 ---
 
@@ -2320,7 +2335,7 @@ cho thấy baseline không đáp ứng.
 
 - [ ] Chốt Contracts.
 - [ ] Freeze JS golden tests.
-- [ ] Tạo Unity project structure.
+- [x] Tạo Unity project structure (app skeleton; chưa triển khai UI/UX và core).
 - [ ] Port C# deterministic core.
 
 ## Phase 2 — NPC
