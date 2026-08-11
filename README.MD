@@ -1,3 +1,9 @@
+# AIsle Store Simulator
+
+AIsle là hệ thống mô phỏng hành vi khách hàng trong cửa hàng tiện lợi. Dự án kết hợp dữ liệu quan sát từ video thực tế, ngữ cảnh cửa hàng, quần thể NPC sinh bằng Genetic Algorithm và Utility AI lấy cảm hứng từ *The Sims*.
+
+Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chính sách bán hàng trong môi trường mô phỏng trước khi áp dụng vào cửa hàng thật. Hệ thống tập trung vào khả năng quan sát, replay và giải thích nguyên nhân dẫn đến kết quả; không tự động tuyên bố một layout là “tối ưu”.
+
 ## Team: BlackBox AI
 
 - **Phan Trung Kiên** — Core simulation.
@@ -10,12 +16,6 @@
 
 - [module-1](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/module-1)
 - [module-3](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/module-3)
-
-# AIsle — Store Customer Simulation
-
-AIsle là hệ thống mô phỏng hành vi khách hàng trong cửa hàng tiện lợi. Dự án kết hợp dữ liệu quan sát từ video thực tế, ngữ cảnh cửa hàng, quần thể NPC sinh bằng Genetic Algorithm và Utility AI lấy cảm hứng từ *The Sims*.
-
-Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chính sách bán hàng trong môi trường mô phỏng trước khi áp dụng vào cửa hàng thật. Hệ thống tập trung vào khả năng quan sát, replay và giải thích nguyên nhân dẫn đến kết quả; không tự động tuyên bố một layout là “tối ưu”.
 
 ## Lý thuyết nền tảng sản phẩm
 
@@ -48,7 +48,7 @@ Các nhu cầu chính gồm:
 - Nhập thủ công hằng số, chỉ số và NPC cho các ca kiểm thử có kiểm soát.
 - Đánh giá doanh thu cùng trải nghiệm khách hàng và khả năng quay lại.
 
-Xem tài liệu [chân dung người dùng và kịch bản sử dụng](build/docs/personal.md) để biết đầy đủ mục tiêu, pain points, job-to-be-done và tiêu chí thành công của sản phẩm.
+Xem tài liệu [chân dung người dùng và kịch bản sử dụng](docs/personal.md) để biết đầy đủ mục tiêu, pain points, job-to-be-done và tiêu chí thành công của sản phẩm.
 
 ## Bài toán
 
@@ -110,7 +110,7 @@ Shelf là smart object quảng bá category, sản phẩm và valence. NPC chấ
 Nhấp đúp:
 
 ```text
-build\run.bat
+run.bat
 ```
 
 Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web bằng trình duyệt mặc định.
@@ -118,7 +118,7 @@ Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web 
 ## Cấu trúc chính
 
 ```text
-build/
+.
 ├── run.bat
 ├── backend/
 │   ├── server.mjs
@@ -172,7 +172,7 @@ build/
 
 ## Kiểm thử
 
-Từ thư mục `build`:
+Từ thư mục gốc:
 
 ```powershell
 node tests/live_engine.test.mjs
@@ -200,8 +200,8 @@ Benchmark hiện tại với 200 NPC × 3.600 ticks, bao gồm trajectory captur
 ## Tài liệu
 
 - [Project overview](Project.md)
-- [Product brief](build/docs/plan.md)
-- [Chân dung người dùng](build/docs/personal.md)
-- [Kiến trúc simulator](build/docs/ARCHITECTURE.md)
-- [Kế hoạch triển khai](build/docs/PLAN_CODEX.md)
-- [Hướng dẫn riêng cho build](build/README.md)
+- [Product brief](docs/plan.md)
+- [Chân dung người dùng](docs/personal.md)
+- [Kiến trúc simulator](docs/ARCHITECTURE.md)
+- [Kế hoạch triển khai](docs/PLAN_CODEX.md)
+- [Hướng dẫn riêng cho build](README_BUILD.md)
