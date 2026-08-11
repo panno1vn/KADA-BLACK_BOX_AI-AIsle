@@ -1,0 +1,7 @@
+{
+  "name": "com.blackbox.aisle.contracts",
+  "version": "0.1.0",
+  "displayName": "AIsle Contracts",
+  "description": "Unity-independent data contracts for AIsle.",
+  "unity": "6000.0"
+}

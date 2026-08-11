@@ -1,0 +1,46 @@
+{
+  "dependencies": {
+    "com.blackbox.aisle.contracts": {
+      "version": "file:../../src/AIsle.Contracts",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
+    "com.blackbox.aisle.simulation": {
+      "version": "file:../../src/AIsle.Simulation",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.blackbox.aisle.contracts": "0.1.0"
+      }
+    },
+    "com.unity.ext.nunit": {
+      "version": "2.1.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.test-framework": {
+      "version": "1.7.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.ext.nunit": "2.1.0",
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0"
+      }
+    },
+    "com.unity.modules.imgui": {
+      "version": "1.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.jsonserialize": {
+      "version": "1.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    }
+  }
+}

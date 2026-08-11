@@ -6,18 +6,34 @@
 
 ## Phạm vi triển khai hiện tại
 
-Ở mốc hiện tại chỉ thực hiện hai nhiệm vụ nền tảng:
+Hai nhiệm vụ nền tảng ban đầu đã hoàn tất:
 
 1. Tái thiết cấu trúc repository theo kiến trúc mục tiêu tại mục 4.
 2. Chuyển hướng sản phẩm từ web prototype sang Unity desktop application bằng cách tạo Unity app skeleton; web prototype được giữ nguyên làm baseline/reference.
 
+Các mốc nền tảng đã hoàn thành local theo `docs/run_source_first.md` và `docs/run_2_codex_source_first.md`:
+
+1. Chốt `NPCProfile` và Population Contracts thuần C#.
+2. Chuẩn hóa `IPopulationGenerator` và Genetic Population Generator dựa trên GeneticSharp.
+3. Tạo Population Validator và Population Statistics.
+4. Tạo Population invariant/statistical tests không khóa exact random output.
+5. Port C# Simulation Baseline từ JS: Spawn, Need/Affect, Smart Object, Utility, A*, Movement, Interaction/Purchase/Exit, Event/Trajectory và `aisle.sim-result.v1`.
+
 Chưa triển khai trong mốc này:
 
 - UI/UX, scene, dashboard, map editor và presentation hoàn chỉnh.
-- Simulation core C#, contracts nghiệp vụ, DOTS/ECS, Burst/Jobs và Spine runtime.
+- Interaction Zone mới, ORCA/RVO2, Social, DOTS/ECS, Burst/Jobs và Spine runtime.
 - Video analytics, calibration và Sim-to-Real.
 
 Mọi hoạt động của mốc này chỉ thực hiện trên máy local. Không commit hoặc push lên GitHub nếu chưa có yêu cầu và kiểm tra riêng của chủ dự án. Tiến trình phải được ghi nối tiếp trong `docs/log.md` theo quy tắc bắt buộc của file đó.
+
+## Chính sách source-first bắt buộc
+
+- Ưu tiên official/original repository và vetted library; không tự viết generic algorithm/framework khi implementation phù hợp đã tồn tại.
+- Population GA dùng GeneticSharp; AIsle chỉ giữ chromosome/domain mapping, fitness, adapters, validation và tests riêng.
+- Distribution/probability/statistics dùng Math.NET khi cần; không duy trì Gaussian/statistics utilities trùng lặp.
+- Random output không phải exact fingerprint/product contract; tests kiểm tra hard invariants và statistical tolerance.
+- Crowd stage sau đánh giá RVO2 (`snape/RVO2`); DOTS stage sau theo Unity official `EntityComponentSystemSamples`; animation stage sau dùng official EsotericSoftware `spine-runtimes`.
 
 ---
 
@@ -104,7 +120,7 @@ Các phần giữ lại và port dần:
 - Trajectory replay.
 - History.
 - SimResult.
-- Deterministic run.
+- Controlled, replayable run output.
 
 Quy trình:
 
@@ -156,18 +172,9 @@ trở thành nơi chứa business logic.
 
 ---
 
-## 2.3 Deterministic simulation
+## 2.3 Controlled fixed-step simulation
 
-Cùng:
-
-```text
-Scenario
-Population
-Configuration
-Seed
-```
-
-phải tạo cùng kết quả logic.
+Simulation phải giữ fixed-step, hard invariants, trace và replay contract. Không coi exact chuỗi random hoặc bit-stable output giữa runtime là product contract.
 
 Rendering FPS không được quyết định simulation behavior.
 
@@ -341,7 +348,7 @@ AIsle.Simulation/
 ├── Core/
 │   ├── SimulationClock
 │   ├── SimulationContext
-│   ├── SeededRandom
+│   ├── RandomSource (library/runtime-provided)
 │   ├── Scheduler
 │   └── EventLog
 │
@@ -544,7 +551,7 @@ Utility Scoring
     ↓
 Top-K
     ↓
-Seeded Weighted Choice
+Weighted Choice
     ↓
 Intent
 ```
@@ -1972,7 +1979,7 @@ Contracts không phụ thuộc Unity.
 Port:
 
 ```text
-Seeded RNG
+Runtime-provided stochastic behavior
 Utility
 Need
 Affect
@@ -2160,19 +2167,16 @@ InteractionZone
 Queue
 SocialUtility
 Purchase
-Seed RNG
+Stochastic invariant checks
 ```
 
-## Determinism Test
+## Invariant / Replay Test
 
 ```text
-same scenario
-+
-same population
-+
-same seed
-=
-same logical result
+repeated scenario runs
+→ hard invariants always hold
+→ summary metrics remain within configured tolerance
+→ events and trajectory remain valid/replayable
 ```
 
 ## Integration Test
@@ -2334,9 +2338,13 @@ cho thấy baseline không đáp ứng.
 ## Phase 1 — Foundation
 
 - [ ] Chốt Contracts.
-- [ ] Freeze JS golden tests.
+- [x] Chốt `NPCProfile` và Population Contracts theo `docs/run.md`.
+- [x] Tạo GeneticSharp-backed Population/GA generator độc lập Unity/DOTS.
+- [x] Tạo Population Validator và Population Statistics.
+- [x] Tạo Population invariant/statistical tests chạy bằng .NET và Unity EditMode.
+- [x] Freeze JS behavior bằng regression tests và source mapping.
 - [x] Tạo Unity project structure (app skeleton; chưa triển khai UI/UX và core).
-- [ ] Port C# deterministic core.
+- [x] Port C# Simulation Baseline core.
 
 ## Phase 2 — NPC
 
@@ -2439,7 +2447,7 @@ Queue System
 Social Utility
 Affect
 Short-Term Memory
-Seeded Random
+Weighted stochastic behavior
 ```
 
 Reality baseline:

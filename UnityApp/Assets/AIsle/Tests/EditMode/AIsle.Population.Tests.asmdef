@@ -1,0 +1,22 @@
+{
+  "name": "AIsle.Population.Tests",
+  "rootNamespace": "AIsle.Tests.Population",
+  "references": [
+    "AIsle.Contracts",
+    "AIsle.Simulation"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

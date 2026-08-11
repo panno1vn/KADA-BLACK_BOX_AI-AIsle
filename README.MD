@@ -2,7 +2,7 @@
 
 AIsle là hệ thống mô phỏng hành vi khách hàng trong cửa hàng tiện lợi. Dự án kết hợp dữ liệu quan sát từ video thực tế, ngữ cảnh cửa hàng, quần thể NPC sinh bằng Genetic Algorithm và Utility AI lấy cảm hứng từ *The Sims*.
 
-> **Trạng thái chuyển đổi:** hướng sản phẩm chính thức là Unity desktop application theo [`docs/Result_Plan.md`](docs/Result_Plan.md). `UnityApp/` hiện là app skeleton; UI/UX và simulation core sẽ được triển khai ở giai đoạn sau. Web hiện tại được giữ làm baseline/reference, không còn là kiến trúc đích.
+> **Trạng thái chuyển đổi:** hướng sản phẩm chính thức là Unity desktop application theo [`docs/Result_Plan.md`](docs/Result_Plan.md). Population foundation dùng GeneticSharp/Math.NET và C# Simulation Baseline đã hoàn thành local với invariant/statistical, .NET, Unity EditMode và web regression tests. UI/UX cùng các stage Interaction Zone/ORCA/Social/DOTS/Spine vẫn để giai đoạn sau. Web hiện tại được giữ làm baseline/reference.
 
 Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chính sách bán hàng trong môi trường mô phỏng trước khi áp dụng vào cửa hàng thật. Hệ thống tập trung vào khả năng quan sát, replay và giải thích nguyên nhân dẫn đến kết quả; không tự động tuyên bố một layout là “tối ưu”.
 
@@ -195,6 +195,17 @@ Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web 
 ## Kiểm thử
 
 Từ thư mục gốc:
+
+### Population foundation C#
+
+```powershell
+dotnet build AIsle.slnx -c Release
+dotnet run --project tests/AIsle.Population.Tests/AIsle.Population.Tests.csproj -c Release --no-build
+```
+
+Unity EditMode tests nằm tại `UnityApp/Assets/AIsle/Tests/EditMode`. Có thể chạy bằng Test Runner trong Editor hoặc batch mode với Unity 6000.5.7f1.
+
+### Web baseline
 
 ```powershell
 node tests/live_engine.test.mjs

@@ -1,0 +1,16 @@
+{
+  "name": "AIsle.Simulation",
+  "rootNamespace": "AIsle.Simulation",
+  "references": [
+    "AIsle.Contracts"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}
