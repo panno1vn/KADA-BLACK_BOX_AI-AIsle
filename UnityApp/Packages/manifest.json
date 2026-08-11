@@ -1,3 +1,7 @@
 {
-  "dependencies": {}
+  "dependencies": {
+    "com.blackbox.aisle.contracts": "file:../../src/AIsle.Contracts",
+    "com.blackbox.aisle.simulation": "file:../../src/AIsle.Simulation",
+    "com.unity.test-framework": "1.7.0"
+  }
 }

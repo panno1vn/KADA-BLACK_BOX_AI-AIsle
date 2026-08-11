@@ -1,7 +1,12 @@
 # AIsle Unity Desktop App
 
-Đây là app skeleton cho hướng chuyển đổi từ web prototype sang Unity desktop application theo `docs/Result_Plan.md`.
+Đây là Unity project cho hướng chuyển đổi từ web prototype sang desktop application theo `docs/Result_Plan.md`.
 
-Phạm vi hiện tại chỉ gồm cấu trúc project. Chưa có UI/UX, scene sản phẩm, simulation core, DOTS/ECS, Burst/Jobs hoặc Spine. Web prototype ở thư mục gốc `web/`, `backend/`, `runtime/` và các test `.mjs` hiện tại vẫn là baseline/reference; không di chuyển chúng trước khi golden tests và contracts được chốt.
+Population foundation hiện được nạp qua hai local UPM packages:
 
-Mở thư mục `UnityApp` bằng Unity Hub. Máy tạo skeleton chưa có Unity Editor, vì vậy Unity Hub có thể yêu cầu chọn hoặc nâng cấp Editor trước lần mở đầu tiên.
+- `com.blackbox.aisle.contracts` → `../src/AIsle.Contracts`;
+- `com.blackbox.aisle.simulation` → `../src/AIsle.Simulation`.
+
+Unity EditMode tests kiểm tra deterministic golden populations và JSON round-trip. Chưa có UI/UX, scene sản phẩm, NPC runtime, Utility AI, DOTS/ECS, Burst/Jobs hoặc Spine. Web prototype ở thư mục gốc `web/`, `backend/`, `runtime/` và các test `.mjs` vẫn là baseline/reference.
+
+Mở thư mục `UnityApp` bằng Unity Hub với Unity Editor 6000.5.7f1. Chạy EditMode tests trong Test Runner để xác minh project sau khi clone hoặc đổi máy.

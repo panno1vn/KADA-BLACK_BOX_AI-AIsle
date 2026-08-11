@@ -55,6 +55,16 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Nên làm tiếp theo: Khi chủ dự án sẵn sàng, cài Unity Editor rồi mở `UnityApp/` để Unity sinh metadata và xác minh skeleton trong Editor. Sau đó chốt golden tests/contracts trước khi mở phạm vi core hoặc UI/UX.
 - Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
 
+## 2026-08-11 14:35 (UTC+07:00) — Codex — RUN_FIX final
+
+- Lý do sửa: Thực hiện `docs/run_fix_codex.md` cuối cùng theo thứ tự chủ dự án đã đính chính, sau Population source-first và C# Simulation Baseline.
+- Đã sửa/đã làm: Giữ nguyên toàn bộ lịch sử log cũ; sửa policy sai của milestone trước bằng cách xóa custom deterministic RNG/Gaussian/fingerprint, custom generic Genome/Selection/Crossover/Mutation/GeneDefinition, public Population `Seed` và public Simulation `RandomControl`; dùng GeneticSharp 2.6.0 cho GA engine/operators/chromosome base và MathNet.Numerics 5.0.0 cho distribution/statistics; giữ AIsle domain mapping/fitness/validator/contracts/tests; đồng bộ `Result_Plan.md`, `run.md`, `run_2.md`, `run_2_codex_source_first.md`, README và dependency/license audit.
+- Đối chiếu Result_Plan.md: Chính sách external-first; không tạo generic algorithm khi vetted implementation tồn tại; RVO2/Unity ECS samples/Spine official runtime vẫn để stage sau; C# Simulation Baseline đã hoàn thành nhưng UI/UX và stage nâng cao chưa mở.
+- Trạng thái: Đạt. Corrective audit không còn public randomness-control/fingerprint field trong Contracts/Population, không còn custom generic GA operator; AIsle mapping/fitness và C# baseline vẫn hoạt động.
+- Kiểm tra: .NET build 0 warning/0 error; Population 5/5 invariant scenarios pass; C# Simulation tests pass RUN2-02…15 (Poisson mean `4.935s` trong tolerance); Unity 6000.5.7f1 EditMode 8/8 pass; web baseline 10/10 pass; SimResult JSON round-trip pass; `git diff --check` pass; `origin/main...HEAD = 0 0`.
+- Nên làm tiếp theo: Dừng tại đây theo `run_fix_codex.md`; milestone tiếp theo chỉ bắt đầu khi chủ dự án yêu cầu, ưu tiên Interaction Zone/Queue baseline review trước RVO2, Social, DOTS/Burst hoặc Spine.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push. Các thay đổi sẵn có của người dùng trong `runtime/` và `docs/` được giữ nguyên.
+
 ## 2026-08-11 12:09 (UTC+07:00) — Codex
 
 - Lý do sửa: Hoàn tất và xác minh hai nhiệm vụ nền tảng trong phạm vi hiện tại: tái thiết cấu trúc repository và chuyển hướng từ web prototype sang Unity desktop app skeleton.
@@ -134,3 +144,133 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Kiểm tra: Remote `test` trả đúng hash `132f7af9a27282d59eb8f1d6a58eae5c5af6f8fa`; `git merge-base origin/main origin/test` bằng chính `225985ec48393f18a4f55a14dc99c557c469b38c`; kiểm tra ancestor thành công.
 - Nên làm tiếp theo: Đẩy bản ghi này lên `origin/test`; sau đó có thể mở lại compare/PR từ `test` sang `main` để GitHub làm mới trạng thái.
 - Phạm vi đồng bộ: Bản sửa ancestry đã push lên `origin/test`; bản ghi hoàn tất này chưa push; không push `main`.
+
+## 2026-08-11 13:22 (UTC+07:00) — Codex
+
+- Lý do sửa: Chủ dự án xác nhận Unity Editor đã được cài và yêu cầu triển khai milestone trong `docs/run.md`.
+- Đã sửa/đã làm: Đọc đầy đủ `AGENTS.md`, `docs/run.md` và quy tắc log; phát hiện Unity Editor 6000.5.7f1 tại `D:\_C\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe`; mở rộng phạm vi chính thức sang Population foundation; cập nhật Unity project version và khai báo local packages/test framework. Chưa viết UI/UX hoặc các hệ thống sau Population milestone.
+- Đối chiếu Result_Plan.md: Phase 1 — Contracts/Population foundation; `docs/run.md` NOW-01 đến NOW-05 và Definition of Done milestone hiện tại.
+- Trạng thái: Đạt một phần; môi trường và phạm vi đã chốt, phần Contracts/GA/Validator/Statistics/Golden Tests đang triển khai.
+- Kiểm tra: Unity Editor 6000.5.7f1 tồn tại; built-in Unity Test Framework 1.7.0 và NUnit extension 2.1.0 có sẵn; máy không có `dotnet` CLI trong PATH nên kiểm thử sẽ chạy bằng Unity batch mode.
+- Nên làm tiếp theo: Tạo C# contracts/local packages, deterministic GA pipeline, validator/statistics, golden fixtures và chạy EditMode tests bằng Unity Editor.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 13:46 (UTC+07:00) — Codex
+
+- Lý do sửa: Hoàn tất và xác minh milestone Population foundation theo `docs/run.md` sau khi Unity Editor và .NET SDK được cài.
+- Đã sửa/đã làm: Hoàn thành NOW-01 `NPCProfile`; NOW-02 `PopulationConfig`/`PopulationDefinition`/metadata/ranges/distribution targets; NOW-03 `IPopulationGenerator`, facade, Manual/Imported generators và GA tách Genome/GeneDefinition/Fitness/Selection/Crossover/Mutation; NOW-04 `PopulationValidator` và `PopulationStatistics`; NOW-05 năm golden scenarios fixed seed. Tổ chức Contracts/Simulation thành local UPM packages đồng thời là .NET projects; thêm solution, offline NuGet config, console verification, Unity EditMode tests, package lock, Unity ProjectSettings và metadata. Sửa RNG Gaussian và fingerprint để bit-stable giữa .NET/Unity; sửa GA tie-break để distribution không target không bị lệch; kiểm tra Unity JSON semantic round-trip. Không triển khai UI/UX, NPC runtime, Utility AI, ORCA, Social, DOTS, Burst hoặc Spine.
+- Đối chiếu Result_Plan.md: Phase 1 — Population subset của Contracts và deterministic foundation; `docs/run.md` mục 2–8, NOW-01 đến NOW-05 và Definition of Done tại mục 23.
+- Trạng thái: Đạt cho milestone Population foundation hiện tại. Pipeline `PopulationConfig → GeneticPopulationGenerator → NPCProfile[200] → PopulationValidator → PopulationStatistics → Golden Tests` chạy ổn, deterministic, serializable, Unity-independent, DOTS-independent và tested.
+- Kiểm tra: `.NET SDK 10.0.302` build solution thành công với 0 warning/0 error; console verification pass 5/5 golden scenarios cùng validator rejection, statistics, generator abstraction và dependency boundary; Unity 6000.5.7f1 EditMode pass 6/6 tests, gồm 5 golden scenarios và kiểm tra không tham chiếu Unity/DOTS; fingerprints khớp giữa .NET/Unity; Unity JSON round-trip giữ tương đương toàn bộ fields với tolerance `1e-12`; web baseline pass 10/10 regression tests; manifest/package lock JSON hợp lệ; `git diff --check` thành công; không có `bin/obj` hoặc dependency Unity/Spine lọt vào source packages.
+- Nên làm tiếp theo: Freeze 5 web reference scenarios theo mục 9 của `docs/run.md`, rồi mới chốt NPC Runtime Model và port Utility AI C# theo thứ tự tài liệu; chỉ bắt đầu khi chủ dự án yêu cầu milestone tiếp theo.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push. Các file người dùng tạo/thay đổi sẵn trong `runtime/` và `docs/` được giữ nguyên.
+
+## 2026-08-11 14:24 (UTC+07:00) — Codex — RUN-01
+
+- Lý do sửa: Áp dụng lại Population milestone theo policy source-first trước khi mở `run_2`.
+- Đã sửa/đã làm: Audit RNG, Gaussian, fingerprint, generic chromosome/selection/crossover/mutation/engine; lập bảng tại `docs/source-first-audit.md`; kiểm tra upstream, license và compatibility của GeneticSharp/Math.NET.
+- Đối chiếu Result_Plan.md: Population foundation và nguyên tắc external-first.
+- Trạng thái: Đạt.
+- Kiểm tra: GeneticSharp 2.6.0 và MathNet.Numerics 5.0.0 đều MIT, có target .NET Standard 2.0 và phù hợp code dùng chung Unity/.NET.
+- Nên làm tiếp theo: Chuẩn hóa contracts và loại bỏ randomness-control fields.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:24 (UTC+07:00) — Codex — RUN-02/RUN-03
+
+- Lý do sửa: Loại bỏ exact-random contract và generic GA implementation tự viết.
+- Đã sửa/đã làm: Xóa `Seed`, config/output fingerprint, deterministic RNG và custom Genome/Selection/Crossover/Mutation/GeneDefinition; tích hợp DLL GeneticSharp/Math.NET; tạo `AIsleNpcChromosome`, `AIslePopulationFitness` và adapter mỏng `GeneticPopulationGenerator`.
+- Đối chiếu Result_Plan.md: Contracts Unity-independent và Population/GA dùng vetted implementation.
+- Trạng thái: Đạt.
+- Kiểm tra: .NET build 0 warning/0 error; source audit không còn public randomness-control field hoặc custom generic GA operator.
+- Nên làm tiếp theo: Chuyển statistics/tests sang vetted library và invariant gate.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:24 (UTC+07:00) — Codex — RUN-04/RUN-05
+
+- Lý do sửa: Hoàn tất validator/statistics/tests theo source-first Definition of Done.
+- Đã sửa/đã làm: Giữ validator AIsle; chuyển mean/median/min/max/std/percentile sang Math.NET; thay exact fingerprint/golden random output bằng count, bounds, validation, serialization, fitness, distribution sanity và dependency boundary; thêm MIT notices.
+- Đối chiếu Result_Plan.md: Population pipeline `Config → GeneticSharp adapter → NPCProfile[] → Validator → Statistics → Tests`.
+- Trạng thái: Đạt; đủ điều kiện chuyển sang `run_2_codex_source_first.md` theo yêu cầu mới của chủ dự án.
+- Kiểm tra: .NET 5/5 scenarios pass; Unity 6000.5.7f1 EditMode 6/6 pass; web regression 10/10 pass; `git diff --check` pass.
+- Nên làm tiếp theo: Chạy RUN2-01 Audit & Freeze, rồi port simulation baseline theo đúng source mapping.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push; lịch sử log cũ giữ nguyên.
+
+## 2026-08-11 14:32 (UTC+07:00) — Codex — RUN2-01
+
+- Lý do sửa: Bắt đầu C# Simulation Baseline sau khi Population source-first pass.
+- Đã sửa/đã làm: Chạy JS baseline 10/10; lập mapping cho Spawn, Need, Affect, Smart Object, Utility, A*, Movement, Interaction, Purchase/Exit, Event/Trajectory và SimResult tại `docs/run2-source-mapping.md`.
+- Đối chiếu Result_Plan.md: Port-first, behavior-preserving, Unity-independent core.
+- Trạng thái: Đạt.
+- Kiểm tra: Không có source gap; nguồn runtime là `web/live-engine.js`, schema là `web/sim-result.js`, behavior gates là 10 test `.mjs`.
+- Nên làm tiếp theo: Port lần lượt runtime baseline.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:32 (UTC+07:00) — Codex — RUN2-02 đến RUN2-07
+
+- Lý do sửa: Port nửa đầu simulation core từ JS sang C#.
+- Đã sửa/đã làm: Thêm contracts thuần C#, `PoissonSpawnSampler`, `NeedAffectSystem`, fixed-access Smart Object advertisements, Utility scoring/top-K weighted choice và `PathGrid` A* với no-corner-cut/smoothing walkability.
+- Đối chiếu Result_Plan.md: Spawn, Need, Affect, Smart Object, Utility AI và Navigation baseline.
+- Trạng thái: Đạt.
+- Kiểm tra: Poisson mean `4.880s` với expected `5s`; Need/Affect formula pass; utility near/far pass; sealed-wall và gap-route A* pass.
+- Nên làm tiếp theo: Port movement-to-result full journey.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:32 (UTC+07:00) — Codex — RUN2-08 đến RUN2-12
+
+- Lý do sửa: Hoàn thiện runtime journey baseline.
+- Đã sửa/đã làm: Tạo `SimulationHost` fixed-step, `NPCRuntimeState`, path-node movement, walkability recheck, replan/abandon, fixed shelf dwell, main/impulse purchase, checkout và normal/unreachable/blocked exit flow. Không thêm Interaction Zone, Queue Zone hoặc ORCA.
+- Đối chiếu Result_Plan.md: Movement/Interaction/Queue-baseline-if-needed/Purchase/Exit.
+- Trạng thái: Đạt.
+- Kiểm tra: Full journey có decision → dwell → purchase → checkout → left; phantom/unreachable agent không xuyên sealed wall và rời cửa hàng có kiểm soát.
+- Nên làm tiếp theo: Hoàn tất trace/replay/result và regression gate.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:32 (UTC+07:00) — Codex — RUN2-13 đến RUN2-15
+
+- Lý do sửa: Hoàn tất observable/replayable output của C# baseline.
+- Đã sửa/đã làm: Port event trace, periodic/status-change trajectory và `aisle.sim-result.v1` gồm input snapshot, summary, events, purchases, replay; thêm JSON round-trip test.
+- Đối chiếu Result_Plan.md: Event/Trace, Trajectory, SimResult.
+- Trạng thái: Đạt.
+- Kiểm tra: C# simulation verification pass; replay có hơn 2 samples và đúng 5 columns; SimResult serialize/deserialize giữ events/purchases/replay.
+- Nên làm tiếp theo: Chạy Regression Gate và corrective audit cuối.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:32 (UTC+07:00) — Codex — RUN2 Regression Gate
+
+- Lý do sửa: Xác minh Definition of Done của `run_2_codex_source_first.md`.
+- Đã sửa/đã làm: Chạy toàn bộ .NET, Population, Unity EditMode và JS baseline; kiểm tra diff.
+- Đối chiếu Result_Plan.md: C# Simulation Baseline hoàn chỉnh trong scope; các stage UI/ORCA/Social/DOTS/Spine vẫn chưa triển khai.
+- Trạng thái: Đạt; `run_2` completed.
+- Kiểm tra: .NET build 0 warning/error; C# Simulation tests pass; Population 5/5 pass; Unity EditMode 8/8 pass; JS 10/10 pass; `git diff --check` pass.
+- Nên làm tiếp theo: Chạy `docs/run_fix_codex.md` theo thứ tự mới của chủ dự án, sau đó dừng.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:36 (UTC+07:00) — Codex — Đính chính vị trí RUN_FIX
+
+- Lý do sửa: Ghi nhận minh bạch việc công cụ đã chèn nhầm bản `RUN_FIX final` 14:35 vào vị trí dòng 58 do dùng câu neo log không duy nhất.
+- Đã sửa/đã làm: Không xóa, sửa, di chuyển hoặc ghi đè bản bị chèn nhầm; append bản đính chính này và bản kết quả chính thức ngay sau nó ở đúng cuối file để bảo toàn audit trail.
+- Đối chiếu Result_Plan.md: Quy tắc quản lý tiến trình append-only tại `docs/log.md`.
+- Trạng thái: Đạt sau đính chính; kết quả kỹ thuật không thay đổi.
+- Kiểm tra: Xác nhận heading `RUN_FIX final` 14:35 đang ở dòng 58 và bản đính chính 14:36 nằm sau `RUN2 Regression Gate` ở cuối file.
+- Nên làm tiếp theo: Dùng heading cuối duy nhất làm neo cho mọi lần append sau; không dùng câu `Phạm vi đồng bộ` lặp lại.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push.
+
+## 2026-08-11 14:36 (UTC+07:00) — Codex — RUN_FIX final (bản append chính thức)
+
+- Lý do sửa: Ghi lại ở đúng cuối file kết quả `docs/run_fix_codex.md` theo thứ tự chủ dự án đã đính chính.
+- Đã sửa/đã làm: Giữ lịch sử cũ; xóa custom deterministic RNG/Gaussian/fingerprint, custom generic GA internals, public Population `Seed` và public Simulation `RandomControl`; dùng GeneticSharp 2.6.0 và MathNet.Numerics 5.0.0; giữ AIsle mapping/fitness/validator/contracts/tests; đồng bộ plan/run/README/audit.
+- Đối chiếu Result_Plan.md: External-first; RVO2/Unity ECS samples/Spine official runtime vẫn để stage sau; Population source-first và C# Simulation Baseline đã hoàn thành.
+- Trạng thái: Đạt; dừng theo `run_fix_codex.md`.
+- Kiểm tra: .NET build 0 warning/error; Population 5/5; C# Simulation RUN2-02…15 pass; Unity EditMode 8/8; web 10/10; JSON round-trip và `git diff --check` pass; audit không còn public randomness-control/fingerprint field hoặc custom generic GA operator.
+- Nên làm tiếp theo: Chỉ mở milestone mới khi chủ dự án yêu cầu.
+- Phạm vi đồng bộ: Chỉ local; chưa stage, chưa commit, chưa push; `origin/main...HEAD = 0 0`.
+
+## 2026-08-11 14:43 (UTC+07:00) — Codex — Chuẩn bị đồng bộ `test`
+
+- Lý do sửa: Chủ dự án yêu cầu đẩy snapshot local hiện tại lên nhánh GitHub `test`.
+- Đã sửa/đã làm: Xác minh remote `origin`, local vẫn ở `main`, `origin/main` là ancestor của `origin/test`, diff check sạch; chuẩn bị tạo commit descendant của `origin/test` bằng index tạm để không thay đổi local branch/index. Ghi nhận các file `docs/run*.md` và source-first audit không còn trên filesystem tại thời điểm yêu cầu push và cũng không có trong `origin/test`, nên snapshot lấy đúng trạng thái local hiện hữu thay vì tự tái tạo nội dung không còn nguồn.
+- Đối chiếu Result_Plan.md: Đồng bộ Population source-first và C# Simulation Baseline đã kiểm thử; không đưa build output hoặc Unity generated cache lên GitHub.
+- Trạng thái: Đạt một phần; đang chờ tạo commit và push.
+- Kiểm tra: `main_is_ancestor_of_test=true`; `git diff --check` pass; local `main` khớp `origin/main`.
+- Nên làm tiếp theo: Tạo snapshot commit trên lịch sử `test`, push và xác minh remote hash/tree.
+- Phạm vi đồng bộ: Chỉ local; chưa stage bằng index chính, chưa commit local branch, chưa push.
