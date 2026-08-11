@@ -274,3 +274,13 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Kiểm tra: `main_is_ancestor_of_test=true`; `git diff --check` pass; local `main` khớp `origin/main`.
 - Nên làm tiếp theo: Tạo snapshot commit trên lịch sử `test`, push và xác minh remote hash/tree.
 - Phạm vi đồng bộ: Chỉ local; chưa stage bằng index chính, chưa commit local branch, chưa push.
+
+## 2026-08-11 14:46 (UTC+07:00) — Codex — Hoàn tất đồng bộ `test`
+
+- Lý do sửa: Ghi nhận kết quả push snapshot source-first/C# Simulation Baseline lên GitHub `test`.
+- Đã sửa/đã làm: Push commit snapshot ban đầu `dd4f1ec35aa7fb9e720358237cd172c26b279979`; phát hiện commit này vô tình chứa một phần Unity cache sinh nhầm ở root do `git add` gặp file khóa; ngay lập tức bổ sung ignore root cache và push corrective descendant `45d119db64a8e24ff5f2acfbd3bc813b3c9896d2` với tree sạch. Corrective tip có 234 file, gồm đủ 4 `.csproj`, không có root `Assets/Library/Logs/Packages/ProjectSettings/Temp/UserSettings`.
+- Đối chiếu Result_Plan.md: Đồng bộ đúng source code, UnityApp, Population source-first, C# Simulation Baseline, tests và tài liệu hiện hữu; không đưa generated cache/build output vào snapshot cuối.
+- Trạng thái: Đạt. `origin/test` đang trỏ tới corrective clean snapshot.
+- Kiểm tra: Remote hash `45d119db64a8e24ff5f2acfbd3bc813b3c9896d2`; tree `720c8152fa9519a88e99d35ebafd172bcf2bc541`; forbidden root count = 0; `.csproj` count = 4; `main` không bị push hoặc thay đổi.
+- Nên làm tiếp theo: Push bản log hoàn tất này bằng descendant commit cuối và xác minh remote tip.
+- Phạm vi đồng bộ: Đã push source snapshot lên `origin/test`; bản ghi hoàn tất này đang chờ descendant commit cuối; không push `main`.
