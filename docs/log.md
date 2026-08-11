@@ -114,3 +114,13 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Kiểm tra: `git ls-remote origin refs/heads/test` trả đúng `949b0cc20181d62f03f8075afe8e40ecaf1f4fd7` sau push; parent và remote hash đều được kiểm tra trước/sau thao tác.
 - Nên làm tiếp theo: Đẩy chính bản ghi đồng bộ cuối này bằng một descendant commit và dừng; không thay đổi `main`.
 - Phạm vi đồng bộ: Kết quả chính đã ở `origin/test`; bản ghi này sẽ nằm trong descendant commit đồng bộ cuối; không push `main`.
+
+## 2026-08-11 12:22 (UTC+07:00) — Codex
+
+- Lý do sửa: Chủ dự án báo `main` và `test` bị conflict sau khi nhánh `test` được thay bằng orphan snapshot.
+- Đã sửa/đã làm: Xác minh `origin/main` là `225985ec48393f18a4f55a14dc99c557c469b38c`, `origin/test` là `0122a19d9554beef2f13a3dceb03cb24b5d219f5`; `git merge-base` trả exit code 1, chứng minh hai nhánh không có tổ tiên chung. Đã fetch lại hai ref và chuẩn bị tạo merge commit giữ nguyên tree của `test`, với parent thứ nhất là `test` và parent thứ hai là `main`.
+- Đối chiếu Result_Plan.md: Không thay đổi nội dung hoặc phạm vi app; chỉ sửa quan hệ lịch sử Git để nhánh `test` có thể so sánh/merge với `main`.
+- Trạng thái: Chưa đạt; nguyên nhân đã xác định, đang chờ tạo và push merge commit kết nối lịch sử.
+- Kiểm tra: Remote refs sau fetch không thay đổi; working tree/index chính vẫn ở local `main` và chưa bị stage.
+- Nên làm tiếp theo: Tạo merge commit bằng index tạm, push lên `origin/test`, kiểm tra `origin/main` là ancestor của `origin/test` và xác minh không còn merge conflict.
+- Phạm vi đồng bộ: Chỉ cập nhật log local; chưa push bản sửa conflict; không push `main`.
