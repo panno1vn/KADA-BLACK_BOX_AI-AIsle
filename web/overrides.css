@@ -28,9 +28,17 @@
 }
 
 .workspace {
-  height: calc(100dvh - 238px);
+  height: calc(100dvh - 280px);
   min-height: 0;
   overflow: hidden;
+}
+
+/* Tab-specific workspace heights */
+body[data-tab="setup"] .workspace {
+  height: calc(100dvh - 150px);
+}
+body[data-tab="simulate"] .workspace {
+  height: calc(100dvh - 280px);
 }
 
 .palette,
@@ -123,7 +131,10 @@
 *::-webkit-scrollbar-thumb { background: #3a4a5f; border-radius: 8px; }
 
 body.outputs-collapsed .workspace {
-  height: calc(100dvh - 138px);
+  height: calc(100dvh - 180px);
+}
+body[data-tab="setup"].outputs-collapsed .workspace {
+  height: calc(100dvh - 150px);
 }
 
 body.outputs-collapsed .outputs {
@@ -142,13 +153,16 @@ body.outputs-collapsed .event-log {
 }
 
 @media (max-height: 760px) {
-  .workspace { height: calc(100dvh - 194px); }
+  .workspace { height: calc(100dvh - 236px); }
+  body[data-tab="setup"] .workspace { height: calc(100dvh - 150px); }
+  body[data-tab="simulate"] .workspace { height: calc(100dvh - 236px); }
   .outputs { height: 88px; }
   .metrics > div { padding: 10px 14px; }
   .metrics b { font-size: 15px; margin-top: 5px; }
   .metrics small { margin-top: 3px; }
   #event-log-list { height: 48px; }
-  body.outputs-collapsed .workspace { height: calc(100dvh - 138px); }
+  body.outputs-collapsed .workspace { height: calc(100dvh - 180px); }
+  body[data-tab="setup"].outputs-collapsed .workspace { height: calc(100dvh - 150px); }
 }
 
 @media (max-width: 900px) {

@@ -1,0 +1,752 @@
+/* ═══════════════════════════════════════════════════════════
+   AIsle Simulation Studio — Stardew Valley / Wooden Pixel Art Theme
+   Lấy cảm hứng từ bản thiết kế Google Stitch.
+   File này override toàn bộ biến CSS và bổ sung hiệu ứng gỗ.
+   ═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=VT323&display=swap');
+
+/* ───────── GHI ĐÈ BIẾN GỐC ───────── */
+:root{
+    --bg:       #1a0e06;
+    --side:     #2e1509;
+    --panel:    #3a1c0d;
+    --panel2:   #4a2512;
+    --line:     #6b3519;
+    --text:     #f5e6c8;
+    --dim:      #b8946a;
+    --blue:     #ffca58;      /* vàng kim thay xanh dương */
+    --pink:     #e05252;
+    --amber:    #ffc24b;
+    --green:    #5dba4f;
+    --red:      #e05252;
+
+    /* Gỗ bevel */
+    --bevel-light:  #c8844a;
+    --bevel-dark:   #1f0c03;
+    --wood-grain:   rgba(90,50,20,.08);
+
+    /* Font pixel */
+    --pixel: 'Pixelify Sans', sans-serif;
+    --vt: 'VT323', monospace;
+}
+
+/* ───────── BODY TEXTURE VÂN GỖ ───────── */
+html, body{
+    background:
+        repeating-linear-gradient(
+            90deg,
+            transparent, transparent 62px,
+            rgba(90,50,20,.06) 62px,
+            rgba(90,50,20,.06) 64px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent, transparent 38px,
+            rgba(139,69,19,.04) 38px,
+            rgba(139,69,19,.04) 40px
+        ),
+        linear-gradient(180deg, #1a0e06 0%, #241008 100%) !important;
+}
+
+/* ───────── MENUBAR — Thanh gỗ trên cùng ───────── */
+.menubar{
+    background: linear-gradient(180deg, #3a1c0d 0%, #2e1509 100%);
+    border-bottom: 3px solid var(--line);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -1px 0 var(--bevel-dark),
+        0 4px 12px rgba(0,0,0,.4);
+}
+
+.brand{
+    font-family: var(--pixel) !important;
+    letter-spacing: .08em;
+}
+.brand b{
+    background: var(--amber) !important;
+    border-radius: 1px;
+}
+.brand small{
+    font-family: var(--vt) !important;
+    color: var(--dim) !important;
+    font-size: 9px !important;
+    letter-spacing: .16em;
+}
+
+.project input{
+    font-family: var(--pixel) !important;
+    color: var(--text);
+    font-size: 13px !important;
+}
+.project span{
+    font-family: var(--vt) !important;
+    color: var(--green) !important;
+}
+
+#export-btn{
+    font-family: var(--pixel) !important;
+    background: linear-gradient(180deg, #8d4a23 0%, #6b3519 100%);
+    border: 2px solid var(--line);
+    color: var(--text);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark);
+    text-shadow: 1px 1px 0 rgba(0,0,0,.4);
+    transition: all .12s ease;
+}
+#export-btn:hover{
+    background: linear-gradient(180deg, #a86732 0%, #8d4a23 100%);
+    border-color: var(--amber);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark),
+        0 0 12px rgba(255,194,75,.2);
+}
+
+/* ───────── TOOLBAR — Thanh công cụ gỗ ───────── */
+.toolbar{
+    background: linear-gradient(180deg, #2e1509 0%, #241008 100%);
+    border-bottom: 2px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(200,132,74,.15);
+}
+
+.tools button{
+    font-family: var(--pixel) !important;
+    color: var(--dim);
+    border-radius: 4px;
+    transition: all .1s ease;
+}
+.tools button.active{
+    background: rgba(255,202,88,.12) !important;
+    border-color: rgba(255,202,88,.4) !important;
+    color: var(--amber) !important;
+    box-shadow: inset 0 1px 0 rgba(200,132,74,.2);
+}
+.tools button:hover:not(.active){
+    color: var(--text);
+    background: rgba(255,255,255,.04);
+}
+
+.transport .run,
+.transport .primary,
+.primary{
+    font-family: var(--pixel) !important;
+    background: linear-gradient(180deg, #5dba4f 0%, #3d8a35 100%) !important;
+    border: 2px solid #3d8a35 !important;
+    color: #0a1a06 !important;
+    font-weight: 600;
+    text-shadow: 0 1px 0 rgba(255,255,255,.15);
+    box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.15),
+        inset 0 -2px 0 rgba(0,0,0,.2),
+        0 2px 6px rgba(0,0,0,.3) !important;
+    transition: all .12s ease;
+}
+.transport .run:hover,
+.primary:hover{
+    background: linear-gradient(180deg, #6dca5f 0%, #4d9a45 100%) !important;
+    box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.2),
+        inset 0 -2px 0 rgba(0,0,0,.2),
+        0 0 14px rgba(93,186,79,.25) !important;
+}
+
+.transport select,
+.transport strong{
+    font-family: var(--vt) !important;
+    color: var(--amber) !important;
+    font-size: 14px !important;
+}
+
+/* ───────── BUTTONS GÉNÉRAUX — Nút gỗ ───────── */
+button{
+    border: 2px solid var(--line);
+    background: var(--panel2);
+    font-family: var(--pixel) !important;
+    border-radius: 4px;
+    box-shadow:
+        inset 0 1px 0 var(--bevel-light),
+        inset 0 -1px 0 var(--bevel-dark);
+    transition: all .1s ease;
+}
+button:hover{
+    border-color: var(--amber) !important;
+    box-shadow:
+        inset 0 1px 0 var(--bevel-light),
+        inset 0 -1px 0 var(--bevel-dark),
+        0 0 8px rgba(255,194,75,.12);
+}
+button:active{
+    box-shadow:
+        inset 0 -1px 0 var(--bevel-light),
+        inset 0 1px 0 var(--bevel-dark);
+    transform: translateY(1px);
+}
+
+/* ───────── SIDEBAR / PALETTE — Bảng gỗ bên trái ───────── */
+.palette{
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px, transparent 38px,
+            rgba(139,69,19,.06) 38px, rgba(139,69,19,.1) 40px
+        ),
+        linear-gradient(180deg, #2e1509 0%, #3a1c0d 50%, #2e1509 100%) !important;
+    border-right: 3px solid var(--line) !important;
+    box-shadow: inset -2px 0 6px rgba(0,0,0,.3);
+}
+
+/* ───────── INSPECTOR — Bảng gỗ bên phải ───────── */
+.inspector{
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px, transparent 38px,
+            rgba(139,69,19,.06) 38px, rgba(139,69,19,.1) 40px
+        ),
+        linear-gradient(180deg, #2e1509 0%, #3a1c0d 50%, #2e1509 100%) !important;
+    border-left: 3px solid var(--line) !important;
+    box-shadow: inset 2px 0 6px rgba(0,0,0,.3);
+}
+
+.inspector #nothing-selected span{
+    color: var(--amber);
+    font-size: 36px;
+}
+.inspector #nothing-selected p{
+    font-family: var(--pixel) !important;
+    color: var(--dim);
+}
+
+/* ───────── SECTION HEADERS ───────── */
+h3{
+    font-family: var(--vt) !important;
+    font-size: 12px !important;
+    letter-spacing: .14em;
+    color: var(--amber) !important;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.4);
+}
+
+section + section{
+    border-top: 2px solid var(--line);
+}
+
+/* ───────── LABELS & INPUTS ───────── */
+label{
+    font-family: var(--pixel) !important;
+    color: var(--dim);
+    font-size: 10px;
+}
+label output{
+    color: var(--amber) !important;
+    font-family: var(--vt) !important;
+    font-size: 14px;
+}
+
+input, select, textarea{
+    background: #1a0e06 !important;
+    border: 2px solid var(--line) !important;
+    border-radius: 4px !important;
+    color: var(--text) !important;
+    font-family: var(--pixel) !important;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.3);
+    transition: border-color .12s ease;
+}
+input:focus, select:focus, textarea:focus{
+    border-color: var(--amber) !important;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.3), 0 0 6px rgba(255,194,75,.15) !important;
+}
+
+input[type=range]{
+    accent-color: var(--amber) !important;
+}
+
+/* ───────── OBJECT LIST ───────── */
+#object-list button{
+    font-family: var(--pixel) !important;
+    border-radius: 4px;
+}
+#object-list button.active{
+    background: var(--panel2) !important;
+    color: var(--amber) !important;
+    border-left: 3px solid var(--amber);
+}
+#object-list i{
+    background: var(--bevel-light) !important;
+}
+#object-list i.wall-swatch{
+    background: #c8844a !important;
+}
+
+.wide{
+    font-family: var(--pixel) !important;
+}
+.wide b{
+    color: var(--amber) !important;
+    font-family: var(--vt) !important;
+}
+
+/* ───────── LEGEND NPC STATE ───────── */
+.legend span{
+    font-family: var(--pixel) !important;
+    color: var(--dim);
+}
+.transit{  background: #5fa8d3 !important; }
+.dwell{    background: var(--amber) !important; }
+.purchased{ background: var(--green) !important; }
+.leaving{  background: var(--red) !important; }
+
+/* ───────── STAGE HEADER ───────── */
+.stage{
+    background: #120a04 !important;
+}
+.stage-head{
+    background: var(--panel);
+    border-bottom: 2px solid var(--line);
+    font-family: var(--vt) !important;
+    font-size: 11px !important;
+    color: var(--dim) !important;
+}
+.stage-head strong{
+    color: var(--green) !important;
+    font-family: var(--vt) !important;
+}
+
+/* ───────── TIMELINE ───────── */
+.timeline{
+    background: var(--panel) !important;
+    border-top: 2px solid var(--line);
+}
+.timeline span{
+    font-family: var(--vt) !important;
+    font-size: 11px !important;
+    color: var(--dim) !important;
+}
+
+/* ───────── OUTPUT FOOTER — Metrics gỗ ───────── */
+.outputs{
+    border-top: 3px solid var(--line);
+    background: var(--panel) !important;
+    box-shadow: inset 0 2px 0 var(--bevel-light);
+}
+
+.metrics{
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px;
+    background: var(--line) !important;
+}
+.metrics > div{
+    background: var(--panel) !important;
+    position: relative;
+}
+.metrics > div::after{
+    content: "";
+    position: absolute;
+    top: 8px; bottom: 8px;
+    right: -1px;
+    width: 1px;
+    background: var(--bevel-light);
+}
+.metrics > div:last-child::after{ display: none; }
+
+.metrics span{
+    font-family: var(--vt) !important;
+    font-size: 11px !important;
+    letter-spacing: .12em;
+    color: var(--amber) !important;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.4);
+}
+.metrics b{
+    font-family: var(--vt) !important;
+    font-size: 22px !important;
+    color: var(--text) !important;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.3);
+}
+.metrics small{
+    font-family: var(--pixel) !important;
+    color: var(--dim) !important;
+}
+
+/* ───────── EVENT LOG ───────── */
+.event-log{
+    border-left: 2px solid var(--line) !important;
+}
+.event-log strong{
+    font-family: var(--vt) !important;
+    font-size: 12px !important;
+    color: var(--amber) !important;
+    letter-spacing: .12em;
+}
+#event-log-list{
+    font-family: var(--vt) !important;
+    font-size: 11px !important;
+}
+#event-log-list b{
+    color: var(--amber) !important;
+}
+#event-log-list div{
+    color: var(--dim) !important;
+}
+
+/* ───────── DIALOGS — Hộp thoại gỗ ───────── */
+dialog{
+    background: var(--bg) !important;
+    border: 3px solid var(--line) !important;
+    border-radius: 8px;
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark),
+        0 20px 60px rgba(0,0,0,.6) !important;
+}
+dialog::backdrop{
+    background: rgba(10,5,2,.8) !important;
+}
+dialog header{
+    border-bottom: 2px solid var(--line);
+}
+dialog h2{
+    font-family: var(--pixel) !important;
+    color: var(--amber) !important;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.4);
+}
+dialog p{
+    font-family: var(--pixel) !important;
+    color: var(--dim) !important;
+}
+dialog textarea{
+    font-family: var(--vt) !important;
+    font-size: 13px !important;
+}
+.dialog-foot{
+    border-top: 2px solid var(--line);
+}
+.dialog-foot span{
+    font-family: var(--pixel) !important;
+    color: var(--dim) !important;
+}
+
+/* Parameter grid */
+#parameter-grid fieldset{
+    border: 2px solid var(--line) !important;
+    border-radius: 6px;
+    background: var(--panel);
+    box-shadow:
+        inset 0 1px 0 var(--bevel-light),
+        inset 0 -1px 0 var(--bevel-dark);
+}
+#parameter-grid legend{
+    font-family: var(--vt) !important;
+    font-size: 12px !important;
+    color: var(--amber) !important;
+    letter-spacing: .1em;
+}
+#parameter-grid label{
+    font-family: var(--pixel) !important;
+}
+#parameter-grid input{
+    font-family: var(--vt) !important;
+    font-size: 14px !important;
+}
+
+/* ───────── DANGER BUTTON ───────── */
+.danger{
+    background: #3d1a12 !important;
+    border-color: #8d3525 !important;
+    color: #ff8e7a !important;
+}
+.danger:hover{
+    border-color: #e05252 !important;
+    background: #4d2218 !important;
+    box-shadow: 0 0 10px rgba(224,82,82,.15);
+}
+
+/* ───────── TOAST ───────── */
+#toast{
+    background: var(--amber) !important;
+    color: #1a0e06 !important;
+    font-family: var(--pixel) !important;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+/* ───────── SCROLLBAR GỖ ───────── */
+*{
+    scrollbar-width: thin;
+    scrollbar-color: #6b3519 transparent;
+}
+*::-webkit-scrollbar{ width: 7px; height: 7px; }
+*::-webkit-scrollbar-track{ background: transparent; }
+*::-webkit-scrollbar-thumb{
+    background: #6b3519;
+    border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover{
+    background: #8d4a23;
+}
+
+/* ───────── TAB BAR — Thanh chuyển tab gỗ ───────── */
+.tab-bar{
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 16px;
+    background: linear-gradient(180deg, #241008 0%, #1a0e06 100%);
+    border-bottom: 2px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(200,132,74,.08);
+}
+
+.tab-btn{
+    font-family: var(--pixel) !important;
+    font-size: 12px;
+    padding: 8px 18px;
+    border: 2px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: var(--dim);
+    cursor: pointer;
+    transition: all .15s ease;
+    box-shadow: none;
+    position: relative;
+}
+.tab-btn:hover{
+    color: var(--text);
+    background: rgba(255,202,88,.06);
+    border-color: rgba(107,53,25,.5) !important;
+}
+.tab-btn.active{
+    background: linear-gradient(180deg, #3a1c0d 0%, #2e1509 100%);
+    color: var(--amber);
+    border-color: var(--line) !important;
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        0 2px 0 #2e1509;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.4);
+}
+.tab-btn.active::after{
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 4px;
+    right: 4px;
+    height: 2px;
+    background: #2e1509;
+}
+
+/* ───────── CASHIER PANEL — Avatar nhân viên thu ngân ───────── */
+.cashier-panel{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 10px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.cashier-avatar{
+    position: relative;
+    width: 180px;
+    height: 240px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 3px solid var(--line);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark),
+        0 4px 16px rgba(0,0,0,.4);
+    background: #120a04;
+}
+
+.cashier-img{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity .3s ease;
+}
+
+.cashier-img-smile,
+.cashier-img-happy,
+.cashier-img-sad{
+    opacity: 0;
+}
+
+/* Biểu cảm: mỉm cười nhắm mắt (mua < 10k) */
+.cashier-avatar.cashier-smile .cashier-img-smile{
+    opacity: 1;
+}
+.cashier-avatar.cashier-smile{
+    animation: cashierGentle .5s ease;
+    border-color: var(--amber);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark),
+        0 0 12px rgba(255,194,75,.2);
+}
+
+/* Biểu cảm: cười tươi (mua >= 10k) */
+.cashier-avatar.cashier-react .cashier-img-happy{
+    opacity: 1;
+}
+.cashier-avatar.cashier-react{
+    animation: cashierBounce .6s ease;
+    border-color: var(--amber);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark),
+        0 0 20px rgba(255,194,75,.35),
+        0 0 40px rgba(255,194,75,.15);
+}
+
+/* Biểu cảm: buồn (khách không mua) */
+.cashier-avatar.cashier-sad .cashier-img-sad{
+    opacity: 1;
+}
+.cashier-avatar.cashier-sad{
+    animation: cashierDroop .5s ease;
+    border-color: var(--red);
+    box-shadow:
+        inset 0 2px 0 var(--bevel-light),
+        inset 0 -2px 0 var(--bevel-dark),
+        0 0 12px rgba(224,82,82,.15);
+}
+
+@keyframes cashierGentle{
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+@keyframes cashierBounce{
+    0%   { transform: scale(1); }
+    20%  { transform: scale(1.06) rotate(-2deg); }
+    40%  { transform: scale(1.03) rotate(1deg); }
+    60%  { transform: scale(1.05) rotate(-1deg); }
+    80%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes cashierDroop{
+    0%   { transform: scale(1); }
+    30%  { transform: scale(.97) translateY(3px); }
+    100% { transform: scale(1); }
+}
+
+.cashier-status{
+    width: 100%;
+    text-align: center;
+}
+
+.cashier-name-input{
+    width: 80% !important;
+    text-align: center !important;
+    font-family: var(--pixel) !important;
+    color: var(--amber) !important;
+    font-size: 16px !important;
+    font-weight: 600;
+    background: transparent !important;
+    border: 2px solid transparent !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    margin: 4px auto 8px !important;
+    display: block;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.4);
+    box-shadow: none !important;
+    transition: border-color .2s ease;
+    cursor: text;
+}
+.cashier-name-input:hover{
+    border-color: rgba(107,53,25,.6) !important;
+}
+.cashier-name-input:focus{
+    border-color: var(--amber) !important;
+    background: #1a0e06 !important;
+    box-shadow: 0 0 8px rgba(255,194,75,.15) !important;
+}
+
+.cashier-mood{
+    font-family: var(--pixel) !important;
+    color: var(--dim);
+    font-size: 11px;
+    margin: 0 0 14px;
+    min-height: 18px;
+    transition: color .3s ease;
+}
+.cashier-mood.happy{
+    color: var(--green);
+}
+.cashier-mood.sad{
+    color: var(--red);
+}
+
+.cashier-stats{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.cashier-stats > div{
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 6px;
+    box-shadow:
+        inset 0 1px 0 var(--bevel-light),
+        inset 0 -1px 0 var(--bevel-dark);
+}
+.cashier-stats span{
+    display: block;
+    font-family: var(--vt) !important;
+    font-size: 9px;
+    letter-spacing: .1em;
+    color: var(--dim);
+    margin-bottom: 4px;
+}
+.cashier-stats b{
+    display: block;
+    font-family: var(--vt) !important;
+    font-size: 18px;
+    color: var(--amber);
+    text-shadow: 1px 1px 0 rgba(0,0,0,.3);
+}
+
+/* ───────── TAB VISIBILITY — Ẩn/hiện theo tab ───────── */
+body[data-tab="setup"] .tab-simulate-only{
+    display: none !important;
+}
+body[data-tab="simulate"] .tab-setup-only{
+    display: none !important;
+}
+
+/* Toolbar layout khi chỉ hiện 1 nhóm */
+body[data-tab="setup"] .toolbar{
+    justify-content: flex-start;
+}
+body[data-tab="simulate"] .toolbar{
+    justify-content: flex-end;
+}
+
+/* Fix border-top cho section đầu tiên visible trong palette */
+body[data-tab="setup"] .palette > section.tab-setup-only{
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+body[data-tab="simulate"] .palette > section.tab-simulate-only:first-child{
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+/* Khi ở simulate tab, section simulate-only đầu tiên (SIMULATION INPUT) 
+   đã là first-child nên border-top được bỏ qua tự nhiên. 
+   Section legend (thứ 3) follow section setup-only (ẩn) nên vẫn có border-top từ section+section,
+   cần bỏ border thừa */
+body[data-tab="simulate"] .palette > .tab-setup-only + .tab-simulate-only{
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
