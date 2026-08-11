@@ -94,3 +94,13 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Kiểm tra: `origin` đúng repository được yêu cầu; `main` đang khớp `origin/main`; không có tracked file nào bị `.gitignore` loại trừ; Git identity là `PANdeVInCent <yeuemnhieu3377@gmail.com>`.
 - Nên làm tiếp theo: Tạo orphan commit bằng index tạm, force-push lên `origin/test`, xác minh hash và cây file remote, sau đó ghi bản hoàn tất.
 - Phạm vi đồng bộ: Local đã cập nhật log; chưa stage bằng index chính, chưa commit lên nhánh local, chưa push.
+
+## 2026-08-11 12:19 (UTC+07:00) — Codex
+
+- Lý do sửa: Ghi nhận kết quả thay toàn bộ nhánh GitHub `test` bằng snapshot local theo yêu cầu của chủ dự án.
+- Đã sửa/đã làm: Tạo orphan tree từ toàn bộ file không bị ignore trong `D:\dev\kada\KADA-BLACK_BOX_AI-AIsle` bằng index tạm; force-push commit `bdcaa7f3cc9f84d3f83a7b70ed2d8e4afa52d307` lên `origin/test`, thay thế commit remote cũ `242c8a937121be0420d16c1895de6fa0e00a1105`; snapshot có 87 file. Không chuyển nhánh local, không thay đổi index chính và không đẩy lên `main`.
+- Đối chiếu Result_Plan.md: Snapshot trên `test` chứa plan chính thức, cấu trúc repository mới, Unity desktop app skeleton và web baseline/reference đúng phạm vi hiện tại.
+- Trạng thái: Đạt. Nội dung/lịch sử cũ của nhánh remote `test` đã được thay bằng orphan snapshot mới.
+- Kiểm tra: `git ls-remote origin refs/heads/test` trả đúng `bdcaa7f3cc9f84d3f83a7b70ed2d8e4afa52d307`; tree là `b2a47d80e4671a5519b46af1988a716829b15884`; push báo `forced update` thành công.
+- Nên làm tiếp theo: Đưa bản ghi hoàn tất này lên `test` bằng commit kế tiếp, xác minh hash cuối và tiếp tục giữ `main` không thay đổi.
+- Phạm vi đồng bộ: Đã push snapshot lên `origin/test`; chưa push bản ghi hoàn tất này; không push `main`.
