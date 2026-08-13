@@ -294,3 +294,13 @@ File này dùng để lưu tiến trình thực hiện dự án, phục vụ qu�
 - Kiểm tra: `origin/test = 25422b612f13ee51b94a3c3e015ec3f0cbe52404`; 234 file; forbidden Unity root cache = 0; `origin/main` vẫn là ancestor; local branch vẫn là `main`.
 - Nên làm tiếp theo: Không cần thao tác Git thêm cho yêu cầu này.
 - Phạm vi đồng bộ: Đã push `origin/test`; không push hoặc thay đổi `main`.
+
+## 2026-08-13 20:56 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Di chuyển và đồng bộ hóa thư mục ứng dụng Mobile cùng Mock API lên nhánh test trên Github theo cấu trúc mới.
+- Đã sửa/đã làm: Sao lưu mã nguồn mobile app dở dang, reset local test về giống origin/test; di chuyển ứng dụng mobile ra thư mục gốc thành mobile/; tạo tài liệu mobile/README.md; tích hợp thuật toán sinh số ngẫu nhiên Mock API vào backend/routes/api-router.mjs; cập nhật cấu hình layout.json trong runtime/layout.json; khôi phục Streamlit python app trong app/; dọn dẹp các thư mục tạm backup_temp/ và build/ cũ.
+- Đối chiếu Result_Plan.md: Đồng bộ cấu trúc phẳng, Mock API backend, cấu hình layout và ứng dụng Mobile.
+- Trạng thái: Đạt.
+- Kiểm tra: Commit 0a16a37 thành công, push thành công lên origin/test, git status sạch, không còn thư mục build/ hay backup_temp/ trong workspace.
+- Nên làm tiếp theo: Tiếp tục phát triển và hoàn thiện các màn hình của ứng dụng Mobile.
+- Phạm vi đồng bộ: Đã commit và push lên origin/test.
