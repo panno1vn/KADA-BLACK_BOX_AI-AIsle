@@ -27,6 +27,33 @@ export function sendJson(response, data, status = 200) {
   response.end(payload);
 }
 
+function seededRandom(seed) {
+  let s = (seed >>> 0) || 1;
+  return function next() {
+    s = (s * 48271) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+export function buildStatistics(type, year) {
+  const count = type === 'thang' ? 12 : type === 'quy' ? 4 : Math.max(1, year - 2000 + 1);
+  const keys = Array.from({length: count}, (_, i) => (type === 'nam' ? 2000 + i : i + 1));
+  const rng = seededRandom(year * 1000 + count);
+  const raw = keys.map(() => 5 + rng() * 95);
+  const total = raw.reduce((a, b) => a + b, 0);
+  const weights = raw.map(value => value / total);
+  const shares = weights.map(weight => Math.floor(weight * 100));
+  const remainder = 100 - shares.reduce((a, b) => a + b, 0);
+  const sorted = weights
+    .map((weight, i) => ({i, rest: weight * 100 - Math.floor(weight * 100)}))
+    .sort((a, b) => b.rest - a.rest);
+  for (let k = 0; k < remainder; k++) shares[sorted[k % sorted.length].i] += 1;
+  return {
+    percent: keys.map((key, i) => ({key, value: `${shares[i]}%`})),
+    numberOfPurchases: (year - 2000) * 137 + Math.round(800 + rng() * 400),
+  };
+}
+
 export function createApiRouter(store) {
   return async function routeApi(request, response, url) {
     if (url.pathname === '/health' && request.method === 'GET') {
@@ -68,6 +95,16 @@ export function createApiRouter(store) {
     }
     if (url.pathname.startsWith('/api/history/') && request.method === 'GET') {
       sendJson(response, await store.getHistory(decodeURIComponent(url.pathname.slice('/api/history/'.length))));
+      return true;
+    }
+    if (url.pathname.startsWith('/api/statistics-by/') && request.method === 'GET') {
+      const [type, yearText] = decodeURIComponent(url.pathname.slice('/api/statistics-by/'.length)).split('/');
+      const year = Number(yearText);
+      if (!['thang', 'quy', 'nam'].includes(type) || !Number.isInteger(year)) {
+        sendJson(response, {error: 'Invalid statistics-by params'}, 400);
+        return true;
+      }
+      sendJson(response, buildStatistics(type, year));
       return true;
     }
     if (url.pathname.startsWith('/api/')) {
