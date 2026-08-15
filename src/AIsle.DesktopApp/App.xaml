@@ -1,0 +1,116 @@
+<Application x:Class="AIsle.DesktopApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:vm="clr-namespace:AIsle.DesktopApp.ViewModels"
+             xmlns:views="clr-namespace:AIsle.DesktopApp.Views"
+             xmlns:conv="clr-namespace:AIsle.DesktopApp.Converters"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- STARDEW THEME COLORS -->
+            <SolidColorBrush x:Key="BgBrush" Color="#1a0e06" />
+            <SolidColorBrush x:Key="SideBrush" Color="#2e1509" />
+            <SolidColorBrush x:Key="PanelBrush" Color="#3a1c0d" />
+            <SolidColorBrush x:Key="Panel2Brush" Color="#4a2512" />
+            <SolidColorBrush x:Key="LineBrush" Color="#6b3519" />
+            <SolidColorBrush x:Key="TextBrush" Color="#f5e6c8" />
+            <SolidColorBrush x:Key="DimBrush" Color="#b8946a" />
+            <SolidColorBrush x:Key="BlueBrush" Color="#ffca58" />
+            <SolidColorBrush x:Key="PinkBrush" Color="#e05252" />
+            <SolidColorBrush x:Key="AmberBrush" Color="#ffc24b" />
+            <SolidColorBrush x:Key="GreenBrush" Color="#5dba4f" />
+            <SolidColorBrush x:Key="RedBrush" Color="#e05252" />
+            
+            <SolidColorBrush x:Key="BevelLightBrush" Color="#c8844a" />
+            <SolidColorBrush x:Key="BevelDarkBrush" Color="#1f0c03" />
+
+            <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            <conv:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" />
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+
+            <conv:BooleanToBrushConverter x:Key="BooleanToBrushConverter" TrueBrush="{StaticResource LineBrush}" FalseBrush="Transparent" />
+            <conv:BooleanToBrushConverter x:Key="BooleanToBgBrushConverter" TrueBrush="{StaticResource PanelBrush}" FalseBrush="Transparent" />
+            <conv:BooleanToBrushConverter x:Key="BooleanToTextBrushConverter" TrueBrush="{StaticResource AmberBrush}" FalseBrush="{StaticResource DimBrush}" />
+
+            <!-- BASIC STYLES -->
+            <Style TargetType="Window">
+                <Setter Property="Background" Value="{StaticResource BgBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                <Setter Property="FontFamily" Value="Consolas" />
+            </Style>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                <Setter Property="FontFamily" Value="Consolas" />
+            </Style>
+
+            <Style TargetType="Button">
+                <Setter Property="Background" Value="{StaticResource Panel2Brush}" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+                <Setter Property="BorderThickness" Value="2" />
+                <Setter Property="FontFamily" Value="Consolas" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" 
+                                    BorderThickness="{TemplateBinding BorderThickness}" 
+                                    CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="TextBox">
+                <Setter Property="Background" Value="{StaticResource BgBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+                <Setter Property="BorderThickness" Value="2" />
+                <Setter Property="Padding" Value="4" />
+                <Setter Property="FontFamily" Value="Consolas" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Background" Value="{StaticResource BgBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+
+            <!-- VIEWS -->
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CatalogViewModel}"><views:CatalogView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LayoutViewModel}"><views:LayoutView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SimulationViewModel}"><views:SimulationView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><views:HistoryView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><views:SettingsView /></DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

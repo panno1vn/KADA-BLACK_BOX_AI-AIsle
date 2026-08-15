@@ -1,7 +1,13 @@
 <Project>
   <PropertyGroup>
-    <BaseOutputPath>$(MSBuildThisFileDirectory).build\bin\$(MSBuildProjectName)\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <MSBuildProjectExtensionsPath>$(MSBuildThisFileDirectory).build\obj\$(MSBuildProjectName)\</MSBuildProjectExtensionsPath>
+    <_OriginalProjectName>$(MSBuildProjectName)</_OriginalProjectName>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('_wpftmp'))">
+    <_OriginalProjectName>$([System.Text.RegularExpressions.Regex]::Replace($(MSBuildProjectName), `_[^_]+_wpftmp$`, ``))</_OriginalProjectName>
+  </PropertyGroup>
+  <PropertyGroup>
+    <BaseOutputPath>$(MSBuildThisFileDirectory).build\bin\$(_OriginalProjectName)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).build\obj\$(_OriginalProjectName)\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(MSBuildThisFileDirectory).build\obj\$(_OriginalProjectName)\</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 </Project>
