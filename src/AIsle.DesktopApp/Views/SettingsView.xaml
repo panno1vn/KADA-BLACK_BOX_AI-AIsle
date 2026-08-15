@@ -1,0 +1,55 @@
+<UserControl x:Class="AIsle.DesktopApp.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="8" MaxWidth="600">
+            <!-- Time & Spawn -->
+            <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="⏱ Thời gian &amp; Sinh NPC" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBox materialDesign:HintAssist.Hint="Tick Seconds" Text="{Binding TickSeconds}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Utility AI -->
+            <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="🧠 Utility AI" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBox materialDesign:HintAssist.Hint="Need Weight" Text="{Binding UtilityNeedWeight}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Explore Weight" Text="{Binding UtilityExploreWeight}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Valence Weight" Text="{Binding UtilityValenceWeight}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Distance Penalty" Text="{Binding DistancePenalty}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Max Shelf Visits" Text="{Binding MaxShelfVisits}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Purchase -->
+            <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="💰 Mua hàng" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBox materialDesign:HintAssist.Hint="Purchase Need A" Text="{Binding PurchaseNeedA}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Purchase Valence B" Text="{Binding PurchaseValenceB}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Purchase Bias C" Text="{Binding PurchaseBiasC}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Impulse Base" Text="{Binding ImpulseBase}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Motion -->
+            <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="🚶 Di chuyển" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBox materialDesign:HintAssist.Hint="Collision Radius" Text="{Binding CollisionRadius}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                    <TextBox materialDesign:HintAssist.Hint="Separation Strength" Text="{Binding SeparationStrength}" Margin="0,0,0,8" Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <Button Content="💾 Lưu tham số" Command="{Binding SaveSettingsCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,12,0" />
+                <Button Content="↺ Reset mặc định" Command="{Binding ResetDefaultsCommand}" Style="{StaticResource MaterialDesignFlatButton}" />
+            </StackPanel>
+            <TextBlock Text="{Binding StatusMessage}" FontSize="13" Margin="0,8,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

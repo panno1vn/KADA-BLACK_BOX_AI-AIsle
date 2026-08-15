@@ -1,0 +1,272 @@
+<UserControl x:Class="AIsle.DesktopApp.Views.SimulationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="{StaticResource BgBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="46" /> <!-- Toolbar -->
+            <RowDefinition Height="*" />  <!-- Workspace -->
+            <RowDefinition Height="90" /> <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" BorderThickness="0,0,0,2" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SideBrush}">
+            <StackPanel Orientation="Horizontal" Margin="16,0" HorizontalAlignment="Right">
+                <Button Content="▤ Output" Background="Transparent" BorderThickness="0" Foreground="{StaticResource DimBrush}" Margin="0,0,8,0" />
+                <Button Content="⚙ Parameters" Background="Transparent" BorderThickness="0" Foreground="{StaticResource DimBrush}" Margin="0,0,16,0" />
+                
+                <Button Content="↺ Reset" Command="{Binding StopSimulationCommand}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}" Margin="0,0,8,0" />
+                <Button Content="▷│ Step" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}" Margin="0,0,8,0" />
+                
+                <Button Content="▶ Run live" Command="{Binding StartSimulationCommand}" Background="{StaticResource GreenBrush}" Foreground="#0a1a06" FontWeight="Bold" Margin="0,0,8,0" BorderBrush="#3d8a35" />
+                
+                <ComboBox SelectedIndex="1" Background="{StaticResource BgBrush}" Foreground="{StaticResource AmberBrush}" BorderBrush="{StaticResource LineBrush}" Width="60" Margin="0,0,16,0">
+                    <ComboBoxItem Content="1×" />
+                    <ComboBoxItem Content="5×" />
+                    <ComboBoxItem Content="15×" />
+                </ComboBox>
+                
+                <TextBlock Text="{Binding CurrentTime, StringFormat=hh\\:mm}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource AmberBrush}" VerticalAlignment="Center" Margin="0,0,16,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Workspace -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" /> <!-- Left State -->
+                <ColumnDefinition Width="*" />   <!-- Center Canvas -->
+                <ColumnDefinition Width="260" /> <!-- Right Cashier -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: STATE -->
+            <Border Grid.Column="0" BorderThickness="0,0,3,0" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SideBrush}">
+                <StackPanel Margin="16">
+                    <TextBlock Text="STATE" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" Margin="0,0,0,12" />
+                    
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="8" Height="8" Fill="#5fa8d3" Margin="0,0,8,0" />
+                        <TextBlock Text="Transit" Foreground="{StaticResource DimBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource AmberBrush}" Margin="0,0,8,0" />
+                        <TextBlock Text="Dwelling" Foreground="{StaticResource DimBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource GreenBrush}" Margin="0,0,8,0" />
+                        <TextBlock Text="Purchased" Foreground="{StaticResource DimBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource RedBrush}" Margin="0,0,8,0" />
+                        <TextBlock Text="Checkout / exit" Foreground="{StaticResource DimBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Center: Stage -->
+            <Grid Grid.Column="1" Background="#120a04">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="32" /> <!-- Timeline -->
+                </Grid.RowDefinitions>
+                
+                <!-- Stage Head -->
+                <Border Grid.Row="0" BorderThickness="0,0,0,2" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource PanelBrush}" Padding="16,0">
+                    <Grid>
+                        <TextBlock Text="TOP VIEW · 0.5 M GRID" FontSize="11" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="READY TO RUN" FontSize="11" Foreground="{StaticResource GreenBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Canvas -->
+                <Viewbox Grid.Row="1" Stretch="Uniform" Margin="16">
+                    <Canvas Width="{Binding StoreWidth}" Height="{Binding StoreHeight}">
+                        <Canvas.Background>
+                            <DrawingBrush Viewport="0,0,0.5,0.5" ViewportUnits="Absolute" TileMode="Tile">
+                                <DrawingBrush.Drawing>
+                                    <DrawingGroup>
+                                        <GeometryDrawing Geometry="M0,0 L0.5,0 L0.5,0.5 L0,0.5 Z" Brush="#120a04" />
+                                        <GeometryDrawing Geometry="M0,0 L0.5,0 M0,0 L0,0.5">
+                                            <GeometryDrawing.Pen>
+                                                <Pen Brush="#33c8844a" Thickness="0.02" />
+                                            </GeometryDrawing.Pen>
+                                        </GeometryDrawing>
+                                    </DrawingGroup>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Canvas.Background>
+                        <Canvas.LayoutTransform>
+                            <ScaleTransform ScaleX="50" ScaleY="50" />
+                        </Canvas.LayoutTransform>
+
+                        <!-- Shelves -->
+                        <ItemsControl ItemsSource="{Binding Shelves}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                    <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="{Binding W}" Height="{Binding H}" 
+                                            Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DimBrush}" BorderThickness="0.1">
+                                        <TextBlock Text="{Binding Label}" Foreground="{StaticResource DimBrush}" FontSize="0.4" 
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Walls -->
+                        <ItemsControl ItemsSource="{Binding Walls}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}" 
+                                          Stroke="{StaticResource DimBrush}" StrokeThickness="0.2" StrokeEndLineCap="Square" StrokeStartLineCap="Square" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Agents -->
+                        <ItemsControl ItemsSource="{Binding State.Agents}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <!-- Center the ellipse on X/Y -->
+                                    <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                    <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                                    <Setter Property="RenderTransform">
+                                        <Setter.Value>
+                                            <TranslateTransform X="-0.25" Y="-0.25" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Ellipse Width="0.5" Height="0.5" Fill="{Binding FillBrush}" Opacity="0.8" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Canvas>
+                </Viewbox>
+
+                <!-- Timeline -->
+                <Border Grid.Row="2" BorderThickness="0,2,0,0" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource PanelBrush}" Padding="16,0">
+                    <Grid>
+                        <Slider Minimum="0" Maximum="1000" Value="0" VerticalAlignment="Center" Margin="0,0,100,0" />
+                        <TextBlock Text="{Binding ActiveNpcs.Count, StringFormat='\{0\} active NPC'}" FontSize="11" Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Right: Cashier Panel -->
+            <Border Grid.Column="2" BorderThickness="3,0,0,0" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource SideBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                    <StackPanel HorizontalAlignment="Center">
+                        <!-- Avatar -->
+                        <Border Width="180" Height="240" BorderThickness="3" BorderBrush="{StaticResource LineBrush}" CornerRadius="12" Background="#120a04" Margin="0,0,0,16">
+                            <!-- TODO: Add Trigger to change image based on Mood -->
+                            <Image Source="pack://application:,,,/Assets/cashier_idle.jpg" Stretch="UniformToFill" />
+                        </Border>
+
+                        <TextBlock Text="NHÂN VIÊN THU NGÂN" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8" />
+                        
+                        <TextBox Text="Linh ✿" FontSize="16" FontWeight="Bold" Foreground="{StaticResource AmberBrush}" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Center" Margin="0,0,0,8" />
+                        
+                        <TextBlock Text="Đang chờ khách..." FontSize="11" Foreground="{StaticResource DimBrush}" HorizontalAlignment="Center" Margin="0,0,0,16" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Served -->
+                            <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="2" CornerRadius="8" Padding="10,6">
+                                <StackPanel>
+                                    <TextBlock Text="Đã phục vụ" FontSize="9" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                                    <TextBlock Text="{Binding TotalShoppers}" FontSize="18" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Revenue -->
+                            <Border Grid.Column="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="2" CornerRadius="8" Padding="10,6">
+                                <StackPanel>
+                                    <TextBlock Text="Doanh thu" FontSize="9" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                                    <TextBlock Text="{Binding TotalRevenue, StringFormat='\{0\} ₫'}" FontSize="18" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Footer (Metrics & Log) -->
+        <Border Grid.Row="2" BorderThickness="0,3,0,0" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource PanelBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Metrics -->
+                <Grid Grid.Column="0" Background="{StaticResource LineBrush}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <Border Grid.Column="0" Background="{StaticResource PanelBrush}" Margin="0,0,2,0" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="CONVERSION LIVE" FontSize="11" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" />
+                            <TextBlock Text="{Binding ConversionRate, StringFormat='\{0:F1\}%'}" FontSize="22" Foreground="{StaticResource TextBrush}" FontWeight="Bold" Margin="0,4" />
+                            <TextBlock Text="{Binding ConvertedShoppers, StringFormat='\{0\} converted'}" FontSize="11" Foreground="{StaticResource DimBrush}" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border Grid.Column="1" Background="{StaticResource PanelBrush}" Margin="0,0,2,0" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="PURCHASES" FontSize="11" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" />
+                            <TextBlock Text="{Binding TotalPurchases}" FontSize="22" Foreground="{StaticResource TextBrush}" FontWeight="Bold" Margin="0,4" />
+                            <TextBlock Text="main + impulse" FontSize="11" Foreground="{StaticResource DimBrush}" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border Grid.Column="2" Background="{StaticResource PanelBrush}" Margin="0,0,0,0" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="NOT FOUND" FontSize="11" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" />
+                            <TextBlock Text="0.0%" FontSize="22" Foreground="{StaticResource TextBrush}" FontWeight="Bold" Margin="0,4" />
+                            <TextBlock Text="outside catalog" FontSize="11" Foreground="{StaticResource DimBrush}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Event Log -->
+                <Border Grid.Column="1" BorderThickness="2,0,0,0" BorderBrush="{StaticResource LineBrush}" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="DECISION TRACE" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <TextBlock Text="Ready. One click on Run live starts both the engine and visualization." FontSize="11" Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
