@@ -194,3 +194,17 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: Build .NET 0 warning/0 error; C# Simulation và Population verification pass; 10/10 JavaScript regression pass. Đính chính bản `02:01`: unstaged diff check ban đầu pass, nhưng sau khi stage các file log lịch sử mới, `git diff --cached --check` báo trailing whitespace có sẵn trong `docs/log_backend.md`, `docs/log_frontend.md`, `docs/log_mobile.md`, `docs/log_sim.md`, `docs/repository-map.md` và `docs/task.md`; không tự sửa vì các log chuyên môn là lịch sử không được chỉnh lại.
 - Nên làm tiếp theo: Nếu cần merge `develop`, review riêng các whitespace của file lịch sử theo quyết định của chủ dự án; không tự mở task kế tiếp.
 - Phạm vi đồng bộ: Đã commit và push `origin/develop`; `main` và `origin/test` không thay đổi.
+
+## 2026-08-18 02:28 (UTC+07:00) — Antigravity — Hoàn thành S0 (S0.1, S0.2, S0.3)
+
+- Lý do sửa: Thực hiện toàn bộ phần S0 (Architecture & Baseline) theo yêu cầu trong `docs/task.md`.
+- Đã sửa/đã làm:
+  - S0.1 (Repository Classification): Rà soát, lập bảng phân loại toàn bộ root folders, `.csproj` và entry points theo các trạng thái ACTIVE / REFERENCE / LEGACY / FROZEN / REMOVED.
+  - S0.2 (Dependency Audit): Phân tích dependency graph và scan toàn bộ C# codebase trong `src/`; xác nhận mã nguồn DesktopApp/Simulation/Contracts không phụ thuộc vào Node.js, localhost, HTTP hay Unity Engine.
+  - S0.3 (Baseline Tests): Chạy kiểm thử toàn diện gồm `dotnet build AIsle.slnx -c Release` (0 error, 0 warning), Population verification (11/11 PASS), Simulation verification (6/6 PASS), JS regression test suite (10/10 PASS) và kiểm tra `git diff --check` sạch sẽ.
+  - Tạo báo cáo tổng hợp `s0_report.md`.
+- Đối chiếu Result_Plan.md: Bám sát mục tiêu S0 trong `task.md` và tuân thủ các quy tắc trong `rule.md` (giữ nguyên code, không thêm bớt dependency ngoài kế hoạch, không rewrite).
+- Trạng thái: Đạt.
+- Kiểm tra: `dotnet build` 0 warning/0 error, Population verification PASS, Simulation verification PASS, 10/10 JS tests PASS, `git diff --check` pass.
+- Nên làm tiếp theo: Bắt đầu S1.1 (Local UI Hosting cho WebView2) khi có chỉ thị tiếp theo từ chủ dự án; WIP luôn giữ = 1.
+- Phạm vi đồng bộ: Đã commit và push origin/develop; main và origin/test không thay đổi.
