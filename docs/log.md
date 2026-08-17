@@ -184,3 +184,13 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet restore AIsle.slnx` thành công; `dotnet build AIsle.slnx -c Release --no-restore` thành công 0 warning/0 error; C# Simulation verification pass; Population verification pass; 10/10 JavaScript regression tests pass; staged/unstaged `git diff --check` pass.
 - Nên làm tiếp theo: Tạo local branch `develop`, stage toàn bộ snapshot, commit, fetch/kiểm tra remote và push không force.
 - Phạm vi đồng bộ: Hiện chỉ local; chưa commit, chưa push; không thay đổi `main` hoặc remote `test`.
+
+## 2026-08-18 02:03 (UTC+07:00) — Codex — Hoàn tất tạo nhánh `develop`
+
+- Lý do sửa: Ghi nhận kết quả commit/push snapshot local lên nhánh `develop` và đính chính minh bạch kết quả whitespace gate sau khi stage các file mới.
+- Đã sửa/đã làm: Tạo local branch `develop` từ `test` commit `00d2dd8`; stage toàn bộ trạng thái working tree; tạo commit `4f0bdfa` (`chore: establish develop workspace snapshot`); push nhánh mới lên `origin/develop` và thiết lập upstream.
+- Đối chiếu rule.md/task.md: Đây là thao tác Git ngoại lệ theo yêu cầu trực tiếp của chủ dự án; không mở task sản phẩm kế tiếp và không push `main`/`test`.
+- Trạng thái: Đạt. `origin/develop` đã được tạo mà không force-push.
+- Kiểm tra: Build .NET 0 warning/0 error; C# Simulation và Population verification pass; 10/10 JavaScript regression pass. Đính chính bản `02:01`: unstaged diff check ban đầu pass, nhưng sau khi stage các file log lịch sử mới, `git diff --cached --check` báo trailing whitespace có sẵn trong `docs/log_backend.md`, `docs/log_frontend.md`, `docs/log_mobile.md`, `docs/log_sim.md`, `docs/repository-map.md` và `docs/task.md`; không tự sửa vì các log chuyên môn là lịch sử không được chỉnh lại.
+- Nên làm tiếp theo: Nếu cần merge `develop`, review riêng các whitespace của file lịch sử theo quyết định của chủ dự án; không tự mở task kế tiếp.
+- Phạm vi đồng bộ: Đã commit và push `origin/develop`; `main` và `origin/test` không thay đổi.
