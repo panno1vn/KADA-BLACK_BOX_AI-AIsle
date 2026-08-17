@@ -1,36 +1,24 @@
-export const API_BASE_URL = 'http://10.251.11.36:8765';
+// Change this to your dev machine's LAN IP when testing on a physical phone with Expo Go —
+// the phone can't reach 127.0.0.1 (that's the phone itself). Both devices must be on the
+// same Wi-Fi, and the backend must be started with AISLE_HOST=0.0.0.0 (see mobile/README.md).
+export const API_BASE_URL = 'http://192.168.1.27:8765';
 
-export const ALIASES_API = {
-  thang: 'thang',
-  quy: 'quy',
-  nam: 'nam',
-} as const;
-
-export const STATISTIC_TYPES = [
-  { key: 'thang', label: 'Tháng' },
-  { key: 'quy', label: 'Quý' },
-  { key: 'nam', label: 'Năm' },
+export const PERIOD_TYPES = [
+  {key: 'daily', label: 'Ngày'},
+  {key: 'monthly', label: 'Tháng'},
+  {key: 'quarterly', label: 'Quý'},
+  {key: 'yearly', label: 'Năm'},
 ] as const;
 
-export type StatisticTypeKey = (typeof STATISTIC_TYPES)[number]['key'];
+export type PeriodTypeKey = (typeof PERIOD_TYPES)[number]['key'];
 
-export const MIN_YEAR = 2000;
+export const DEFAULT_PERIOD_TYPE: PeriodTypeKey = 'monthly';
 
-export function currentYear(): number {
-  return new Date().getFullYear();
-}
-
-export const CHARTS_PALETTE = [
-  '#F97316',
-  '#3B82F6',
-  '#10B981',
-  '#EF4444',
-  '#8B5CF6',
-  '#F59E0B',
-  '#06B6D4',
-  '#EC4899',
-  '#84CC16',
-  '#64748B',
-  '#F43F5E',
-  '#14B8A6',
-];
+// Only the most recent N points are charted for the finer-grained views, so the screen
+// doesn't have to render (and the phone doesn't have to scroll through) unbounded history.
+export const MAX_POINTS: Record<PeriodTypeKey, number> = {
+  daily: 30,
+  monthly: 24,
+  quarterly: 12,
+  yearly: 10,
+};

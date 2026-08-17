@@ -218,6 +218,10 @@ node tests/spawn_curve.test.mjs
 node tests/layout_validation.test.mjs
 node tests/population_generation.test.mjs
 node tests/sim_result_history.test.mjs
+node tests/analytics_aggregation.test.mjs
+node tests/history_date_sequencing.test.mjs
+node tests/api_router_endpoints.test.mjs
+node tests/emotion_summary.test.mjs
 node tests/benchmark.mjs
 ```
 
