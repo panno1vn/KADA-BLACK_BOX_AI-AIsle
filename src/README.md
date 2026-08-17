@@ -1,17 +1,9 @@
-# .NET-compatible source modules
+# Active .NET source
 
-Ranh giới module C# theo `docs/Result_Plan.md` và milestone trong `docs/run.md`.
+Ranh giới module lấy `docs/rule.md` làm nguồn chính thức:
 
-Đã triển khai:
+- `AIsle.Contracts`: DTO, schema, enum và contract dùng chung.
+- `AIsle.Simulation`: Population/GA và C# Simulation Core; không phụ thuộc UI.
+- `AIsle.DesktopApp`: WPF Desktop host; Application/Bridge/Infrastructure/UI được tổ chức bên trong project này khi các task tương ứng được mở.
 
-- `AIsle.Contracts`: local UPM/.NET project chứa `NPCProfile`, `PopulationConfig`, `PopulationDefinition` và `IPopulationGenerator`, không tham chiếu Unity/DOTS.
-- `AIsle.Simulation`: local UPM/.NET project chứa GeneticSharp-backed Population, Math.NET statistics, validator và C# Simulation Baseline; không có exact random fingerprint contract.
-
-Các module còn lại mới là ranh giới dành cho milestone sau.
-
-- `AIsle.Domain`
-- `AIsle.Application`
-- `AIsle.Simulation`
-- `AIsle.Analytics`
-- `AIsle.Contracts`
-- `AIsle.Infrastructure`
+Không tạo thêm project layer chỉ để mô phỏng kiến trúc enterprise. Chỉ tách project khi có lợi ích reuse, dependency hoặc test isolation đo được.

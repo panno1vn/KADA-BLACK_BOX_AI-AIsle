@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AIsle.DesktopApp</RootNamespace>
+    <AssemblyName>AIsleDesktop</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.3.0" />
+    <ProjectReference Include="..\AIsle.Contracts\AIsle.Contracts.csproj" />
+    <ProjectReference Include="..\AIsle.Simulation\AIsle.Simulation.csproj" />
+    <Resource Include="Assets\*.jpg" />
+  </ItemGroup>
+</Project>

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -48,8 +50,8 @@ namespace AIsle.DesktopApp.ViewModels
             if (sender is Services.Wall wall) _service.UpdateWall(wall);
         }
 
-        public event Action RequestOpenCatalog;
-        public event Action RequestRunSimulation;
+        public event Action? RequestOpenCatalog;
+        public event Action? RequestRunSimulation;
 
         public LayoutViewModel(Services.LayoutService service)
         {

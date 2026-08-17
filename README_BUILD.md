@@ -2,7 +2,7 @@
 
 Ứng dụng mô phỏng cửa hàng chạy bằng JavaScript live engine và Canvas 2D. Không cần cài npm package.
 
-> Tài liệu này chỉ dành cho web prototype được giữ làm baseline/reference trong quá trình chuyển sang Unity desktop app. Kiến trúc và phạm vi chính thức nằm trong `docs/Result_Plan.md`; Unity app skeleton nằm tại `UnityApp/`.
+> Tài liệu này chỉ dành cho web prototype REFERENCE. Desktop product active và luật kiến trúc nằm trong `docs/rule.md`; task triển khai nằm trong `docs/task.md`.
 
 ## Chạy web
 
@@ -17,7 +17,7 @@ Launcher khởi động backend ở `http://127.0.0.1:8765` và mở trình duy�
 ## Bố cục thư mục
 
 ```text
-build/
+./
 ├── run.bat                    # launcher duy nhất
 ├── backend/
 │   ├── server.mjs             # HTTP host và static pages
@@ -33,10 +33,10 @@ build/
 │   └── overrides.css
 ├── runtime/                   # layout/catalog và output khi chạy
 ├── tests/                     # Node tests
-└── docs/ARCHITECTURE.md
+└── docs/rule.md
 ```
 
-Backend tách router khỏi storage. Khi thêm page, đặt HTML/JS/CSS trong `web`; khi thêm API, khai báo route trong `backend/routes/api-router.mjs` và nghiệp vụ lưu trữ trong `backend/storage`.
+Backend tách router khỏi storage. Web và Node backend chỉ được duy trì để regression/reference; không thêm feature Desktop MVP mới vào luồng này.
 
 ## Quy tắc NPC
 

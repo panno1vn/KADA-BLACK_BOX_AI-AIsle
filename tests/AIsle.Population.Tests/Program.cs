@@ -129,7 +129,7 @@ internal static class Program
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current != null) { if (File.Exists(Path.Combine(current.FullName, "docs", "run.md"))) return current.FullName; current = current.Parent; }
+        while (current != null) { if (File.Exists(Path.Combine(current.FullName, "docs", "rule.md"))) return current.FullName; current = current.Parent; }
         throw new DirectoryNotFoundException("Repository root not found.");
     }
 

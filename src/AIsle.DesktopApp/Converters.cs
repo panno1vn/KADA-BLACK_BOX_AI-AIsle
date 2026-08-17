@@ -7,8 +7,8 @@ namespace AIsle.DesktopApp.Converters
 {
     public class BooleanToBrushConverter : IValueConverter
     {
-        public Brush TrueBrush { get; set; }
-        public Brush FalseBrush { get; set; }
+        public Brush TrueBrush { get; set; } = Brushes.Transparent;
+        public Brush FalseBrush { get; set; } = Brushes.Transparent;
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

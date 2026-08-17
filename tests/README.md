@@ -6,7 +6,7 @@ Population foundation:
 
 - `AIsle.Population.Tests`: console verification thuần .NET, không dùng test package ngoài.
 - `Golden/Population`: 5 fixed-seed scenarios, mỗi scenario có `config.json` và `expected.json`.
-- Unity EditMode tests: `UnityApp/Assets/AIsle/Tests/EditMode`.
+- Unity EditMode tests cũ nằm trong `UnityApp/Assets/AIsle/Tests/EditMode` và được giữ FROZEN.
 
 Chạy từ root:
 
@@ -15,4 +15,4 @@ dotnet build AIsle.slnx -c Release
 dotnet run --project tests/AIsle.Population.Tests/AIsle.Population.Tests.csproj -c Release --no-build
 ```
 
-Các thư mục Domain, Simulation, Integration, Video và Performance tiếp tục dành cho các milestone sau.
+Không giữ các thư mục placeholder rỗng. Test mới được đặt cạnh project test hoặc nhóm `Golden` khi task active yêu cầu.

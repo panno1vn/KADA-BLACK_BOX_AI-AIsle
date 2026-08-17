@@ -25,7 +25,10 @@ UnityApp/[Mm]emoryCaptures/
 UnityApp/Recordings/
 UnityApp/TestResults/
 UnityApp/Assets/AssetStoreTools*
-*.csproj
+# Unity generates IDE project files at these locations. Source-owned .NET
+# projects elsewhere in the repository must remain trackable.
+/*.csproj
+UnityApp/*.csproj
 *.sln
 *.suo
 *.user
@@ -42,7 +45,6 @@ UnityApp/Assets/AssetStoreTools*
 .dotnet-cli/
 .nuget/
 .build/
-.dotnet-cli/
 unity-*-results.xml
 unity-*.log
 **/bin/
