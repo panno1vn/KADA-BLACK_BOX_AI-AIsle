@@ -1,5 +1,6 @@
 import {DEFAULT_PARAMETERS, LiveSimulation, createRng, generatePopulation, manualPopulation} from './live-engine.js';
 import {createSimResult} from './sim-result.js';
+import {loadDashboard} from './dashboard.js';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -16,7 +17,7 @@ let currentTab='setup';
 let lastPurchaseCount=0;
 let lastFinishedCount=0;
 const cashierMoods=['Yay! Có khách mua rồi! 🎉','Cảm ơn quý khách! ♡','Hàng bán chạy quá! ✨','Tuyệt vời! 💰','Vui ghê, thêm một đơn! 🌟','Khách ơi quay lại nha~ 💕'];
-function switchTab(tab){currentTab=tab;document.body.dataset.tab=tab;$$('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));if(tab==='setup'&&playing){playing=false;$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='PAUSED'}if(tab==='setup'){tool='select';$$('.tools button').forEach(b=>b.classList.toggle('active',b.dataset.tool==='select'));$('#stage-status').textContent='EDIT MODE';selected=null;renderInspector()}if(tab==='simulate'){selected=null;renderInspector();$('#stage-status').textContent=simulation&&!dirty?(playing?'RUNNING LIVE':'READY TO RUN'):'READY TO RUN'}requestAnimationFrame(()=>{resizeCanvas();draw()})}
+function switchTab(tab){currentTab=tab;document.body.dataset.tab=tab;$$('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));if(tab==='setup'&&playing){playing=false;$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='PAUSED'}if(tab==='setup'){tool='select';$$('.tools button').forEach(b=>b.classList.toggle('active',b.dataset.tool==='select'));$('#stage-status').textContent='EDIT MODE';selected=null;renderInspector()}if(tab==='simulate'){selected=null;renderInspector();$('#stage-status').textContent=simulation&&!dirty?(playing?'RUNNING LIVE':'READY TO RUN'):'READY TO RUN'}if(tab==='dashboard'){loadDashboard()}requestAnimationFrame(()=>{resizeCanvas();draw()})}
 function triggerCashierReaction(type='happy'){const avatar=$('#cashier-avatar'),mood=$('#cashier-mood');if(!avatar)return;avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.classList.remove('happy','sad');void avatar.offsetWidth;if(type==='happy'){avatar.classList.add('cashier-react');mood.textContent=cashierMoods[Math.floor(Math.random()*cashierMoods.length)];mood.classList.add('happy')}else if(type==='smile'){avatar.classList.add('cashier-smile');mood.textContent='Cảm ơn quý khách~';mood.classList.add('happy')}else if(type==='sad'){avatar.classList.add('cashier-sad');mood.textContent='Trời ơi, hổng mua gì sao...';mood.classList.add('sad')}clearTimeout(triggerCashierReaction.t);triggerCashierReaction.t=setTimeout(()=>{avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.textContent='Đang chờ khách...';mood.classList.remove('happy','sad')},2800)}
 function updateCashier(){if(!simulation)return;const s=simulation.snapshot();const served=simulation.stats.converted||0;const rev=s.revenue||0;$('#cashier-served').textContent=served;$('#cashier-revenue').textContent=money(rev);if(s.purchases>lastPurchaseCount&&lastPurchaseCount>=0){const latest=simulation.purchases[simulation.purchases.length-1];if(latest&&latest.price<10000){triggerCashierReaction('smile')}else{triggerCashierReaction('happy')}}else{const finishedCount=simulation.agents.filter(a=>a.finished).length;if(finishedCount>lastFinishedCount){const finished=simulation.agents.filter(a=>a.finished);const last=finished[finished.length-1];if(!last.converted){triggerCashierReaction('sad')}}lastFinishedCount=finishedCount}lastPurchaseCount=s.purchases}
 
@@ -80,8 +81,8 @@ function renderEvents(){if(!simulation)return;const items=simulation.events.slic
 
 function renderObjects(){
   if(!layout)return;
-  const walls=layout.walls.map((w,index)=>`<button data-type="wall" data-id="${w.id}" class="${selected?.type==='wall'&&selected.id===w.id?'active':''}"><i class="wall-swatch"></i>Wall ${index+1}<small>${pointDistance({x:w.x1,y:w.y1},{x:w.x2,y:w.y2}).toFixed(2)} m</small></button>`);
-  const shelves=layout.shelves.map(s=>`<button data-type="shelf" data-id="${s.id}" class="${selected?.type==='shelf'&&selected.id===s.id?'active':''}"><i></i>${escapeHTML(s.label)}<small>${escapeHTML(s.category)}</small></button>`);
+  const walls=layout.walls.map((w,index)=>`<button data-type="wall" data-id="${escapeHTML(w.id)}" class="${selected?.type==='wall'&&selected.id===w.id?'active':''}"><i class="wall-swatch"></i>Wall ${index+1}<small>${pointDistance({x:w.x1,y:w.y1},{x:w.x2,y:w.y2}).toFixed(2)} m</small></button>`);
+  const shelves=layout.shelves.map(s=>`<button data-type="shelf" data-id="${escapeHTML(s.id)}" class="${selected?.type==='shelf'&&selected.id===s.id?'active':''}"><i></i>${escapeHTML(s.label)}<small>${escapeHTML(s.category)}</small></button>`);
   $('#object-list').innerHTML=[...walls,...shelves].join('');
   $$('#object-list button').forEach(button=>button.onclick=()=>{selected={type:button.dataset.type,id:button.dataset.id};renderObjects();renderInspector();draw()});
 }

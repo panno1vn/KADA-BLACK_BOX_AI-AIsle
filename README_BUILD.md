@@ -14,6 +14,16 @@ run.bat
 
 Launcher khởi động backend ở `http://127.0.0.1:8765` và mở trình duyệt mặc định. Nếu backend đã chạy, launcher chỉ mở lại trang web.
 
+## Dữ liệu mẫu cho dashboard Thống Kê
+
+`runtime/` (layout, catalog, lịch sử mô phỏng) không đưa lên Git — mỗi máy tự sinh dữ liệu riêng. Sau khi clone repo lần đầu, tab "📊 Thống Kê" sẽ trống vì chưa có lượt chạy nào. Để có ngay ~3 tháng dữ liệu mẫu (chạy bằng chính engine thật, không phải số giả):
+
+```powershell
+node scripts/seed-demo-data.mjs
+```
+
+Chạy lại lệnh này bất cứ lúc nào để làm mới dữ liệu mẫu — script chỉ xoá/tạo lại các file `demo-*.json` do chính nó sinh ra, không đụng tới lượt chạy thật của bạn.
+
 ## Bố cục thư mục
 
 ```text

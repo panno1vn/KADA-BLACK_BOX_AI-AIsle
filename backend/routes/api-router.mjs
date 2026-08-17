@@ -1,5 +1,6 @@
 import {validateLayout} from '../../web/layout-validation.js';
 import {validateSimResult} from '../../web/sim-result.js';
+import {buildAnalytics} from '../analytics.mjs';
 
 async function readBody(request, maxBytes = 12_000_000) {
   const chunks = [];
@@ -68,6 +69,10 @@ export function createApiRouter(store) {
     }
     if (url.pathname.startsWith('/api/history/') && request.method === 'GET') {
       sendJson(response, await store.getHistory(decodeURIComponent(url.pathname.slice('/api/history/'.length))));
+      return true;
+    }
+    if (url.pathname === '/api/analytics' && request.method === 'GET') {
+      sendJson(response, buildAnalytics(await store.listHistory()));
       return true;
     }
     if (url.pathname.startsWith('/api/')) {

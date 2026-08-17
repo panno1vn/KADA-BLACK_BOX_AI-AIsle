@@ -38,6 +38,27 @@ export function createProjectStore(runtimeDirectory, defaults) {
     summary: result.summary,
   });
 
+  async function listHistory() {
+    await mkdir(historyDirectory, {recursive: true});
+    const files = (await readdir(historyDirectory)).filter(name => name.endsWith('.json'));
+    const items = [];
+    for (const file of files) {
+      try { items.push(historySummary(JSON.parse(await readFile(join(historyDirectory, file), 'utf8')))); }
+      catch { /* Ignore partial/corrupt files instead of breaking the history page. */ }
+    }
+    return items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+
+  // Each saved run represents one simulated business day rather than a real save timestamp,
+  // so a fresh run always lands one calendar day after the latest one already on record.
+  async function nextRunDate() {
+    const [latest] = await listHistory();
+    if (!latest) return new Date();
+    const next = new Date(latest.createdAt);
+    next.setUTCDate(next.getUTCDate() + 1);
+    return next;
+  }
+
   return {
     async getProject() {
       await ensureRuntime();
@@ -58,24 +79,16 @@ export function createProjectStore(runtimeDirectory, defaults) {
     async saveHistory(result) {
       const id = safeHistoryId(result.id);
       await mkdir(historyDirectory, {recursive: true});
-      try { await writeFile(join(historyDirectory, `${id}.json`), JSON.stringify(result), {encoding: 'utf8', flag: 'wx'}); }
+      const stamped = {...result, createdAt: (await nextRunDate()).toISOString()};
+      try { await writeFile(join(historyDirectory, `${id}.json`), JSON.stringify(stamped), {encoding: 'utf8', flag: 'wx'}); }
       catch (error) {
         if (error.code === 'EEXIST') throw Object.assign(new Error('History id already exists'), {status: 409});
         throw error;
       }
-      await writeJson('live_result.json', result, false);
-      return historySummary(result);
+      await writeJson('live_result.json', stamped, false);
+      return historySummary(stamped);
     },
-    async listHistory() {
-      await mkdir(historyDirectory, {recursive: true});
-      const files = (await readdir(historyDirectory)).filter(name => name.endsWith('.json'));
-      const items = [];
-      for (const file of files) {
-        try { items.push(historySummary(JSON.parse(await readFile(join(historyDirectory, file), 'utf8')))); }
-        catch { /* Ignore partial/corrupt files instead of breaking the history page. */ }
-      }
-      return items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    },
+    listHistory,
     async getHistory(id) {
       try { return JSON.parse(await readFile(join(historyDirectory, `${safeHistoryId(id)}.json`), 'utf8')); }
       catch (error) {
