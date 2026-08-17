@@ -1,0 +1,15 @@
+{
+  "Count": 80,
+  "ParameterRanges": {
+    "Patience": {"Min": 0.82, "Max": 1.0}
+  },
+  "DistributionTargets": {
+    "Patience": {"Enabled": true, "Mean": 0.92, "StandardDeviation": 0.035, "Weight": 2.0, "Tolerance": 0.05}
+  },
+  "GeneratorSettings": {
+    "EvolutionPopulationSize": 120,
+    "Generations": 12,
+    "CrossoverProbability": 0.75,
+    "MutationProbability": 0.1
+  }
+}

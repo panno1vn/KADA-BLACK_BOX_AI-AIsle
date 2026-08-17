@@ -1,0 +1,40 @@
+<UserControl x:Class="AIsle.DesktopApp.Views.HistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="350" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Run List -->
+        <materialDesign:Card Grid.Column="0" Margin="0,0,12,0" Padding="16">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="📜 Danh sách Phiên mô phỏng" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <DataGrid ItemsSource="{Binding Runs}" SelectedItem="{Binding SelectedRun}"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          materialDesign:DataGridAssist.CellPadding="12 8">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Tên" Binding="{Binding Name}" Width="*" />
+                        <DataGridTextColumn Header="Ngày" Binding="{Binding CreatedAt}" Width="160" />
+                        <DataGridTextColumn Header="Seed" Binding="{Binding Seed}" Width="70" />
+                        <DataGridTextColumn Header="Doanh thu" Binding="{Binding Summary.Revenue, StringFormat=N0}" Width="120" />
+                        <DataGridTextColumn Header="Mua" Binding="{Binding Summary.Purchases}" Width="60" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </materialDesign:Card>
+
+        <!-- Detail Panel -->
+        <materialDesign:Card Grid.Column="1" Padding="16">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="📋 Chi tiết" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <Button DockPanel.Dock="Bottom" Content="📥 Xuất file JSON" Command="{Binding ExportRunCommand}" Style="{StaticResource MaterialDesignFlatMidBgButton}" Margin="0,12,0,0" HorizontalAlignment="Left" />
+                <TextBox Text="{Binding DetailText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+            </DockPanel>
+        </materialDesign:Card>
+    </Grid>
+</UserControl>

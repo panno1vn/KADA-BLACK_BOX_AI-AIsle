@@ -1,0 +1,13 @@
+{
+  "Count": 64,
+  "CategoryIds": ["drinks", "snacks", "essentials", "personal-care"],
+  "DistributionTargets": {
+    "WalkingSpeed": {"Enabled": true, "Mean": 1.3, "StandardDeviation": 0.15, "Weight": 1.0, "Tolerance": 0.12}
+  },
+  "GeneratorSettings": {
+    "EvolutionPopulationSize": 96,
+    "Generations": 10,
+    "CrossoverProbability": 0.75,
+    "MutationProbability": 0.1
+  }
+}

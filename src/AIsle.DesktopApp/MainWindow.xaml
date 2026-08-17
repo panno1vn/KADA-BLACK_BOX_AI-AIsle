@@ -1,0 +1,100 @@
+<Window x:Class="AIsle.DesktopApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:AIsle.DesktopApp.ViewModels"
+        xmlns:views="clr-namespace:AIsle.DesktopApp.Views"
+        Title="AIsle Simulation Studio" Height="768" Width="1024"
+        WindowStartupLocation="CenterScreen"
+        Style="{StaticResource {x:Type Window}}">
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+
+    <Grid>
+        <!-- Main Layout -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="46" /> <!-- Header -->
+                <RowDefinition Height="42" /> <!-- Tab-bar -->
+                <RowDefinition Height="*" />  <!-- Main Content -->
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" BorderThickness="0,0,0,3" BorderBrush="{StaticResource LineBrush}" 
+                    Background="{StaticResource PanelBrush}">
+                <Grid Margin="16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="AISLE" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AmberBrush}" Margin="0,0,8,0" />
+                        <TextBlock Text="SIMULATION STUDIO" FontSize="11" Foreground="{StaticResource DimBrush}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBox Text="Layout A - live test" Width="200" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" />
+                    </StackPanel>
+
+                    <Button Grid.Column="2" Content="Export" Width="80" VerticalAlignment="Center" Height="28" />
+                </Grid>
+            </Border>
+
+            <!-- Tab-bar -->
+            <Border Grid.Row="1" BorderThickness="0,0,0,2" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource BgBrush}">
+                <StackPanel Orientation="Horizontal" Margin="16,0,0,0">
+                    <!-- Setup Tab -->
+                    <Border BorderThickness="2,2,2,0" Margin="0,8,4,0" CornerRadius="6,6,0,0" Cursor="Hand"
+                            BorderBrush="{Binding IsSetupTabActive, Converter={StaticResource BooleanToBrushConverter}}"
+                            Background="{Binding IsSetupTabActive, Converter={StaticResource BooleanToBgBrushConverter}}">
+                        <Border.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding SwitchToSetupTabCommand}" />
+                        </Border.InputBindings>
+                        <TextBlock Text="🏪 Setup Cửa Hàng" Padding="18,6" FontSize="12" 
+                                   Foreground="{Binding IsSetupTabActive, Converter={StaticResource BooleanToTextBrushConverter}}" />
+                    </Border>
+                    <!-- Run Tab -->
+                    <Border BorderThickness="2,2,2,0" Margin="0,8,4,0" CornerRadius="6,6,0,0" Cursor="Hand"
+                            BorderBrush="{Binding IsRunTabActive, Converter={StaticResource BooleanToBrushConverter}}"
+                            Background="{Binding IsRunTabActive, Converter={StaticResource BooleanToBgBrushConverter}}">
+                        <Border.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding SwitchToRunTabCommand}" />
+                        </Border.InputBindings>
+                        <TextBlock Text="🚀 Mô Phỏng &amp; Run Thử" Padding="18,6" FontSize="12" 
+                                   Foreground="{Binding IsRunTabActive, Converter={StaticResource BooleanToTextBrushConverter}}" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Content Area -->
+            <ContentControl Grid.Row="2" Content="{Binding CurrentView}" />
+        </Grid>
+
+        <!-- Catalog Overlay Dialog -->
+        <Border Background="#CC0a0502" Visibility="{Binding IsCatalogOpen, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="{StaticResource BgBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="3" CornerRadius="8" 
+                    Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" BorderThickness="0,0,0,2" BorderBrush="{StaticResource LineBrush}" Padding="16">
+                        <Grid>
+                            <TextBlock Text="Quản lý Sản phẩm" FontSize="16" FontWeight="Bold" Foreground="{StaticResource AmberBrush}" />
+                            <Button Content="×" Command="{Binding CloseCatalogCommand}" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource DimBrush}" FontSize="16" Padding="4,0" />
+                        </Grid>
+                    </Border>
+
+                    <ContentControl Grid.Row="1" Content="{Binding CatalogVM}" Margin="16" />
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

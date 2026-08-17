@@ -12,6 +12,13 @@ runtime/*_result.json
 runtime/history/
 
 # Unity generated files (UnityApp source and ProjectSettings remain tracked).
+/Assets/
+/Library/
+/Logs/
+/Packages/
+/ProjectSettings/
+/Temp/
+/UserSettings/
 UnityApp/[Ll]ibrary/
 UnityApp/[Tt]emp/
 UnityApp/[Oo]bj/
@@ -21,6 +28,7 @@ UnityApp/[Ll]ogs/
 UnityApp/[Uu]ser[Ss]ettings/
 UnityApp/[Mm]emoryCaptures/
 UnityApp/Recordings/
+UnityApp/TestResults/
 UnityApp/Assets/AssetStoreTools*
 *.csproj
 *.sln
@@ -34,3 +42,13 @@ UnityApp/Assets/AssetStoreTools*
 *.mdb
 *.opendb
 *.VC.db
+
+# Local .NET SDK state and build output.
+.dotnet-cli/
+.nuget/
+.build/
+.dotnet-cli/
+unity-*-results.xml
+unity-*.log
+**/bin/
+**/obj/

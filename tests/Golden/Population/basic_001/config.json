@@ -1,0 +1,10 @@
+{
+  "Count": 200,
+  "CategoryIds": ["drinks", "snacks", "essentials"],
+  "GeneratorSettings": {
+    "EvolutionPopulationSize": 220,
+    "Generations": 12,
+    "CrossoverProbability": 0.75,
+    "MutationProbability": 0.12
+  }
+}

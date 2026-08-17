@@ -1,0 +1,10 @@
+{
+  "name": "com.blackbox.aisle.simulation",
+  "version": "0.1.0",
+  "displayName": "AIsle Simulation Foundation",
+  "description": "Unity-independent population generation and validation for AIsle.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.blackbox.aisle.contracts": "0.1.0"
+  }
+}
