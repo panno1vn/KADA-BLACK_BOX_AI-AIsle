@@ -30,8 +30,6 @@ UnityApp/[Mm]emoryCaptures/
 UnityApp/Recordings/
 UnityApp/TestResults/
 UnityApp/Assets/AssetStoreTools*
-*.csproj
-*.sln
 *.suo
 *.user
 *.userprefs

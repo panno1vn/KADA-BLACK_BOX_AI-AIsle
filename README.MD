@@ -234,6 +234,29 @@ Benchmark hiện tại với 200 NPC × 3.600 ticks, bao gồm trajectory captur
 - Một số hằng số hiện là design constants, chưa phải số đo được hiệu chỉnh từ cửa hàng thật.
 - Simulator không tự thay đổi cửa hàng thật và không thay manager ra quyết định cuối cùng.
 
+## Kế hoạch tương lai
+
+### Kết nối với hệ thống cửa hàng thật
+
+AIsle hiện dừng ở mức mô phỏng offline: input là video đã xử lý sẵn, không có luồng cảm biến/camera thời gian thực nào chạy song song với cửa hàng thật. Hướng đã phác trong `docs/Result_Plan.md` (mục Video Reality Analytics) là một tầng "Reality Bridge" tách biệt, không chạy chung tiến trình với simulation core: Detection (RT-DETR/YOLOX) → Tracking (ByteTrack) → Homography calibration → `aisle.observation.v1` → so sánh với `SimResult`.
+
+Để đánh giá hướng này khả thi tới đâu, nhóm tham khảo **Just Walk Out của Amazon** — công nghệ checkout-free thương mại đã triển khai quy mô lớn nhất hiện nay:
+
+- **Cơ chế**: camera gắn trần + cảm biến trọng lượng (load-cell) trên từng ngăn kệ, kết hợp computer vision và sensor fusion để xác định ai lấy sản phẩm nào. Từ 7/2024, Amazon huấn luyện hệ thống trên bản đồ 3D của cửa hàng cùng catalog ảnh sản phẩm để rút ngắn thời gian triển khai cho cửa hàng mới.
+- **Độ chính xác**: thất thoát do trộm cắp dưới 1% ở các cửa hàng tuân thủ đúng quy trình vận hành (6/2024–5/2025).
+- **Bài học quan trọng cho AIsle**: Amazon đã **gỡ Just Walk Out khỏi chính chuỗi Amazon Fresh** (định dạng siêu thị lớn) trong năm 2024, chuyển sang Dash Cart — không phải vì công nghệ sai, mà vì khách mua giỏ hàng lớn muốn thấy tổng tiền, ưu đãi và số tiền tiết kiệm ngay trong lúc mua sắm, chứ không chỉ "đi ra là xong". Ngược lại, Amazon vẫn tiếp tục mở rộng Just Walk Out theo hướng B2B cho bên thứ ba, tăng hơn gấp đôi số cửa hàng **định dạng nhỏ** dùng công nghệ này chỉ trong 2024, đạt hơn 360 điểm triển khai tới 2025–2026.
+- Kết quả này **khớp trực tiếp với đối tượng người dùng AIsle đã chọn** (Circle K, GS25, 7-Eleven — cửa hàng tiện lợi, giỏ hàng nhỏ, mua nhanh) chứ không phải mô hình siêu thị lớn: nếu tích hợp phần cứng thật, hướng checkout-free kiểu Just Walk Out phù hợp với đúng phân khúc AIsle đang nhắm tới hơn là với giỏ hàng lớn.
+
+### Tính khả thi
+
+| Hướng | Chi phí/độ phức tạp | Giai đoạn phù hợp |
+|---|---|---|
+| Video offline (đã có trong kế hoạch) | Thấp — không cần lắp thêm cảm biến, chỉ xử lý video CCTV sẵn có | Ngắn hạn — đủ để calibrate và so sánh Sim vs Reality |
+| Camera thời gian thực + computer vision, không dùng weight sensor | Trung bình — cần camera phủ toàn bộ khu vực kệ, xử lý gần thời gian thực | Trung hạn — khi cần observation cập nhật liên tục |
+| Camera + weight sensor từng ngăn kệ (đầy đủ kiểu Just Walk Out) | Cao — lắp cảm biến trên từng ngăn kệ, bảo trì phần cứng liên tục, chi phí đáng kể so với quy mô cửa hàng tiện lợi | Dài hạn/tuỳ chọn — chỉ cân nhắc nếu đối tác thật sự cần checkout-free, không phải mục tiêu bắt buộc của MVP |
+
+Ưu tiên hiện tại là giữ nguyên hướng video offline đã có trong `docs/Result_Plan.md`: đây là bước rẻ nhất để kiểm chứng mô hình simulator so với hành vi thật, trước khi cân nhắc đầu tư phần cứng thời gian thực.
+
 ## Tài liệu
 
 - [Project overview](Project.md)
