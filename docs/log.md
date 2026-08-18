@@ -335,3 +335,10 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet build AIsle.slnx -c Release --no-restore` thành công 0 warning/0 error; Population, Simulation S4/S8 + R1–R7, Results S5/S6 và Desktop S1–S7 verification đều pass; benchmark correctness pass cả legacy 200/500/1000 và R8 50/100/200; JavaScript regression 10/10 pass; bảy file RVO2 vendored có SHA-256 trùng upstream tag; `git diff --check` pass. Máy không cài Unity Editor nên không chạy Unity batchmode; source v2.0.1 được đặt trực tiếp trong UPM package và .NET compile xác nhận không cần assembly ngoài.
 - Nên làm tiếp theo: Review trực quan một phiên RUN LIVE đông NPC trong lối đi; nếu thay parameter chỉ dùng ranges đã audit và chạy lại R1–R8. Dừng tại phạm vi `run.txt`, không tự mở task mới.
 - Phạm vi đồng bộ: Chỉ local trên nhánh `develop`; chưa commit, chưa push. Giữ nguyên file task `docs/run.txt` do chủ dự án cung cấp và không sửa `docs/log_sim.md`.
+
+## 2026-08-18 10:53 (UTC+07:00) — Codex — Đã đồng bộ RVO2 lên develop
+
+- Đã làm: Commit toàn bộ batch Local Crowd Avoidance bằng commit `5a18580` (`feat: integrate RVO2 local crowd avoidance`) và push fast-forward từ `c6b0442` lên `origin/develop`.
+- Kiểm soát conflict: Fetch trước khi kiểm thử và ngay trước push xác nhận remote không có commit mới; local/remote trước push `1/0`; không merge, không rebase và không force-push. Lần push đầu bị hủy tại hộp thoại xác thực, sau khi xác thực lại thì push thành công và không làm thay đổi lịch sử.
+- Kiểm tra: Release build 0 warning/0 error; Desktop, Results, Simulation, Population và benchmark correctness đều pass; 10/10 JavaScript regression test pass; RVO2 collision/geometry gates đạt.
+- Phạm vi: Chỉ repository `D:\Big\KADA\test`, nhánh `develop`; không chạm `main` hoặc `D:\Big\KADA\store\main`.
