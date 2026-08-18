@@ -13,7 +13,7 @@ namespace AIsle.Simulation.Population.Genetic
 {
     public sealed class GeneticPopulationGenerator : IPopulationGenerator
     {
-        public const string Version = "population-geneticsharp-v2";
+        public const string Version = "population-geneticsharp-v3";
 
         public PopulationDefinition Generate(PopulationConfig config)
         {
@@ -59,6 +59,8 @@ namespace AIsle.Simulation.Population.Genetic
             var categories = config.CategoryIds ?? Array.Empty<string>();
             var selector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount)));
             var categoryIndex = Math.Min(categories.Length - 1, (int)(selector * categories.Length));
+            var category = categories[categoryIndex];
+            var missionSelector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + 1)));
 
             return new NPCProfile
             {
@@ -73,8 +75,27 @@ namespace AIsle.Simulation.Population.Genetic
                 AffectDispersion = chromosome.ValueAt(7),
                 AffectRecovery = chromosome.ValueAt(8),
                 DwellSeconds = chromosome.ValueAt(9),
-                TargetCategory = categories[categoryIndex]
+                Impulsiveness = chromosome.ValueAt(10),
+                PriceSensitivity = chromosome.ValueAt(11),
+                TargetCategory = category,
+                CategoryPreferences = new[] { new CategoryPreference(category, 1.0) },
+                ShoppingMission = SelectMission(config.ShoppingMissionWeights, missionSelector)
             };
+        }
+
+        private static ShoppingMission SelectMission(ShoppingMissionWeight[] weights, double selector)
+        {
+            var source = weights ?? Array.Empty<ShoppingMissionWeight>();
+            var total = 0.0;
+            for (var index = 0; index < source.Length; index++) total += Math.Max(0.0, source[index].Weight);
+            var roll = selector * total;
+            for (var index = 0; index < source.Length; index++)
+            {
+                roll -= Math.Max(0.0, source[index].Weight);
+                if (roll <= 0.0) return source[index].Mission;
+            }
+
+            return source[source.Length - 1].Mission;
         }
     }
 }

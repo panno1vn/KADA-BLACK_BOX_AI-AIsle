@@ -7,11 +7,11 @@ namespace AIsle.Simulation.Population.Genetic
 {
     public sealed class AIsleNpcChromosome : ChromosomeBase
     {
-        public const int TraitCount = 10;
+        public const int TraitCount = 12;
         private readonly PopulationConfig _config;
 
         public AIsleNpcChromosome(PopulationConfig config)
-            : base(TraitCount + 1)
+            : base(TraitCount + 2)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             CreateGenes();
@@ -62,6 +62,8 @@ namespace AIsle.Simulation.Population.Genetic
                 case 7: return ranges.AffectDispersion;
                 case 8: return ranges.AffectRecovery;
                 case 9: return ranges.DwellSeconds;
+                case 10: return ranges.Impulsiveness;
+                case 11: return ranges.PriceSensitivity;
                 default: return new ParameterRange(0.0, 1.0);
             }
         }
@@ -81,6 +83,8 @@ namespace AIsle.Simulation.Population.Genetic
                 case 7: return targets.AffectDispersion;
                 case 8: return targets.AffectRecovery;
                 case 9: return targets.DwellSeconds;
+                case 10: return targets.Impulsiveness;
+                case 11: return targets.PriceSensitivity;
                 default: return null;
             }
         }

@@ -58,6 +58,12 @@ internal static class Program
         var validation = new PopulationValidator().Validate(definition, config);
         Assert(validation.Valid, label + " invalid: " + string.Join("; ", validation.Errors));
         Assert(definition.NPCProfiles.All(profile => profile != null && !string.IsNullOrWhiteSpace(profile.Id)), label + ": invalid profile.");
+        Assert(definition.NPCProfiles.All(profile => profile.CategoryPreferences.Length > 0
+            && profile.Impulsiveness >= config.ParameterRanges.Impulsiveness.Min
+            && profile.Impulsiveness <= config.ParameterRanges.Impulsiveness.Max
+            && profile.PriceSensitivity >= config.ParameterRanges.PriceSensitivity.Min
+            && profile.PriceSensitivity <= config.ParameterRanges.PriceSensitivity.Max),
+            label + ": S8 shopping fields were not generated within bounds.");
     }
 
     private static void RunValidatorFailureChecks()
@@ -138,7 +144,8 @@ internal static class Program
         Id = id, WalkingSpeed = speed, InitialNeed = 0.5, NeedGrowthPerMinute = 0.01,
         InitialExplorationNeed = 0.4, ExplorationGrowthPerMinute = 0.01, AffectAttractor = 0.2,
         AffectStability = 0.6, AffectDispersion = 0.4, AffectRecovery = 0.15,
-        DwellSeconds = 10, TargetCategory = "essentials"
+        DwellSeconds = 10, TargetCategory = "essentials", Impulsiveness = 0.5, PriceSensitivity = 0.5,
+        CategoryPreferences = new[] { new CategoryPreference("essentials", 1.0) }, ShoppingMission = ShoppingMission.Routine
     };
 
     private static string FindRepositoryRoot()

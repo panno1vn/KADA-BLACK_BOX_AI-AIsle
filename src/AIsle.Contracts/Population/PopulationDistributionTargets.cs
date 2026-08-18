@@ -16,7 +16,8 @@ namespace AIsle.Contracts.Population
         public DistributionTarget AffectRecovery = new DistributionTarget();
         public DistributionTarget DwellSeconds = new DistributionTarget();
 
-        // Frozen compatibility fields. They are not inputs to the active S3 generator.
+        // Compatibility fields. S8 activates Impulsiveness and PriceSensitivity;
+        // the remaining legacy fields stay frozen.
         public DistributionTarget Patience = new DistributionTarget();
         public DistributionTarget Exploration = new DistributionTarget();
         public DistributionTarget Sociability = new DistributionTarget();

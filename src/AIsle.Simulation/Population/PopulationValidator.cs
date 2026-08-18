@@ -58,9 +58,37 @@ namespace AIsle.Simulation.Population
                 ValidateValue(errors, profile.Id, "AffectDispersion", profile.AffectDispersion, config.ParameterRanges.AffectDispersion);
                 ValidateValue(errors, profile.Id, "AffectRecovery", profile.AffectRecovery, config.ParameterRanges.AffectRecovery);
                 ValidateValue(errors, profile.Id, "DwellSeconds", profile.DwellSeconds, config.ParameterRanges.DwellSeconds);
+                ValidateValue(errors, profile.Id, "Impulsiveness", profile.Impulsiveness, config.ParameterRanges.Impulsiveness);
+                ValidateValue(errors, profile.Id, "PriceSensitivity", profile.PriceSensitivity, config.ParameterRanges.PriceSensitivity);
                 if (!categories.Contains(profile.TargetCategory))
                 {
                     errors.Add("NPC " + profile.Id + " has an invalid TargetCategory.");
+                }
+
+                var preferences = profile.CategoryPreferences ?? Array.Empty<CategoryPreference>();
+                if (preferences.Length == 0)
+                {
+                    errors.Add("NPC " + profile.Id + " has no category preference.");
+                }
+                else
+                {
+                    var preferredCategories = new HashSet<string>(StringComparer.Ordinal);
+                    for (var preferenceIndex = 0; preferenceIndex < preferences.Length; preferenceIndex++)
+                    {
+                        var preference = preferences[preferenceIndex];
+                        if (preference == null || !categories.Contains(preference.CategoryId)
+                            || !preferredCategories.Add(preference.CategoryId)
+                            || !IsFinite(preference.Weight) || preference.Weight < 0.0 || preference.Weight > 1.0)
+                        {
+                            errors.Add("NPC " + profile.Id + " has an invalid category preference.");
+                            break;
+                        }
+                    }
+                }
+
+                if (!Enum.IsDefined(typeof(ShoppingMission), profile.ShoppingMission))
+                {
+                    errors.Add("NPC " + profile.Id + " has an invalid ShoppingMission.");
                 }
             }
 
@@ -106,6 +134,8 @@ namespace AIsle.Simulation.Population
                 ValidateRange(errors, "AffectDispersion", config.ParameterRanges.AffectDispersion);
                 ValidateRange(errors, "AffectRecovery", config.ParameterRanges.AffectRecovery);
                 ValidateRange(errors, "DwellSeconds", config.ParameterRanges.DwellSeconds);
+                ValidateRange(errors, "Impulsiveness", config.ParameterRanges.Impulsiveness);
+                ValidateRange(errors, "PriceSensitivity", config.ParameterRanges.PriceSensitivity);
                 if (config.GeneratorSettings.EvolutionPopulationSize <= 0 || config.GeneratorSettings.Generations <= 0)
                 {
                     errors.Add("Generator population size and generation count are invalid.");
@@ -138,6 +168,24 @@ namespace AIsle.Simulation.Population
                 errors.Add("At least one category is required.");
             }
 
+            var missionWeights = config.ShoppingMissionWeights ?? Array.Empty<ShoppingMissionWeight>();
+            var missionSet = new HashSet<ShoppingMission>();
+            var missionWeightTotal = 0.0;
+            for (var index = 0; index < missionWeights.Length; index++)
+            {
+                var item = missionWeights[index];
+                if (item == null || !Enum.IsDefined(typeof(ShoppingMission), item.Mission)
+                    || !missionSet.Add(item.Mission) || !IsFinite(item.Weight) || item.Weight < 0.0)
+                {
+                    errors.Add("Shopping mission weights must be finite, non-negative and unique.");
+                    break;
+                }
+
+                missionWeightTotal += item.Weight;
+            }
+
+            if (!(missionWeightTotal > 0.0)) errors.Add("At least one positive shopping mission weight is required.");
+
             if (errors.Count > 0)
             {
                 throw new ArgumentException(string.Join(" ", errors), nameof(config));
@@ -161,6 +209,8 @@ namespace AIsle.Simulation.Population
             ValidateDistribution(errors, warnings, "AffectDispersion", statistics.AffectDispersion, targets.AffectDispersion);
             ValidateDistribution(errors, warnings, "AffectRecovery", statistics.AffectRecovery, targets.AffectRecovery);
             ValidateDistribution(errors, warnings, "DwellSeconds", statistics.DwellSeconds, targets.DwellSeconds);
+            ValidateDistribution(errors, warnings, "Impulsiveness", statistics.Impulsiveness, targets.Impulsiveness);
+            ValidateDistribution(errors, warnings, "PriceSensitivity", statistics.PriceSensitivity, targets.PriceSensitivity);
         }
 
         private static void ValidateDistribution(

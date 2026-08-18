@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using AIsle.Contracts.Population;
 using AIsle.Contracts.Simulation;
+using AIsle.Simulation.Decision;
 using AIsle.Simulation.Runtime;
 
 internal static class Program
@@ -11,8 +12,8 @@ internal static class Program
     {
         try
         {
-            TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility();
-            TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestNoPurchaseJourney();
+            TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility(); TestShoppingDecisionSeparation();
+            TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestMovementAndArrival(); TestNoPurchaseJourney();
             TestFullJourneyAndResult(); TestStateProjection();
             Console.WriteLine("PASS: C# simulation baseline verification completed."); return 0;
         }
@@ -74,6 +75,30 @@ internal static class Program
         Assert(host.Events.Any(item=>item.Type=="decision")&&host.Events.Any(item=>item.Type=="purchase")&&host.Events.Any(item=>item.Type=="checkout")&&host.Events.Any(item=>item.Type=="left"),"Full event journey incomplete");Assert(host.Purchases.Count>=1,"Purchase missing");Assert(host.Agents[0].Trajectory.Count>2,"Trajectory missing");var result=host.BuildResult("baseline");Assert(result.SchemaVersion=="aisle.sim-result.v1"&&result.Summary.Completed&&result.Replay.Columns.Length==5,"SimResult contract invalid");AssertClose(result.Purchases.Sum(item=>item.Price),result.Summary.Revenue,1e-12,"Revenue and purchase records disagree");Assert(result.Summary.Purchases==result.Purchases.Length&&result.Summary.Converted==host.Agents.Count(item=>item.Converted),"Result counters disagree with runtime state");Assert(result.Replay.Agents.SelectMany(item=>item.Samples).All(item=>host.Grid.IsPointWalkable(new Position2D(item.X,item.Y))),"Journey trajectory penetrated geometry");var json=JsonSerializer.Serialize(result,new JsonSerializerOptions{IncludeFields=true});var roundTrip=JsonSerializer.Deserialize<SimResult>(json,new JsonSerializerOptions{IncludeFields=true});Assert(roundTrip!=null&&roundTrip.Purchases.Length==result.Purchases.Length&&roundTrip.Replay.Agents[0].Samples.Length>2,"SimResult serialization failed");Console.WriteLine("PASS RUN2-08..15 full journey, trace, trajectory and SimResult");
     }
 
+    private static void TestShoppingDecisionSeparation()
+    {
+        var shelf=new ShelfDefinition{Id="s",Label="Shelf",Category="drink",X=3,Y=1,Width=1,Height=1};
+        var product=new ProductDefinition{Id="p",Name="Drink",Category="drink",ShelfId="s",Price=5};
+        var config=new SimulationConfig{DecisionNoise=0,UtilityExploreWeight=0,DistancePenalty=.05,PurchaseNeedA=3,PurchaseBiasC=-2,ImpulseBase=.2};
+        var lowProfile=Profile("low","drink");lowProfile.InitialNeed=.2;lowProfile.PriceSensitivity=1;lowProfile.Impulsiveness=.2;
+        var highProfile=lowProfile.Copy();highProfile.Id="high";highProfile.InitialNeed=.9;
+        var lowAgent=new NPCRuntimeState(lowProfile,new Position2D(),0,new Random(1));var highAgent=new NPCRuntimeState(highProfile,new Position2D(),0,new Random(1));
+        var lowNeed=ShoppingDecisionSystem.EvaluateTarget(lowAgent,shelf,new[]{product},2,config);var highNeed=ShoppingDecisionSystem.EvaluateTarget(highAgent,shelf,new[]{product},2,config);
+        Assert(highNeed.Total>=lowNeed.Total,"D2 higher matching need reduced target utility");
+        var near=ShoppingDecisionSystem.EvaluateTarget(highAgent,shelf,new[]{product},1,config);var far=ShoppingDecisionSystem.EvaluateTarget(highAgent,shelf,new[]{product},4,config);
+        Assert(far.Total<=near.Total,"D3 longer travel improved target utility");
+        var cheap=ShoppingDecisionSystem.EvaluateMainPurchase(highAgent,new ProductDefinition{Category="drink",Price=1},config);var expensive=ShoppingDecisionSystem.EvaluateMainPurchase(highAgent,new ProductDefinition{Category="drink",Price=100},config);
+        Assert(expensive.Probability<=cheap.Probability,"D4 higher price increased purchase tendency for a price-sensitive NPC");
+        var impulsiveProfile=highProfile.Copy();impulsiveProfile.Impulsiveness=.9;var impulsiveAgent=new NPCRuntimeState(impulsiveProfile,new Position2D(),0,new Random(1));
+        var lowImpulse=ShoppingDecisionSystem.EvaluateImpulsePurchase(highAgent,product,config);var highImpulse=ShoppingDecisionSystem.EvaluateImpulsePurchase(impulsiveAgent,product,config);
+        Assert(highImpulse.Probability>=lowImpulse.Probability,"D5 higher impulsiveness reduced impulse tendency");
+
+        var blockedLayout=new LayoutDefinition{Width=6,Height=4,Entrance=new Position2D(1,2),Checkout=new Position2D(1,1),Walls=new[]{new WallDefinition{Id="barrier",X1=3,Y1=0,X2=3,Y2=4}},Shelves=new[]{new ShelfDefinition{Id="blocked",Label="Blocked",Category="drink",X=4.2,Y=1,Width=1,Height=1}}};
+        var blockedProduct=new ProductDefinition{Id="blocked-p",Name="Blocked",Category="drink",ShelfId="blocked",Price=1};var blockedHost=new SimulationHost(blockedLayout,new[]{blockedProduct},Population(Profile("blocked-choice","drink")),config);blockedHost.Decide(blockedHost.Agents[0]);
+        Assert(blockedHost.Agents[0].CurrentShelf!="blocked","D1 unreachable shelf was selected");
+        Console.WriteLine("PASS S8.1 D1-D5 separated target and purchase decisions");
+    }
+
     private static void TestNoPurchaseJourney()
     {
         var shelf=new ShelfDefinition{Id="s1",Label="Drink",Category="drink",X=3,Y=1.2,Width=1,Height=1,Valence=0};var layout=OpenLayout(new[]{shelf});
@@ -95,6 +120,31 @@ internal static class Program
         Assert(host.Events.Count(item=>item.Type=="replan")<=config.MaxReplans+1,"Recovery exceeded its configured bound");Assert(host.Events.Any(item=>item.Type=="abandon"),"Failed route was not abandoned; events="+string.Join(",",host.Events.Select(item=>item.Type)));Assert(agent.X<3,"Recovery crossed sealed geometry");host.RunToCompletion(5000);Assert(host.Completed&&agent.Finished,"Blocked-target journey did not terminate");
         Console.WriteLine("PASS S4.2 bounded replan and abandon");
     }
+
+    private static void TestMovementAndArrival()
+    {
+        var config=new SimulationConfig{DurationMinutes=1,TickSeconds=.1,PathCellSize=.2,ObstacleMargin=.12,StuckTimeout=2};var profile=Profile("mover","drink");profile.WalkingSpeed=1.4;profile.DwellSeconds=5;
+        var straightHost=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(profile),config);var straight=straightHost.Agents[0];var target=new Position2D(3.03,1.7);PrepareRoute(straight,new[]{straight.Position(),target});
+        var previousDistance=SimulationMathForTest(straight,target);var peakSpeed=0.0;var nearMovingSpeed=double.PositiveInfinity;
+        for(var tick=0;tick<400&&straight.Status!="DWELL";tick++)
+        {
+            straightHost.Step(.1);var speed=straight.Speed();var distance=SimulationMathForTest(straight,target);peakSpeed=Math.Max(peakSpeed,speed);if(distance<.4&&speed>0)nearMovingSpeed=Math.Min(nearMovingSpeed,speed);
+            Assert(speed<=profile.WalkingSpeed+1e-9,"M1 actual speed exceeded WalkingSpeed");Assert(straight.X<=target.X+1e-9,"M3 straight movement overshot its target");Assert(distance<=previousDistance+1e-9,"M4 distance increased near a straight target");Assert(straightHost.Grid.IsPointWalkable(straight.Position()),"M5 straight movement entered blocked geometry");previousDistance=distance;
+        }
+        Assert(straight.Status=="DWELL"&&SimulationMathForTest(straight,target)<1e-9&&straight.Speed()==0,"M2 agent did not arrive and stop at the access point");Assert(nearMovingSpeed<peakSpeed,"M2 agent did not slow down before arrival");
+
+        var turnHost=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(Profile("turn","drink")),config);var turn=turnHost.Agents[0];var corner=new Position2D(2,1.7);var turnTarget=new Position2D(2,2.8);PrepareRoute(turn,new[]{turn.Position(),corner,turnTarget});var reachedCorner=false;
+        for(var tick=0;tick<400&&turn.Status!="DWELL";tick++){turnHost.Step(.1);reachedCorner|=Math.Abs(turn.X-corner.X)<1e-9&&Math.Abs(turn.Y-corner.Y)<1e-9;Assert(turn.Speed()<=turn.Profile.WalkingSpeed+1e-9,"M1 speed bound failed at 90-degree turn");Assert(turnHost.Grid.IsPointWalkable(turn.Position()),"M5 90-degree turn entered blocked geometry");}
+        Assert(reachedCorner&&turn.Status=="DWELL"&&SimulationMathForTest(turn,turnTarget)<1e-9,"M2/M4 90-degree route missed a waypoint or oscillated");
+
+        var corridorLayout=new LayoutDefinition{Width=6,Height=4,Entrance=new Position2D(1,2),Checkout=new Position2D(1,2.5),Walls=new[]{new WallDefinition{Id="top",X1=.2,Y1=1.25,X2=5.5,Y2=1.25},new WallDefinition{Id="bottom",X1=.2,Y1=2.75,X2=5.5,Y2=2.75}}};var corridorHost=new SimulationHost(corridorLayout,Array.Empty<ProductDefinition>(),Population(Profile("corridor","drink")),config);var corridor=corridorHost.Agents[0];var corridorTarget=new Position2D(5,2);var corridorPath=corridorHost.Grid.FindPath(corridor.Position(),corridorTarget);Assert(corridorPath!=null,"M5 narrow corridor path was not found");PrepareRoute(corridor,corridorPath.ToArray());
+        for(var tick=0;tick<600&&corridor.Status!="DWELL";tick++){corridorHost.Step(.1);Assert(corridorHost.Grid.IsPointWalkable(corridor.Position()),"M5 narrow path penetrated a wall");Assert(corridor.Speed()<=corridor.Profile.WalkingSpeed+1e-9,"M1 narrow path exceeded speed bound");}
+        Assert(corridor.Status=="DWELL"&&SimulationMathForTest(corridor,corridorTarget)<1e-9,"M2 narrow path did not arrive and stop");
+        Console.WriteLine("PASS S8.2 M1-M5 smooth speed, arrival, overshoot, oscillation and geometry");
+    }
+
+    private static void PrepareRoute(NPCRuntimeState agent,Position2D[] path){agent.Spawn=0;agent.Status="TRANSIT";agent.CurrentShelf="synthetic";agent.Path=new System.Collections.Generic.List<Position2D>(path);agent.PathIndex=path.Length>1?1:0;agent.RouteTarget=path[path.Length-1];agent.RouteStatus="TRANSIT";agent.VelocityX=0;agent.VelocityY=0;}
+    private static double SimulationMathForTest(NPCRuntimeState agent,Position2D target)=>Math.Sqrt(((agent.X-target.X)*(agent.X-target.X))+((agent.Y-target.Y)*(agent.Y-target.Y)));
 
     private static void TestStateProjection()
     {

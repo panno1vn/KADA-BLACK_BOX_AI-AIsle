@@ -37,6 +37,8 @@ namespace AIsle.Simulation.Population
                 AffectDispersion = CalculateMetric(profiles, profile => profile.AffectDispersion),
                 AffectRecovery = CalculateMetric(profiles, profile => profile.AffectRecovery),
                 DwellSeconds = CalculateMetric(profiles, profile => profile.DwellSeconds),
+                Impulsiveness = CalculateMetric(profiles, profile => profile.Impulsiveness),
+                PriceSensitivity = CalculateMetric(profiles, profile => profile.PriceSensitivity),
                 TargetCategoryFrequency = CalculateCategoryFrequency(profiles)
             };
         }

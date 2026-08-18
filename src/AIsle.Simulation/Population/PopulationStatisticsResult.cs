@@ -16,6 +16,8 @@ namespace AIsle.Simulation.Population
         public NumericStatistics AffectDispersion = new NumericStatistics();
         public NumericStatistics AffectRecovery = new NumericStatistics();
         public NumericStatistics DwellSeconds = new NumericStatistics();
+        public NumericStatistics Impulsiveness = new NumericStatistics();
+        public NumericStatistics PriceSensitivity = new NumericStatistics();
         public CategoryFrequency[] TargetCategoryFrequency = Array.Empty<CategoryFrequency>();
     }
 }

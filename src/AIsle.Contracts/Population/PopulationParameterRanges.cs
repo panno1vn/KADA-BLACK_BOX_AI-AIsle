@@ -16,7 +16,8 @@ namespace AIsle.Contracts.Population
         public ParameterRange AffectRecovery = new ParameterRange(0.0, 1.0);
         public ParameterRange DwellSeconds = new ParameterRange(1.0, 30.0);
 
-        // Frozen compatibility fields. They are not inputs to the active S3 generator.
+        // Compatibility fields. S8 activates Impulsiveness and PriceSensitivity;
+        // the remaining legacy fields stay frozen.
         public ParameterRange Patience = new ParameterRange(0.0, 1.0);
         public ParameterRange Exploration = new ParameterRange(0.0, 1.0);
         public ParameterRange Sociability = new ParameterRange(0.0, 1.0);
