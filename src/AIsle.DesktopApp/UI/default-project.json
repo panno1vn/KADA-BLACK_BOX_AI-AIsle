@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "aisle.project.v1",
+  "layout": {
+    "width": 12,
+    "height": 8,
+    "walls": [
+      { "id": "w1", "x1": 0.2, "y1": 0.2, "x2": 11.8, "y2": 0.2 },
+      { "id": "w2", "x1": 0.2, "y1": 0.2, "x2": 0.2, "y2": 7.8 },
+      { "id": "w3", "x1": 11.8, "y1": 0.2, "x2": 11.8, "y2": 7.8 },
+      { "id": "w4", "x1": 0.2, "y1": 7.8, "x2": 4.8, "y2": 7.8 },
+      { "id": "w5", "x1": 7.2, "y1": 7.8, "x2": 11.8, "y2": 7.8 }
+    ],
+    "shelves": [
+      { "id": "s1", "label": "Đồ uống", "category": "beverage", "x": 2, "y": 2, "w": 2.5, "h": 0.7, "valence": 0.42 }
+    ],
+    "entrance": { "x": 6, "y": 7.55 },
+    "checkout": { "x": 9.5, "y": 6.85 },
+    "spawnRateCurve": [
+      { "minute": 0, "rate": 3 },
+      { "minute": 15, "rate": 8 },
+      { "minute": 30, "rate": 2 }
+    ]
+  },
+  "catalog": [
+    { "id": "p001", "name": "Nước khoáng", "category": "beverage", "shelf": "s1", "price": 10000 }
+  ]
+}
