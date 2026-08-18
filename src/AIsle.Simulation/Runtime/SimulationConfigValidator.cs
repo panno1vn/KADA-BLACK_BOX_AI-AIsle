@@ -30,6 +30,10 @@ namespace AIsle.Simulation.Runtime
             NonNegative(errors, nameof(config.NeedTimeScale), config.NeedTimeScale);
             Positive(errors, nameof(config.CollisionRadius), config.CollisionRadius);
             NonNegative(errors, nameof(config.SeparationStrength), config.SeparationStrength);
+            InRange(errors, nameof(config.RvoNeighborDistance), config.RvoNeighborDistance, config.CollisionRadius, 20.0);
+            IntegerInRange(errors, nameof(config.RvoMaxNeighbors), config.RvoMaxNeighbors, 1, 100);
+            InRange(errors, nameof(config.RvoTimeHorizon), config.RvoTimeHorizon, 0.1, 30.0);
+            InRange(errors, nameof(config.RvoTimeHorizonObstacles), config.RvoTimeHorizonObstacles, 0.1, 30.0);
             InRange(errors, nameof(config.PathCellSize), config.PathCellSize, 0.1, 0.75);
             NonNegative(errors, nameof(config.ObstacleMargin), config.ObstacleMargin);
             InRange(errors, nameof(config.StuckTimeout), config.StuckTimeout, 0.2, 10.0);

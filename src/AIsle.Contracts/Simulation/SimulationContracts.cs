@@ -24,6 +24,8 @@ namespace AIsle.Contracts.Simulation
         public double PurchaseNeedA = 3.0; public double PurchaseValenceB = 1.5; public double PurchaseBiasC = -2.0;
         public double ImpulseBase = 0.08; public int MaxShelfVisits = 3; public double DwellScale = 1.0; public double NeedTimeScale = 1.0;
         public double CollisionRadius = 0.32; public double SeparationStrength = 0.22;
+        public double RvoNeighborDistance = 2.0; public int RvoMaxNeighbors = 10;
+        public double RvoTimeHorizon = 2.0; public double RvoTimeHorizonObstacles = 2.0;
         public double PathCellSize = 0.25; public double ObstacleMargin = 0.28; public double StuckTimeout = 1.5; public int MaxReplans = 2;
         public double TrajectorySampleSeconds = 0.5;
     }

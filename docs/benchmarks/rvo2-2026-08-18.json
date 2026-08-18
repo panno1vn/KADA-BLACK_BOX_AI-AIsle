@@ -1,0 +1,75 @@
+{
+  "timestampUtc": "2026-08-18T03:36:32.6090041+00:00",
+  "machine": "KHANGCUTE",
+  "framework": ".NET 10.0.9",
+  "scenarios": [
+    {
+      "npcCount": 200,
+      "ticks": 15,
+      "runtimeMilliseconds": 207.6608,
+      "tickMilliseconds": 13.844053333333333,
+      "allocatedMegabytes": 58.23070526123047,
+      "workingSetMegabytes": 31.6953125,
+      "events": 401,
+      "replaySamples": 1200,
+      "correct": true
+    },
+    {
+      "npcCount": 500,
+      "ticks": 15,
+      "runtimeMilliseconds": 333.5324,
+      "tickMilliseconds": 22.235493333333334,
+      "allocatedMegabytes": 145.25016021728516,
+      "workingSetMegabytes": 38.0546875,
+      "events": 1001,
+      "replaySamples": 2937,
+      "correct": true
+    },
+    {
+      "npcCount": 1000,
+      "ticks": 15,
+      "runtimeMilliseconds": 342.8617,
+      "tickMilliseconds": 22.857446666666664,
+      "allocatedMegabytes": 288.0821228027344,
+      "workingSetMegabytes": 49.6015625,
+      "events": 2001,
+      "replaySamples": 5429,
+      "correct": true
+    }
+  ],
+  "avoidanceScenarios": [
+    {
+      "npcCount": 50,
+      "ticks": 121,
+      "runtimeMilliseconds": 32.4686,
+      "tickMilliseconds": 0.2683355371900827,
+      "collisionPairTicks": 0,
+      "overlapPairTicks": 50,
+      "progressedAgents": 50,
+      "geometrySafe": true,
+      "correct": true
+    },
+    {
+      "npcCount": 100,
+      "ticks": 121,
+      "runtimeMilliseconds": 73.8216,
+      "tickMilliseconds": 0.610095867768595,
+      "collisionPairTicks": 0,
+      "overlapPairTicks": 968,
+      "progressedAgents": 96,
+      "geometrySafe": true,
+      "correct": true
+    },
+    {
+      "npcCount": 200,
+      "ticks": 121,
+      "runtimeMilliseconds": 385.5027,
+      "tickMilliseconds": 3.1859727272727274,
+      "collisionPairTicks": 0,
+      "overlapPairTicks": 3783,
+      "progressedAgents": 189,
+      "geometrySafe": true,
+      "correct": true
+    }
+  ]
+}

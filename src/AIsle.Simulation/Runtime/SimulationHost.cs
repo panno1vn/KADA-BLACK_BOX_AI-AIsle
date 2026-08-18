@@ -4,6 +4,7 @@ using System.Linq;
 using AIsle.Contracts.Population;
 using AIsle.Contracts.Simulation;
 using AIsle.Simulation.Decision;
+using AIsle.Simulation.Runtime.Avoidance;
 
 namespace AIsle.Simulation.Runtime
 {
@@ -11,16 +12,18 @@ namespace AIsle.Simulation.Runtime
     {
         private readonly LayoutDefinition _layout; private readonly ProductDefinition[] _catalog; private readonly SimulationConfig _config;
         private readonly Random _random; private readonly HashSet<string> _catalogCategories;
+        private readonly IRvoAvoidance _avoidance; private bool _avoidanceFailureReported;
         public readonly PathGrid Grid; public readonly List<NPCRuntimeState> Agents = new List<NPCRuntimeState>(); public readonly List<SimulationEvent> Events = new List<SimulationEvent>(); public readonly List<PurchaseRecord> Purchases = new List<PurchaseRecord>();
         public double Time { get; private set; } public double Revenue { get; private set; } public bool Completed { get; private set; }
         public int Spawned { get; private set; } public int Converted { get; private set; } public int MainBuyers { get; private set; } public int ImpulseBuyers { get; private set; }
         public int NotFound { get; private set; } public int Unreachable { get; private set; } public int StuckRecoveries { get; private set; }
 
-        public SimulationHost(LayoutDefinition layout, ProductDefinition[] catalog, PopulationDefinition population, SimulationConfig config)
+        public SimulationHost(LayoutDefinition layout, ProductDefinition[] catalog, PopulationDefinition population, SimulationConfig config, IRvoAvoidance avoidance = null)
         {
             _layout = layout ?? throw new ArgumentNullException(nameof(layout)); _catalog = catalog ?? Array.Empty<ProductDefinition>(); if (population == null) throw new ArgumentNullException(nameof(population)); _config = config ?? new SimulationConfig();
             SimulationConfigValidator.ThrowIfInvalid(_config);
             _random = new Random();
+            _avoidance = avoidance ?? new Rvo2Adapter();
             _catalogCategories = new HashSet<string>(_catalog.Select(product => product.Category), StringComparer.Ordinal); Grid = new PathGrid(_layout, _config);
             var profiles = population.NPCProfiles ?? Array.Empty<NPCProfile>(); var spawns = MakeSpawnTimes(profiles.Length);
             for (var index = 0; index < profiles.Length; index++) { var agent = new NPCRuntimeState(profiles[index].Copy(), _layout.Entrance, spawns[index], _random); Agents.Add(agent); if (!string.IsNullOrWhiteSpace(agent.Profile.TargetCategory) && !_catalogCategories.Contains(agent.Profile.TargetCategory)) NotFound++; }
@@ -28,14 +31,15 @@ namespace AIsle.Simulation.Runtime
 
         public void Step(double deltaSeconds = 0.0)
         {
-            if (Completed) return; var dt = SimulationMath.Clamp(deltaSeconds <= 0.0 ? _config.TickSeconds : deltaSeconds, 0.01, 2.0); Time = Math.Min(_config.DurationMinutes * 60.0, Time + dt); var active = new List<NPCRuntimeState>();
+            if (Completed) return; var dt = SimulationMath.Clamp(deltaSeconds <= 0.0 ? _config.TickSeconds : deltaSeconds, 0.01, 2.0); Time = Math.Min(_config.DurationMinutes * 60.0, Time + dt); var active = new List<NPCRuntimeState>();var eligibleMovers=new HashSet<NPCRuntimeState>();
             for (var index = 0; index < Agents.Count; index++)
             {
-                var agent = Agents[index]; if (agent.Finished || Time < agent.Spawn) continue;
+                var agent = Agents[index]; if (agent.Finished || Time < agent.Spawn) continue;var wasMoving=IsMoving(agent);
                 if (agent.Status == "WAITING") { agent.Status = "DECIDING"; Spawned++; Emit(agent, "spawn", "spawned"); if (!string.IsNullOrWhiteSpace(agent.Profile.TargetCategory) && !_catalogCategories.Contains(agent.Profile.TargetCategory)) Emit(agent, "phantom-need", "requested unavailable category", targetCategory: agent.Profile.TargetCategory); }
-                NeedAffectSystem.Update(agent, dt, _config); UpdateAgent(agent, dt); if (!agent.Finished) active.Add(agent);
+                NeedAffectSystem.Update(agent, dt, _config); UpdateAgentState(agent, dt); if (!agent.Finished){active.Add(agent);if(wasMoving&&IsMoving(agent))eligibleMovers.Add(agent);}
             }
-            Separate(active);
+            MoveAgents(active, eligibleMovers, dt);
+            for (var index = 0; index < active.Count; index++) RecordTrajectory(active[index], false);
             if (Time >= _config.DurationMinutes * 60.0 || Agents.All(agent => agent.Finished)) { Completed = true; Emit(null, "complete", "simulation complete"); }
         }
 
@@ -119,22 +123,75 @@ namespace AIsle.Simulation.Runtime
             };
         }
 
-        private void UpdateAgent(NPCRuntimeState agent, double dt)
+        private void UpdateAgentState(NPCRuntimeState agent, double dt)
         {
-            if (agent.Status == "DECIDING") Decide(agent); else if (agent.Status == "TRANSIT" || agent.Status == "CHECKOUT" || agent.Status == "LEAVING") Move(agent, dt); else if (agent.Status == "DWELL") { agent.DwellLeft -= dt; if (agent.DwellLeft <= 0.0) FinishDwell(agent); }
-            RecordTrajectory(agent, false);
+            if (agent.Status == "DECIDING") Decide(agent);
+            else if (agent.Status == "DWELL") { agent.DwellLeft -= dt; if (agent.DwellLeft <= 0.0) FinishDwell(agent); }
         }
 
-        private void Move(NPCRuntimeState agent, double dt)
+        private void MoveAgents(List<NPCRuntimeState> active, HashSet<NPCRuntimeState> eligibleMovers, double dt)
+        {
+            var moving = new List<NPCRuntimeState>();
+            var inputs = new List<RvoAgentInput>();
+            for (var index = 0; index < active.Count; index++)
+            {
+                var agent = active[index];
+                if (!eligibleMovers.Contains(agent)) continue;
+                var input = PrepareMovement(agent, dt);
+                if (input == null) continue;
+                moving.Add(agent);
+                inputs.Add(input);
+            }
+
+            if (inputs.Count == 0) return;
+            var movingCount = inputs.Count;
+            var movingSet = new HashSet<NPCRuntimeState>(moving);
+            for (var index = 0; index < active.Count; index++)
+            {
+                var agent = active[index];
+                if (movingSet.Contains(agent)) continue;
+                inputs.Add(new RvoAgentInput
+                {
+                    X=agent.X,Y=agent.Y,VelocityX=0.0,VelocityY=0.0,
+                    PreferredVelocityX=0.0,PreferredVelocityY=0.0,
+                    Radius=_config.CollisionRadius*0.5,MaxSpeed=0.0
+                });
+            }
+            IReadOnlyList<RvoVelocity> velocities;
+            try
+            {
+                velocities = _avoidance.Solve(inputs, new RvoAvoidanceSettings
+                {
+                    NeighborDistance = _config.RvoNeighborDistance,
+                    MaxNeighbors = _config.RvoMaxNeighbors,
+                    TimeHorizon = _config.RvoTimeHorizon,
+                    TimeHorizonObstacles = _config.RvoTimeHorizonObstacles
+                }, dt);
+                if (velocities == null || velocities.Count != inputs.Count) throw new InvalidOperationException("RVO2 returned an invalid velocity set.");
+            }
+            catch (Exception exception)
+            {
+                velocities = inputs.Select(item => new RvoVelocity(item.PreferredVelocityX, item.PreferredVelocityY)).ToArray();
+                if (!_avoidanceFailureReported)
+                {
+                    _avoidanceFailureReported = true;
+                    Emit(null, "avoidance-fallback", "RVO2 unavailable; preferred velocity fallback: " + exception.GetType().Name);
+                }
+            }
+
+            for (var index = 0; index < movingCount; index++) ApplyMovement(moving[index], inputs[index], velocities[index], dt);
+        }
+
+        private RvoAgentInput PrepareMovement(NPCRuntimeState agent, double dt)
         {
             if (agent.Path == null || agent.PathIndex >= agent.Path.Count)
             {
                 CompleteRoute(agent);
-                return;
+                return null;
             }
             var target = agent.Path[agent.PathIndex]; var dx = target.X-agent.X; var dy = target.Y-agent.Y; var distance = Math.Sqrt(dx*dx+dy*dy);
             var stopTolerance = Math.Max(0.01, Math.Min(0.05, _config.PathCellSize * 0.2));
-            if (distance <= stopTolerance) { agent.X=target.X;agent.Y=target.Y;agent.PathIndex++;if(agent.PathIndex>=agent.Path.Count){Stop(agent);CompleteRoute(agent);}return; }
+            if (distance <= stopTolerance) { AdvanceWaypoint(agent,target); return null; }
 
             var directionX=dx/distance;var directionY=dy/distance;var maximumSpeed=Math.Max(0.0,agent.Profile.WalkingSpeed);var pace=0.94+(0.06*Math.Sin((Time*4.0)+agent.StridePhase));
             var preferredSpeed=maximumSpeed*pace;var isFinalWaypoint=agent.PathIndex==agent.Path.Count-1;
@@ -143,12 +200,45 @@ namespace AIsle.Simulation.Runtime
             var responseSeconds=Math.Max(dt,_config.TickSeconds*2.0);var blend=SimulationMath.Clamp(dt/responseSeconds,0.0,1.0);
             var smoothedVelocityX=agent.VelocityX+((preferredVelocityX-agent.VelocityX)*blend);var smoothedVelocityY=agent.VelocityY+((preferredVelocityY-agent.VelocityY)*blend);
             var forwardSpeed=Math.Max(0.0,(smoothedVelocityX*directionX)+(smoothedVelocityY*directionY));forwardSpeed=Math.Min(maximumSpeed,forwardSpeed);
-            agent.VelocityX=directionX*forwardSpeed;agent.VelocityY=directionY*forwardSpeed;
-            var step=Math.Min(distance,forwardSpeed*dt);var next=new Position2D(agent.X+(directionX*step),agent.Y+(directionY*step));
-            if (!Grid.LineIsWalkable(agent.Position(), next)) { agent.StuckFor += dt; if (agent.StuckFor >= _config.StuckTimeout) RecoverRoute(agent, "path obstructed"); return; }
-            var moved = SimulationMath.Distance(agent.Position(),next); agent.X=next.X;agent.Y=next.Y;agent.StuckFor=moved<0.001?agent.StuckFor+dt:0.0;
-            if(distance-step<=stopTolerance){agent.X=target.X;agent.Y=target.Y;agent.PathIndex++;if(agent.PathIndex>=agent.Path.Count){Stop(agent);CompleteRoute(agent);}}
+            return new RvoAgentInput
+            {
+                X=agent.X,Y=agent.Y,VelocityX=agent.VelocityX,VelocityY=agent.VelocityY,
+                PreferredVelocityX=directionX*forwardSpeed,PreferredVelocityY=directionY*forwardSpeed,
+                Radius=_config.CollisionRadius*0.5,MaxSpeed=maximumSpeed
+            };
+        }
+
+        private void ApplyMovement(NPCRuntimeState agent, RvoAgentInput input, RvoVelocity actualVelocity, double dt)
+        {
+            if (!IsMoving(agent) || agent.Path == null || agent.PathIndex >= agent.Path.Count) return;
+            var speed=Math.Sqrt((actualVelocity.X*actualVelocity.X)+(actualVelocity.Y*actualVelocity.Y));
+            if(!double.IsFinite(speed)){actualVelocity=new RvoVelocity(input.PreferredVelocityX,input.PreferredVelocityY);speed=Math.Sqrt((actualVelocity.X*actualVelocity.X)+(actualVelocity.Y*actualVelocity.Y));}
+            var maximumSpeed=Math.Max(0.0,agent.Profile.WalkingSpeed);
+            if(speed>maximumSpeed&&speed>0.0){var scale=maximumSpeed/speed;actualVelocity=new RvoVelocity(actualVelocity.X*scale,actualVelocity.Y*scale);}
+
+            var before=agent.Position();var target=agent.Path[agent.PathIndex];
+            var next=new Position2D(agent.X+(actualVelocity.X*dt),agent.Y+(actualVelocity.Y*dt));
+            if(!Grid.LineIsWalkable(before,next))
+            {
+                actualVelocity=new RvoVelocity(input.PreferredVelocityX,input.PreferredVelocityY);
+                next=new Position2D(agent.X+(actualVelocity.X*dt),agent.Y+(actualVelocity.Y*dt));
+            }
+            if(!Grid.LineIsWalkable(before,next)){agent.VelocityX=0.0;agent.VelocityY=0.0;agent.StuckFor+=dt;if(agent.StuckFor>=_config.StuckTimeout)RecoverRoute(agent,"path obstructed");return;}
+
+            agent.VelocityX=actualVelocity.X;agent.VelocityY=actualVelocity.Y;agent.X=next.X;agent.Y=next.Y;
+            var moved=SimulationMath.Distance(before,next);agent.StuckFor=moved<0.001?agent.StuckFor+dt:0.0;
+            var stopTolerance=Math.Max(0.01,Math.Min(0.05,_config.PathCellSize*0.2));
+            var remainingX=target.X-agent.X;var remainingY=target.Y-agent.Y;
+            var reached=Math.Sqrt((remainingX*remainingX)+(remainingY*remainingY))<=stopTolerance;
+            var passed=((target.X-before.X)*remainingX)+((target.Y-before.Y)*remainingY)<=0.0;
+            if((reached||passed)&&Grid.LineIsWalkable(agent.Position(),target))AdvanceWaypoint(agent,target);
             if(agent.StuckFor>=_config.StuckTimeout)RecoverRoute(agent,"no movement progress");
+        }
+
+        private void AdvanceWaypoint(NPCRuntimeState agent, Position2D target)
+        {
+            agent.X=target.X;agent.Y=target.Y;agent.PathIndex++;
+            if(agent.PathIndex>=agent.Path.Count){Stop(agent);CompleteRoute(agent);}
         }
 
         private void CompleteRoute(NPCRuntimeState agent)
@@ -177,11 +267,6 @@ namespace AIsle.Simulation.Runtime
         private bool SetPath(NPCRuntimeState agent,Position2D target,string status,bool keepReplans){var path=Grid.FindPath(agent.Position(),target);if(path==null)return false;agent.Path=path;agent.PathIndex=path.Count>1?1:0;agent.Status=status;agent.RouteTarget=new Position2D(target.X,target.Y);agent.RouteStatus=status;agent.StuckFor=0;Stop(agent);if(!keepReplans)agent.Replans=0;return true;}
         private void RecoverRoute(NPCRuntimeState agent,string reason){agent.Replans++;StuckRecoveries++;Emit(agent,"replan",reason);if(agent.RouteTarget!=null&&agent.Replans<=_config.MaxReplans&&SetPath(agent,agent.RouteTarget,agent.RouteStatus,true))return;if(agent.Status=="TRANSIT"){if(!string.IsNullOrEmpty(agent.CurrentShelf)&&!agent.Visited.Contains(agent.CurrentShelf))agent.Visited.Add(agent.CurrentShelf);Emit(agent,"abandon","abandoned unreachable shelf");agent.CurrentShelf=string.Empty;RouteExit(agent);return;}FailRoute(agent,"exit route remained blocked after replanning");}
         private void FailRoute(NPCRuntimeState agent,string reason){agent.Path.Clear();Stop(agent);agent.Finished=true;agent.Status="BLOCKED";Emit(agent,"blocked",reason);}
-
-        private void Separate(List<NPCRuntimeState> active)
-        {
-            for(var first=0;first<active.Count;first++)for(var second=first+1;second<active.Count;second++){var a=active[first];var b=active[second];if(!IsMoving(a)||!IsMoving(b))continue;var dx=a.X-b.X;var dy=a.Y-b.Y;var distance=Math.Sqrt(dx*dx+dy*dy);if(distance<=0.0||distance>=_config.CollisionRadius)continue;var push=(_config.CollisionRadius-distance)/_config.CollisionRadius*_config.SeparationStrength*0.5;var pa=new Position2D(a.X+dx/distance*push,a.Y+dy/distance*push);var pb=new Position2D(b.X-dx/distance*push,b.Y-dy/distance*push);if(Grid.LineIsWalkable(a.Position(),pa)){a.X=pa.X;a.Y=pa.Y;}if(Grid.LineIsWalkable(b.Position(),pb)){b.X=pb.X;b.Y=pb.Y;}}
-        }
 
         private static bool IsMoving(NPCRuntimeState agent)=>agent.Status=="TRANSIT"||agent.Status=="CHECKOUT"||agent.Status=="LEAVING";
 

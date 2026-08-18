@@ -18,7 +18,8 @@ internal static class Program
                 TimestampUtc = DateTimeOffset.UtcNow,
                 Machine = Environment.MachineName,
                 Framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
-                Scenarios = new[] { Run(200), Run(500), Run(1000) }
+                Scenarios = new[] { Run(200), Run(500), Run(1000) },
+                AvoidanceScenarios = new[] { RunAvoidance(50), RunAvoidance(100), RunAvoidance(200) }
             };
             var json = JsonSerializer.Serialize(report, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true });
             Console.WriteLine(json);
@@ -28,7 +29,7 @@ internal static class Program
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, json);
             }
-            if (report.Scenarios.Any(item => !item.Correct)) return 1;
+            if (report.Scenarios.Any(item => !item.Correct) || report.AvoidanceScenarios.Any(item => !item.Correct)) return 1;
             return 0;
         }
         catch (Exception exception)
@@ -69,6 +70,35 @@ internal static class Program
         };
     }
 
+    private static AvoidanceBenchmarkScenario RunAvoidance(int count)
+    {
+        GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var config=new SimulationConfig{DurationMinutes=.1,TickSeconds=.05,TrajectorySampleSeconds=1,RvoNeighborDistance=3,RvoMaxNeighbors=30,RvoTimeHorizon=4};
+        var host=new SimulationHost(new LayoutDefinition{Width=20,Height=8,Entrance=new Position2D(.8,.8),Checkout=new Position2D(.8,7.2),SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=100000}}},Array.Empty<ProductDefinition>(),Population(count),config);
+        var initialDistance=new double[count];
+        for(var index=0;index<count;index++)
+        {
+            var column=index%20;var row=index/20;var agent=host.Agents[index];agent.X=.8+(column*.5);agent.Y=.8+(row*.6);agent.Spawn=0;agent.Status="TRANSIT";agent.CurrentShelf="benchmark";
+            var target=new Position2D(column<10?18:.8,agent.Y);agent.Path=new System.Collections.Generic.List<Position2D>{agent.Position(),target};agent.PathIndex=1;agent.RouteTarget=target;agent.RouteStatus="TRANSIT";agent.Profile.DwellSeconds=1000;
+            initialDistance[index]=Distance(agent.Position(),target);
+        }
+        var stopwatch=Stopwatch.StartNew();var ticks=0;long collisions=0;long overlaps=0;var geometrySafe=true;
+        while(!host.Completed&&ticks<1000)
+        {
+            host.Step(config.TickSeconds);ticks++;
+            for(var first=0;first<count;first++)
+            {
+                geometrySafe&=host.Grid.IsPointWalkable(host.Agents[first].Position());
+                for(var second=first+1;second<count;second++){var distance=Distance(host.Agents[first].Position(),host.Agents[second].Position());if(distance<config.CollisionRadius*.5)collisions++;if(distance<config.CollisionRadius)overlaps++;}
+            }
+        }
+        stopwatch.Stop();var progressed=0;
+        for(var index=0;index<count;index++)if(Distance(host.Agents[index].Position(),host.Agents[index].RouteTarget)<initialDistance[index]-.2)progressed++;
+        return new AvoidanceBenchmarkScenario{NpcCount=count,Ticks=ticks,RuntimeMilliseconds=stopwatch.Elapsed.TotalMilliseconds,TickMilliseconds=ticks==0?0:stopwatch.Elapsed.TotalMilliseconds/ticks,CollisionPairTicks=collisions,OverlapPairTicks=overlaps,ProgressedAgents=progressed,GeometrySafe=geometrySafe,Correct=host.Completed&&collisions==0&&progressed>=Math.Ceiling(count*.8)&&geometrySafe};
+    }
+
+    private static double Distance(Position2D first,Position2D second){var dx=first.X-second.X;var dy=first.Y-second.Y;return Math.Sqrt((dx*dx)+(dy*dy));}
+
     private static LayoutDefinition Layout() => new LayoutDefinition
     {
         Width = 20, Height = 10,
@@ -101,6 +131,7 @@ internal static class Program
         public string Machine { get; set; } = string.Empty;
         public string Framework { get; set; } = string.Empty;
         public BenchmarkScenario[] Scenarios { get; set; } = Array.Empty<BenchmarkScenario>();
+        public AvoidanceBenchmarkScenario[] AvoidanceScenarios { get; set; } = Array.Empty<AvoidanceBenchmarkScenario>();
     }
 
     private sealed class BenchmarkScenario
@@ -113,6 +144,19 @@ internal static class Program
         public double WorkingSetMegabytes { get; set; }
         public int Events { get; set; }
         public int ReplaySamples { get; set; }
+        public bool Correct { get; set; }
+    }
+
+    private sealed class AvoidanceBenchmarkScenario
+    {
+        public int NpcCount { get; set; }
+        public int Ticks { get; set; }
+        public double RuntimeMilliseconds { get; set; }
+        public double TickMilliseconds { get; set; }
+        public long CollisionPairTicks { get; set; }
+        public long OverlapPairTicks { get; set; }
+        public int ProgressedAgents { get; set; }
+        public bool GeometrySafe { get; set; }
         public bool Correct { get; set; }
     }
 }

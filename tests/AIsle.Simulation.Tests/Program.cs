@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using AIsle.Contracts.Population;
 using AIsle.Contracts.Simulation;
 using AIsle.Simulation.Decision;
 using AIsle.Simulation.Runtime;
+using AIsle.Simulation.Runtime.Avoidance;
 
 internal static class Program
 {
@@ -15,6 +17,7 @@ internal static class Program
             TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility(); TestShoppingDecisionSeparation();
             TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestMovementAndArrival(); TestNoPurchaseJourney();
             TestFullJourneyAndResult(); TestStateProjection();
+            TestRvoHeadOn(); TestRvoCrossingAndCrowd(); TestRvoFallbackAndNoNeighbor();
             Console.WriteLine("PASS: C# simulation baseline verification completed."); return 0;
         }
         catch(Exception exception) { Console.Error.WriteLine("FAIL: " + exception); return 1; }
@@ -47,7 +50,7 @@ internal static class Program
     private static void TestConfigValidation()
     {
         SimulationConfigValidator.ThrowIfInvalid(new SimulationConfig());
-        foreach(var invalid in new[]{new SimulationConfig{TickSeconds=0},new SimulationConfig{PathCellSize=0},new SimulationConfig{ImpulseBase=2},new SimulationConfig{MaxReplans=9}})
+        foreach(var invalid in new[]{new SimulationConfig{TickSeconds=0},new SimulationConfig{PathCellSize=0},new SimulationConfig{ImpulseBase=2},new SimulationConfig{MaxReplans=9},new SimulationConfig{RvoNeighborDistance=.1},new SimulationConfig{RvoMaxNeighbors=0},new SimulationConfig{RvoTimeHorizon=0}})
         {
             var rejected=false;try{SimulationConfigValidator.ThrowIfInvalid(invalid);}catch(ArgumentException){rejected=true;}Assert(rejected,"Invalid SimulationConfig was accepted");
         }
@@ -72,7 +75,7 @@ internal static class Program
         var shelf=new ShelfDefinition{Id="s1",Label="Drink",X=3,Y=1.2,Width=1,Height=1,Valence=0.5};var layout=OpenLayout(new[]{shelf});layout.SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=600},new SpawnRatePoint{Minute=1,Rate=600}};
         var catalog=new[]{new ProductDefinition{Id="drink",Name="Drink",Category="drink",ShelfId="s1",Price=12.5}};var profile=Profile("buyer","drink");profile.InitialNeed=1;profile.DwellSeconds=0.2;profile.WalkingSpeed=1.5;
         var config=new SimulationConfig{DurationMinutes=1,TickSeconds=0.1,TopKChoices=1,DecisionNoise=0,PurchaseNeedA=10,PurchaseValenceB=0,PurchaseBiasC=10,TrajectorySampleSeconds=0.2};var host=new SimulationHost(layout,catalog,Population(profile),config);host.Agents[0].Spawn=0;host.RunToCompletion(5000);
-        Assert(host.Events.Any(item=>item.Type=="decision")&&host.Events.Any(item=>item.Type=="purchase")&&host.Events.Any(item=>item.Type=="checkout")&&host.Events.Any(item=>item.Type=="left"),"Full event journey incomplete");Assert(host.Purchases.Count>=1,"Purchase missing");Assert(host.Agents[0].Trajectory.Count>2,"Trajectory missing");var result=host.BuildResult("baseline");Assert(result.SchemaVersion=="aisle.sim-result.v1"&&result.Summary.Completed&&result.Replay.Columns.Length==5,"SimResult contract invalid");AssertClose(result.Purchases.Sum(item=>item.Price),result.Summary.Revenue,1e-12,"Revenue and purchase records disagree");Assert(result.Summary.Purchases==result.Purchases.Length&&result.Summary.Converted==host.Agents.Count(item=>item.Converted),"Result counters disagree with runtime state");Assert(result.Replay.Agents.SelectMany(item=>item.Samples).All(item=>host.Grid.IsPointWalkable(new Position2D(item.X,item.Y))),"Journey trajectory penetrated geometry");var json=JsonSerializer.Serialize(result,new JsonSerializerOptions{IncludeFields=true});var roundTrip=JsonSerializer.Deserialize<SimResult>(json,new JsonSerializerOptions{IncludeFields=true});Assert(roundTrip!=null&&roundTrip.Purchases.Length==result.Purchases.Length&&roundTrip.Replay.Agents[0].Samples.Length>2,"SimResult serialization failed");Console.WriteLine("PASS RUN2-08..15 full journey, trace, trajectory and SimResult");
+        Assert(host.Events.Any(item=>item.Type=="decision")&&host.Events.Any(item=>item.Type=="purchase")&&host.Events.Any(item=>item.Type=="checkout")&&host.Events.Any(item=>item.Type=="left"),"Full event journey incomplete");Assert(host.Purchases.Count>=1,"Purchase missing");Assert(host.Agents[0].Trajectory.Count>2,"Trajectory missing");var result=host.BuildResult("baseline");Assert(result.SchemaVersion=="aisle.sim-result.v1"&&result.Summary.Completed&&result.Replay.Columns.Length==5,"SimResult contract invalid");AssertClose(result.Purchases.Sum(item=>item.Price),result.Summary.Revenue,1e-12,"Revenue and purchase records disagree");Assert(result.Summary.Purchases==result.Purchases.Length&&result.Summary.Converted==host.Agents.Count(item=>item.Converted),"Result counters disagree with runtime state");Assert(result.Replay.Agents.SelectMany(item=>item.Samples).All(item=>host.Grid.IsPointWalkable(new Position2D(item.X,item.Y))),"Journey trajectory penetrated geometry");var json=JsonSerializer.Serialize(result,new JsonSerializerOptions{IncludeFields=true});var roundTrip=JsonSerializer.Deserialize<SimResult>(json,new JsonSerializerOptions{IncludeFields=true});Assert(roundTrip!=null&&roundTrip.Purchases.Length==result.Purchases.Length&&roundTrip.Replay.Agents[0].Samples.Length>2,"SimResult serialization failed");Console.WriteLine("PASS RUN2-08..15/R5-R6 shelf arrival, full journey, trace, trajectory and SimResult");
     }
 
     private static void TestShoppingDecisionSeparation()
@@ -140,7 +143,7 @@ internal static class Program
         var corridorLayout=new LayoutDefinition{Width=6,Height=4,Entrance=new Position2D(1,2),Checkout=new Position2D(1,2.5),Walls=new[]{new WallDefinition{Id="top",X1=.2,Y1=1.25,X2=5.5,Y2=1.25},new WallDefinition{Id="bottom",X1=.2,Y1=2.75,X2=5.5,Y2=2.75}}};var corridorHost=new SimulationHost(corridorLayout,Array.Empty<ProductDefinition>(),Population(Profile("corridor","drink")),config);var corridor=corridorHost.Agents[0];var corridorTarget=new Position2D(5,2);var corridorPath=corridorHost.Grid.FindPath(corridor.Position(),corridorTarget);Assert(corridorPath!=null,"M5 narrow corridor path was not found");PrepareRoute(corridor,corridorPath.ToArray());
         for(var tick=0;tick<600&&corridor.Status!="DWELL";tick++){corridorHost.Step(.1);Assert(corridorHost.Grid.IsPointWalkable(corridor.Position()),"M5 narrow path penetrated a wall");Assert(corridor.Speed()<=corridor.Profile.WalkingSpeed+1e-9,"M1 narrow path exceeded speed bound");}
         Assert(corridor.Status=="DWELL"&&SimulationMathForTest(corridor,corridorTarget)<1e-9,"M2 narrow path did not arrive and stop");
-        Console.WriteLine("PASS S8.2 M1-M5 smooth speed, arrival, overshoot, oscillation and geometry");
+        Console.WriteLine("PASS S8.2/R4 M1-M5 smooth speed, arrival, overshoot, oscillation and static geometry");
     }
 
     private static void PrepareRoute(NPCRuntimeState agent,Position2D[] path){agent.Spawn=0;agent.Status="TRANSIT";agent.CurrentShelf="synthetic";agent.Path=new System.Collections.Generic.List<Position2D>(path);agent.PathIndex=path.Length>1?1:0;agent.RouteTarget=path[path.Length-1];agent.RouteStatus="TRANSIT";agent.VelocityX=0;agent.VelocityY=0;}
@@ -153,6 +156,54 @@ internal static class Program
         var json=JsonSerializer.Serialize(projection,new JsonSerializerOptions{IncludeFields=true});using var document=JsonDocument.Parse(json);var agent=document.RootElement.GetProperty("Agents")[0];
         Assert(agent.TryGetProperty("X",out _)&&agent.TryGetProperty("Y",out _)&&agent.TryGetProperty("Status",out _)&&agent.TryGetProperty("TargetId",out _),"Projection is missing required fields");Assert(!agent.TryGetProperty("Path",out _)&&!agent.TryGetProperty("Profile",out _),"Projection leaked internal simulation objects");
         Console.WriteLine("PASS S4.5 serializable minimal projection");
+    }
+
+    private static void TestRvoHeadOn()
+    {
+        var config=new SimulationConfig{DurationMinutes=1,TickSeconds=.1,RvoNeighborDistance=3,RvoTimeHorizon=2};
+        var host=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(Profile("left",""),Profile("right","")),config);
+        var left=host.Agents[0];var right=host.Agents[1];left.X=2;left.Y=2;right.X=7;right.Y=2;
+        PrepareRoute(left,new[]{left.Position(),new Position2D(7,2)});PrepareRoute(right,new[]{right.Position(),new Position2D(2,2)});
+        var minimum=double.PositiveInfinity;
+        for(var tick=0;tick<800&&(left.Status!="DWELL"||right.Status!="DWELL");tick++){host.Step(.1);minimum=Math.Min(minimum,SimulationMathForTest(left,right.Position()));}
+        Assert(minimum>=config.CollisionRadius*.8,"R1 head-on agents collided; minimum="+minimum);
+        Assert(left.Status=="DWELL"&&right.Status=="DWELL","R1 head-on agents did not both reach their goals");
+        Console.WriteLine("PASS R1 ORCA head-on avoidance minimum="+minimum.ToString("F3"));
+    }
+
+    private static void TestRvoCrossingAndCrowd()
+    {
+        var config=new SimulationConfig{DurationMinutes=1,TickSeconds=.1,RvoNeighborDistance=2.5,RvoMaxNeighbors=12};
+        var eastProfile=Profile("east","");var northProfile=Profile("north","");eastProfile.DwellSeconds=1000;northProfile.DwellSeconds=1000;
+        var crossing=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(eastProfile,northProfile),config);
+        var east=crossing.Agents[0];var north=crossing.Agents[1];east.X=2;east.Y=2;north.X=4.5;north.Y=.5;
+        PrepareRoute(east,new[]{east.Position(),new Position2D(7,2)});PrepareRoute(north,new[]{north.Position(),new Position2D(4.5,3.5)});
+        var crossingMinimum=double.PositiveInfinity;
+        for(var tick=0;tick<800&&(east.Status!="DWELL"||north.Status!="DWELL");tick++){crossing.Step(.1);crossingMinimum=Math.Min(crossingMinimum,SimulationMathForTest(east,north.Position()));}
+        Assert(crossingMinimum>=config.CollisionRadius*.75,"R2 crossing agents severely overlapped");Assert(east.Status=="DWELL"&&north.Status=="DWELL","R2 crossing paths did not terminate");
+
+        var profiles=Enumerable.Range(0,12).Select(index=>{var profile=Profile("crowd-"+index,"");profile.DwellSeconds=1000;return profile;}).ToArray();var crowd=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(profiles),config);var starts=new double[profiles.Length];var minimum=double.PositiveInfinity;
+        for(var index=0;index<crowd.Agents.Count;index++){var agent=crowd.Agents[index];agent.X=1+(index*.38);agent.Y=1.7;starts[index]=agent.X;PrepareRoute(agent,new[]{agent.Position(),new Position2D(10,1.7)});}
+        for(var tick=0;tick<80;tick++){crowd.Step(.1);for(var a=0;a<crowd.Agents.Count;a++)for(var b=a+1;b<crowd.Agents.Count;b++)minimum=Math.Min(minimum,SimulationMathForTest(crowd.Agents[a],crowd.Agents[b].Position()));}
+        Assert(minimum>=config.CollisionRadius*.65,"R3 aisle crowd developed severe overlap; minimum="+minimum);Assert(crowd.Agents.Count(agent=>agent.X>starts[Array.IndexOf(crowd.Agents.ToArray(),agent)]+.2)>=9,"R3 aisle crowd made insufficient progress");
+        Assert(crowd.Agents.All(agent=>crowd.Grid.IsPointWalkable(agent.Position())),"R4 crowd movement penetrated static geometry");
+        Console.WriteLine("PASS R2-R4 crossing/crowd/wall invariants minimum="+minimum.ToString("F3"));
+    }
+
+    private static void TestRvoFallbackAndNoNeighbor()
+    {
+        var adapter=new Rvo2Adapter();var input=new RvoAgentInput{PreferredVelocityX=.7,PreferredVelocityY=-.2,MaxSpeed=1,Radius=.16};
+        var output=adapter.Solve(new[]{input},new RvoAvoidanceSettings{NeighborDistance=2,MaxNeighbors=10,TimeHorizon=2,TimeHorizonObstacles=2},.1);
+        AssertClose(input.PreferredVelocityX,output[0].X,1e-12,"R7 no-neighbor X velocity changed");AssertClose(input.PreferredVelocityY,output[0].Y,1e-12,"R7 no-neighbor Y velocity changed");
+        var host=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(Profile("fallback-a",""),Profile("fallback-b","")),new SimulationConfig{DurationMinutes=1},new ThrowingAvoidance());
+        var first=host.Agents[0];var second=host.Agents[1];first.X=1;first.Y=1;second.X=1;second.Y=2.5;PrepareRoute(first,new[]{first.Position(),new Position2D(4,1)});PrepareRoute(second,new[]{second.Position(),new Position2D(4,2.5)});host.Step(.2);
+        Assert(host.Events.Count(item=>item.Type=="avoidance-fallback")==1&&first.X>1&&second.X>1,"Safe RVO fallback did not use preferred velocities");
+        Console.WriteLine("PASS R7 adapter no-neighbor equivalence and safe failure fallback");
+    }
+
+    private sealed class ThrowingAvoidance : IRvoAvoidance
+    {
+        public IReadOnlyList<RvoVelocity> Solve(IReadOnlyList<RvoAgentInput> agents,RvoAvoidanceSettings settings,double deltaSeconds)=>throw new InvalidOperationException("synthetic adapter failure");
     }
 
     private static LayoutDefinition OpenLayout(ShelfDefinition[] shelves)=>new LayoutDefinition{Width=12,Height=4,Entrance=new Position2D(1,1.7),Checkout=new Position2D(1,2.7),Shelves=shelves,SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=600}}};

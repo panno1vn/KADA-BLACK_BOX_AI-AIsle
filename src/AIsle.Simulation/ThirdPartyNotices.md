@@ -14,6 +14,14 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+## RVO2 Library C# 2.0.1
+
+Source: https://github.com/snape/RVO2-CS at tag `v2.0.1`, revision `5b7147d36d5cc6310c8e74c6955145c0fdc5fe06`
+
+Copyright 2008 University of North Carolina at Chapel Hill.
+
+Licensed under the Apache License, Version 2.0. The complete upstream license is distributed at `src/AIsle.Simulation/ThirdParty/RVO2/LICENSE`.
+
 ## Math.NET Numerics 5.0.0
 
 Source: https://github.com/mathnet/mathnet-numerics

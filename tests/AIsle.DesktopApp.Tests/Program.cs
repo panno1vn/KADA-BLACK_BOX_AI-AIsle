@@ -202,8 +202,8 @@ internal static class Program
         };
         var options = new JsonSerializerOptions { IncludeFields = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         var startRequest = JsonSerializer.Serialize(new { requestId = "start", type = "simulation.start", payload = new { input } }, options);
-        using var start = JsonDocument.Parse(bridge.Process(startRequest));
-        Assert(start.RootElement.GetProperty("ok").GetBoolean() && start.RootElement.GetProperty("payload").GetProperty("running").GetBoolean(), "simulation.start failed.");
+        var startResponse=bridge.Process(startRequest);using var start = JsonDocument.Parse(startResponse);
+        Assert(start.RootElement.GetProperty("ok").GetBoolean() && start.RootElement.GetProperty("payload").GetProperty("running").GetBoolean(), "simulation.start failed: "+startResponse);
         Assert(start.RootElement.GetProperty("payload").GetProperty("time").GetDouble() > 0, "simulation.start must advance the first live tick immediately.");
         Assert(start.RootElement.GetProperty("payload").GetProperty("counters").GetProperty("spawned").GetInt32() == 1, "simulation.start must admit the first NPC immediately.");
 
