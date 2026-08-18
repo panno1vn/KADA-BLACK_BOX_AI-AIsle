@@ -317,3 +317,10 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet build AIsle.slnx -c Release --no-restore` 0 warning/0 error; Population verification pass 5 golden scenarios cùng active shopping-field bounds/validation/statistics/GeneticSharp boundary; Simulation pass S8 D1–D5, M1–M5 trên straight path, 90-degree turn và narrow corridor, M6 full journey, A* wall/corner/unreachable/replan, purchase/no-purchase/checkout/exit và SimResult round-trip; Results S5/S6 pass; Desktop S1–S7 pass; JavaScript regression 10/10 pass; csproj/package diff trống; `git diff --check` pass.
 - Nên làm tiếp theo: Dừng tại S8 theo task card. Review UI trực quan của C# projection thuộc integration/UI task riêng; không tự mở từ S8.
 - Phạm vi đồng bộ: Chỉ local trên `develop`; chưa stage, chưa commit, chưa push. Giữ nguyên file task S8 do chủ dự án cung cấp.
+
+## 2026-08-18 10:18 (UTC+07:00) — Codex — Đã đồng bộ S8 lên develop
+
+- Đã làm: Commit toàn bộ batch S8 bằng commit `bf374d7` (`feat: refine NPC shopping decisions and movement`) và push fast-forward từ `7786fc4` lên `origin/develop`.
+- Kiểm soát conflict: Fetch trước khi kiểm thử và fetch lại ngay trước push đều xác nhận remote không có commit mới; local/remote trước push `1/0`; không merge, không rebase và không force-push.
+- Kiểm tra: Release build 0 warning/0 error; Desktop, Results, Simulation và Population verification pass; 10/10 JavaScript regression test pass. Các khoảng trắng cuối dòng được giữ nguyên trong file task Markdown do là cú pháp hard line break của tài liệu do chủ dự án cung cấp.
+- Phạm vi: Chỉ repository `D:\Big\KADA\test`, nhánh `develop`; không chạm `main` hoặc `D:\Big\KADA\store\main`.
