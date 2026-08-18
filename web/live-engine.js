@@ -113,6 +113,20 @@ export function createRng(seed = 42) {
   return random;
 }
 
+export function createRunSeed(previousSeed = null, cryptoApi = globalThis.crypto) {
+  const values = new Uint32Array(1);
+  let seed;
+  if (cryptoApi?.getRandomValues) {
+    cryptoApi.getRandomValues(values);
+    seed = values[0] >>> 0;
+  } else {
+    seed = ((Date.now() >>> 0) ^ Math.floor(Math.random() * 0x100000000)) >>> 0;
+  }
+  if (seed === 0) seed = 0x6d2b79f5;
+  if (previousSeed !== null && seed === (Number(previousSeed) >>> 0)) seed = (seed + 0x9e3779b9) >>> 0 || 1;
+  return seed;
+}
+
 const SEEDS = [
   [.72, .018, .24, .008, .32, .66, .36, .14, 1.42, 8.2, .82, 'beverage'],
   [.35, .012, .68, .014, .12, .44, .57, .09, .92, 13.5, .54, 'snack'],
@@ -273,6 +287,10 @@ export class LiveSimulation {
       curve = Array.from({ length: 25 }, (_, index) => { const phase = index / 24; return { minute: phase * this.duration / 60, rate: meanRate * (1 + strength * Math.sin(phase * Math.PI)) / normalizer } });
     }
     const result = samplePoissonSpawnTimes({ curve, durationSeconds: this.duration, rng: this.spawnRng, maxCount: count });
+    // RUN LIVE must have visible progress immediately. Keep the sampled
+    // absolute arrival times for every later NPC, but admit the first NPC at T=0.
+    if (result.length) result[0] = 0;
+    else result.push(0);
     while (result.length < count) result.push(Infinity);
     return result;
   }

@@ -1,7 +1,7 @@
 {
   "Count": 100,
   "DistributionTargets": {
-    "Exploration": {"Enabled": true, "Mean": 0.84, "StandardDeviation": 0.08, "Weight": 2.0, "Tolerance": 0.08}
+    "InitialExplorationNeed": {"Enabled": true, "Mean": 0.84, "StandardDeviation": 0.08, "Weight": 2.0, "Tolerance": 0.08}
   },
   "GeneratorSettings": {
     "EvolutionPopulationSize": 140,

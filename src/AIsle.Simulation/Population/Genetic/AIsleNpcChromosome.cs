@@ -7,11 +7,11 @@ namespace AIsle.Simulation.Population.Genetic
 {
     public sealed class AIsleNpcChromosome : ChromosomeBase
     {
-        public const int TraitCount = 7;
+        public const int TraitCount = 10;
         private readonly PopulationConfig _config;
 
         public AIsleNpcChromosome(PopulationConfig config)
-            : base(TraitCount + (config.CategoryIds ?? Array.Empty<string>()).Length + 1)
+            : base(TraitCount + 1)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             CreateGenes();
@@ -53,12 +53,15 @@ namespace AIsle.Simulation.Population.Genetic
             switch (index)
             {
                 case 0: return ranges.WalkingSpeed;
-                case 1: return ranges.Patience;
-                case 2: return ranges.Exploration;
-                case 3: return ranges.Sociability;
-                case 4: return ranges.Impulsiveness;
-                case 5: return ranges.CrowdTolerance;
-                case 6: return ranges.PriceSensitivity;
+                case 1: return ranges.InitialNeed;
+                case 2: return ranges.NeedGrowthPerMinute;
+                case 3: return ranges.InitialExplorationNeed;
+                case 4: return ranges.ExplorationGrowthPerMinute;
+                case 5: return ranges.AffectAttractor;
+                case 6: return ranges.AffectStability;
+                case 7: return ranges.AffectDispersion;
+                case 8: return ranges.AffectRecovery;
+                case 9: return ranges.DwellSeconds;
                 default: return new ParameterRange(0.0, 1.0);
             }
         }
@@ -69,12 +72,15 @@ namespace AIsle.Simulation.Population.Genetic
             switch (index)
             {
                 case 0: return targets.WalkingSpeed;
-                case 1: return targets.Patience;
-                case 2: return targets.Exploration;
-                case 3: return targets.Sociability;
-                case 4: return targets.Impulsiveness;
-                case 5: return targets.CrowdTolerance;
-                case 6: return targets.PriceSensitivity;
+                case 1: return targets.InitialNeed;
+                case 2: return targets.NeedGrowthPerMinute;
+                case 3: return targets.InitialExplorationNeed;
+                case 4: return targets.ExplorationGrowthPerMinute;
+                case 5: return targets.AffectAttractor;
+                case 6: return targets.AffectStability;
+                case 7: return targets.AffectDispersion;
+                case 8: return targets.AffectRecovery;
+                case 9: return targets.DwellSeconds;
                 default: return null;
             }
         }

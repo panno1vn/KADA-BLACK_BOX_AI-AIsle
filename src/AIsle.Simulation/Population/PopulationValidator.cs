@@ -49,13 +49,19 @@ namespace AIsle.Simulation.Population
                 }
 
                 ValidateValue(errors, profile.Id, "WalkingSpeed", profile.WalkingSpeed, config.ParameterRanges.WalkingSpeed);
-                ValidateValue(errors, profile.Id, "Patience", profile.Patience, config.ParameterRanges.Patience);
-                ValidateValue(errors, profile.Id, "Exploration", profile.Exploration, config.ParameterRanges.Exploration);
-                ValidateValue(errors, profile.Id, "Sociability", profile.Sociability, config.ParameterRanges.Sociability);
-                ValidateValue(errors, profile.Id, "Impulsiveness", profile.Impulsiveness, config.ParameterRanges.Impulsiveness);
-                ValidateValue(errors, profile.Id, "CrowdTolerance", profile.CrowdTolerance, config.ParameterRanges.CrowdTolerance);
-                ValidateValue(errors, profile.Id, "PriceSensitivity", profile.PriceSensitivity, config.ParameterRanges.PriceSensitivity);
-                ValidatePreferences(errors, warnings, profile, categories);
+                ValidateValue(errors, profile.Id, "InitialNeed", profile.InitialNeed, config.ParameterRanges.InitialNeed);
+                ValidateValue(errors, profile.Id, "NeedGrowthPerMinute", profile.NeedGrowthPerMinute, config.ParameterRanges.NeedGrowthPerMinute);
+                ValidateValue(errors, profile.Id, "InitialExplorationNeed", profile.InitialExplorationNeed, config.ParameterRanges.InitialExplorationNeed);
+                ValidateValue(errors, profile.Id, "ExplorationGrowthPerMinute", profile.ExplorationGrowthPerMinute, config.ParameterRanges.ExplorationGrowthPerMinute);
+                ValidateValue(errors, profile.Id, "AffectAttractor", profile.AffectAttractor, config.ParameterRanges.AffectAttractor);
+                ValidateValue(errors, profile.Id, "AffectStability", profile.AffectStability, config.ParameterRanges.AffectStability);
+                ValidateValue(errors, profile.Id, "AffectDispersion", profile.AffectDispersion, config.ParameterRanges.AffectDispersion);
+                ValidateValue(errors, profile.Id, "AffectRecovery", profile.AffectRecovery, config.ParameterRanges.AffectRecovery);
+                ValidateValue(errors, profile.Id, "DwellSeconds", profile.DwellSeconds, config.ParameterRanges.DwellSeconds);
+                if (!categories.Contains(profile.TargetCategory))
+                {
+                    errors.Add("NPC " + profile.Id + " has an invalid TargetCategory.");
+                }
             }
 
             if (errors.Count == 0)
@@ -91,12 +97,15 @@ namespace AIsle.Simulation.Population
             else
             {
                 ValidateRange(errors, "WalkingSpeed", config.ParameterRanges.WalkingSpeed);
-                ValidateRange(errors, "Patience", config.ParameterRanges.Patience);
-                ValidateRange(errors, "Exploration", config.ParameterRanges.Exploration);
-                ValidateRange(errors, "Sociability", config.ParameterRanges.Sociability);
-                ValidateRange(errors, "Impulsiveness", config.ParameterRanges.Impulsiveness);
-                ValidateRange(errors, "CrowdTolerance", config.ParameterRanges.CrowdTolerance);
-                ValidateRange(errors, "PriceSensitivity", config.ParameterRanges.PriceSensitivity);
+                ValidateRange(errors, "InitialNeed", config.ParameterRanges.InitialNeed);
+                ValidateRange(errors, "NeedGrowthPerMinute", config.ParameterRanges.NeedGrowthPerMinute);
+                ValidateRange(errors, "InitialExplorationNeed", config.ParameterRanges.InitialExplorationNeed);
+                ValidateRange(errors, "ExplorationGrowthPerMinute", config.ParameterRanges.ExplorationGrowthPerMinute);
+                ValidateRange(errors, "AffectAttractor", config.ParameterRanges.AffectAttractor);
+                ValidateRange(errors, "AffectStability", config.ParameterRanges.AffectStability);
+                ValidateRange(errors, "AffectDispersion", config.ParameterRanges.AffectDispersion);
+                ValidateRange(errors, "AffectRecovery", config.ParameterRanges.AffectRecovery);
+                ValidateRange(errors, "DwellSeconds", config.ParameterRanges.DwellSeconds);
                 if (config.GeneratorSettings.EvolutionPopulationSize <= 0 || config.GeneratorSettings.Generations <= 0)
                 {
                     errors.Add("Generator population size and generation count are invalid.");
@@ -135,45 +144,6 @@ namespace AIsle.Simulation.Population
             }
         }
 
-        private static void ValidatePreferences(
-            List<string> errors,
-            List<string> warnings,
-            NPCProfile profile,
-            HashSet<string> categories)
-        {
-            var preferences = profile.CategoryPreferences ?? Array.Empty<CategoryPreference>();
-            if (preferences.Length == 0)
-            {
-                errors.Add("NPC " + profile.Id + " has no category preferences.");
-                return;
-            }
-
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            var total = 0.0;
-            for (var index = 0; index < preferences.Length; index++)
-            {
-                var preference = preferences[index];
-                if (preference == null || !categories.Contains(preference.CategoryId) || !seen.Add(preference.CategoryId))
-                {
-                    errors.Add("NPC " + profile.Id + " has an invalid category preference.");
-                    continue;
-                }
-
-                if (!IsFinite(preference.Weight) || preference.Weight < 0.0)
-                {
-                    errors.Add("NPC " + profile.Id + " has an invalid category weight.");
-                    continue;
-                }
-
-                total += preference.Weight;
-            }
-
-            if (Math.Abs(total - 1.0) > 1e-8)
-            {
-                warnings.Add("NPC " + profile.Id + " category weights do not sum to 1.");
-            }
-        }
-
         private static void ValidateDistributions(
             List<string> errors,
             List<string> warnings,
@@ -182,12 +152,15 @@ namespace AIsle.Simulation.Population
         {
             var statistics = PopulationStatistics.Calculate(profiles);
             ValidateDistribution(errors, warnings, "WalkingSpeed", statistics.WalkingSpeed, targets.WalkingSpeed);
-            ValidateDistribution(errors, warnings, "Patience", statistics.Patience, targets.Patience);
-            ValidateDistribution(errors, warnings, "Exploration", statistics.Exploration, targets.Exploration);
-            ValidateDistribution(errors, warnings, "Sociability", statistics.Sociability, targets.Sociability);
-            ValidateDistribution(errors, warnings, "Impulsiveness", statistics.Impulsiveness, targets.Impulsiveness);
-            ValidateDistribution(errors, warnings, "CrowdTolerance", statistics.CrowdTolerance, targets.CrowdTolerance);
-            ValidateDistribution(errors, warnings, "PriceSensitivity", statistics.PriceSensitivity, targets.PriceSensitivity);
+            ValidateDistribution(errors, warnings, "InitialNeed", statistics.InitialNeed, targets.InitialNeed);
+            ValidateDistribution(errors, warnings, "NeedGrowthPerMinute", statistics.NeedGrowthPerMinute, targets.NeedGrowthPerMinute);
+            ValidateDistribution(errors, warnings, "InitialExplorationNeed", statistics.InitialExplorationNeed, targets.InitialExplorationNeed);
+            ValidateDistribution(errors, warnings, "ExplorationGrowthPerMinute", statistics.ExplorationGrowthPerMinute, targets.ExplorationGrowthPerMinute);
+            ValidateDistribution(errors, warnings, "AffectAttractor", statistics.AffectAttractor, targets.AffectAttractor);
+            ValidateDistribution(errors, warnings, "AffectStability", statistics.AffectStability, targets.AffectStability);
+            ValidateDistribution(errors, warnings, "AffectDispersion", statistics.AffectDispersion, targets.AffectDispersion);
+            ValidateDistribution(errors, warnings, "AffectRecovery", statistics.AffectRecovery, targets.AffectRecovery);
+            ValidateDistribution(errors, warnings, "DwellSeconds", statistics.DwellSeconds, targets.DwellSeconds);
         }
 
         private static void ValidateDistribution(

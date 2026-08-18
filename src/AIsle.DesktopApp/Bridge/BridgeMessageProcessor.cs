@@ -3,27 +3,45 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AIsle.Contracts.Project;
+using AIsle.Contracts.Population;
+using AIsle.Contracts.Simulation;
 using AIsle.DesktopApp.Application;
 using AIsle.DesktopApp.Infrastructure;
+using AIsle.Simulation.Results;
 
 namespace AIsle.DesktopApp.Bridge
 {
-    public sealed class BridgeMessageProcessor
+    public sealed class BridgeMessageProcessor : IDisposable
     {
         private readonly ProjectApplicationService? _projects;
         private readonly string? _defaultProjectPath;
+        private readonly PopulationApplicationService _populations;
+        private readonly SimulationApplicationService _simulations;
+        private readonly IHistoryStore _history;
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            IncludeFields = true,
+            PropertyNameCaseInsensitive = true
         };
 
-        public BridgeMessageProcessor(ProjectApplicationService? projects = null, string? defaultProjectPath = null)
+        public BridgeMessageProcessor(
+            ProjectApplicationService? projects = null,
+            string? defaultProjectPath = null,
+            PopulationApplicationService? populations = null,
+            SimulationApplicationService? simulations = null,
+            IHistoryStore? history = null)
         {
             _projects = projects;
             _defaultProjectPath = defaultProjectPath;
+            _populations = populations ?? new PopulationApplicationService();
+            _simulations = simulations ?? new SimulationApplicationService();
+            _history = history ?? new JsonHistoryStore();
         }
 
         public string Process(string? messageJson) => ProcessAsync(messageJson).GetAwaiter().GetResult();
+
+        public void Dispose() => _simulations.Dispose();
 
         public async Task<string> ProcessAsync(string? messageJson, CancellationToken cancellationToken = default)
         {
@@ -50,6 +68,17 @@ namespace AIsle.DesktopApp.Bridge
                     "app.ping" => Success(requestId, new { status = "ready", application = "AIsleDesktop" }),
                     "project.load" => await LoadProjectAsync(requestId, payload, cancellationToken),
                     "project.save" => await SaveProjectAsync(requestId, payload, cancellationToken),
+                    "population.generate" => GeneratePopulation(requestId, payload),
+                    "simulation.start" => StartSimulation(requestId, payload),
+                    "simulation.pause" => SimulationCommand(requestId, _simulations.Pause),
+                    "simulation.step" => SimulationCommand(requestId, _simulations.Step),
+                    "simulation.reset" => SimulationCommand(requestId, _simulations.Reset),
+                    "history.save" => SaveHistory(requestId, payload),
+                    "history.list" => Success(requestId, _history.List()),
+                    "history.read" => ReadHistory(requestId, payload),
+                    "replay.project" => ProjectReplay(requestId, payload),
+                    "kpi.project" => ProjectKpis(requestId, payload),
+                    "compare.results" => CompareResults(requestId, payload),
                     _ => Error(requestId, "unsupported_request", $"Unsupported bridge request type: {type}")
                 };
             }
@@ -65,10 +94,115 @@ namespace AIsle.DesktopApp.Bridge
             {
                 return Error(requestId, "invalid_schema", exception.Message);
             }
+            catch (DuplicateHistoryIdException exception)
+            {
+                return Error(requestId, "duplicate_history_id", exception.Message);
+            }
+            catch (HistoryResultNotFoundException exception)
+            {
+                return Error(requestId, "history_not_found", exception.Message);
+            }
+            catch (CorruptedHistoryException exception)
+            {
+                return Error(requestId, "corrupted_history", exception.Message);
+            }
             catch (Exception)
             {
                 return Error(requestId, "internal_error", "Bridge request could not be processed.");
             }
+        }
+
+        private string GeneratePopulation(string requestId, JsonElement payload)
+        {
+            if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty("config", out var configJson))
+            {
+                throw new BridgeRequestException("population.generate payload must contain config.");
+            }
+
+            var config = JsonSerializer.Deserialize<PopulationConfig>(configJson.GetRawText(), JsonOptions)
+                ?? throw new BridgeRequestException("population.generate config is invalid.");
+            return Success(requestId, _populations.Generate(config));
+        }
+
+        private string StartSimulation(string requestId, JsonElement payload)
+        {
+            SimulationStartInput? input = null;
+            if (payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("input", out var inputJson))
+            {
+                input = JsonSerializer.Deserialize<SimulationStartInput>(inputJson.GetRawText(), JsonOptions)
+                    ?? throw new BridgeRequestException("simulation.start input is invalid.");
+            }
+
+            return SimulationCommand(requestId, () => _simulations.Start(input));
+        }
+
+        private static string SimulationCommand(string requestId, Func<SimulationStateProjection> command)
+        {
+            try
+            {
+                return Success(requestId, command());
+            }
+            catch (ArgumentException exception)
+            {
+                throw new BridgeRequestException(exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                throw new BridgeRequestException(exception.Message);
+            }
+        }
+
+        private string SaveHistory(string requestId, JsonElement payload)
+        {
+            if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty("result", out var resultJson))
+                throw new BridgeRequestException("history.save payload must contain result.");
+            SimResult result;
+            try { result = SimResultJsonSerializer.Deserialize(resultJson.GetRawText()); }
+            catch (JsonException exception) { throw new BridgeRequestException("history.save result is invalid: " + exception.Message); }
+            return Success(requestId, _history.Save(result));
+        }
+
+        private string ReadHistory(string requestId, JsonElement payload)
+        {
+            var id = ReadPayloadId(payload, "history.read");
+            return Success(requestId, _history.Read(id));
+        }
+
+        private string ProjectReplay(string requestId, JsonElement payload)
+        {
+            var id = ReadPayloadId(payload, "replay.project");
+            try { return Success(requestId, ReplayProjector.Project(_history.Read(id))); }
+            catch (ArgumentException exception) { throw new BridgeRequestException("Stored replay is invalid: " + exception.Message); }
+        }
+
+        private string ProjectKpis(string requestId, JsonElement payload)
+        {
+            var id = ReadPayloadId(payload, "kpi.project");
+            return Success(requestId, KpiProjector.Project(_history.Read(id)));
+        }
+
+        private string CompareResults(string requestId, JsonElement payload)
+        {
+            if (payload.ValueKind != JsonValueKind.Object) throw new BridgeRequestException("compare.results payload must be an object.");
+            var runAId = ReadRequiredPayloadString(payload, "runAId", "compare.results");
+            var runBId = ReadRequiredPayloadString(payload, "runBId", "compare.results");
+            return Success(requestId, ResultComparer.Compare(_history.Read(runAId), _history.Read(runBId)));
+        }
+
+        private static string ReadPayloadId(JsonElement payload, string command)
+        {
+            if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty("id", out var idJson)
+                || idJson.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(idJson.GetString()))
+                throw new BridgeRequestException(command + " payload must contain a non-empty id.");
+            return idJson.GetString()!;
+        }
+
+        private static string ReadRequiredPayloadString(JsonElement payload, string propertyName, string command)
+        {
+            if (!payload.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.String
+                || string.IsNullOrWhiteSpace(value.GetString()))
+                throw new BridgeRequestException(command + " payload must contain a non-empty " + propertyName + ".");
+            return value.GetString()!;
         }
 
         private async Task<string> LoadProjectAsync(string requestId, JsonElement payload, CancellationToken cancellationToken)

@@ -6,6 +6,17 @@ namespace AIsle.Contracts.Population
     public sealed class PopulationDistributionTargets
     {
         public DistributionTarget WalkingSpeed = new DistributionTarget();
+        public DistributionTarget InitialNeed = new DistributionTarget();
+        public DistributionTarget NeedGrowthPerMinute = new DistributionTarget();
+        public DistributionTarget InitialExplorationNeed = new DistributionTarget();
+        public DistributionTarget ExplorationGrowthPerMinute = new DistributionTarget();
+        public DistributionTarget AffectAttractor = new DistributionTarget();
+        public DistributionTarget AffectStability = new DistributionTarget();
+        public DistributionTarget AffectDispersion = new DistributionTarget();
+        public DistributionTarget AffectRecovery = new DistributionTarget();
+        public DistributionTarget DwellSeconds = new DistributionTarget();
+
+        // Frozen compatibility fields. They are not inputs to the active S3 generator.
         public DistributionTarget Patience = new DistributionTarget();
         public DistributionTarget Exploration = new DistributionTarget();
         public DistributionTarget Sociability = new DistributionTarget();

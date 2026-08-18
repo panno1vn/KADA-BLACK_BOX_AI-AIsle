@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using AIsle.Contracts.Simulation;
+using AIsle.DesktopApp.Infrastructure;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -94,33 +96,24 @@ namespace AIsle.DesktopApp.ViewModels
 
         private void SaveLog()
         {
-            var summary = new Services.SimRunSummary
+            var result = new SimResult
             {
                 Id = "run-" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                SchemaVersion = "1.0",
-                CreatedAt = DateTime.UtcNow.ToString("O"),
+                CreatedAt = DateTimeOffset.UtcNow,
                 Name = "Layout A - live test",
-                Seed = 42,
-                DurationMinutes = 30,
-                Summary = new Services.SimSummaryData
+                Summary = new SimulationSummary
                 {
-                    Time = 30,
+                    DurationSeconds = CurrentTime.TotalSeconds,
                     Revenue = TotalRevenue,
                     Purchases = TotalPurchases,
-                    ConversionRate = ConversionRate,
-                    NotFoundRate = 0,
                     Spawned = TotalShoppers,
-                    Active = 0
-                }
+                    Converted = ConvertedShoppers,
+                    Completed = !IsRunning
+                },
+                Replay = new ReplayData()
             };
-            
-            var json = System.Text.Json.JsonSerializer.Serialize(summary, new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            });
-            
-            _historyService.SaveRun(summary.Id, json);
+
+            _historyService.SaveRun(result.Id, SimResultJsonSerializer.Serialize(result));
         }
 
         private void ResetSimulation()

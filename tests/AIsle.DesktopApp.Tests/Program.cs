@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AIsle.Contracts.Project;
+using AIsle.Contracts.Population;
+using AIsle.Contracts.Simulation;
 using AIsle.DesktopApp.Application;
 using AIsle.DesktopApp.Bridge;
 using AIsle.DesktopApp.Infrastructure;
@@ -22,8 +24,13 @@ internal static class Program
             await SaveRoundTrip(testDirectory);
             LayoutValidationScenarios();
             await BridgeProjectRoundTrip(testDirectory);
+            BridgePopulationGeneration();
+            BridgeSimulationCommands();
+            BridgeHistoryAndReplay(testDirectory);
+            StartupErrorHandling(testDirectory);
+            ReleaseSmokeFlow(testDirectory);
             BridgeEnvelopeScenarios();
-            Console.WriteLine("PASS: Desktop S1/S2 project and layout verification completed.");
+            Console.WriteLine("PASS: Desktop S1-S7 bridge, persistence, QA and application verification completed.");
             return 0;
         }
         catch (Exception exception)
@@ -154,6 +161,133 @@ internal static class Program
             using var response = JsonDocument.Parse(processor.Process(input));
             Assert(!response.RootElement.GetProperty("ok").GetBoolean(), "Invalid bridge message unexpectedly succeeded.");
         }
+    }
+
+    private static void BridgePopulationGeneration()
+    {
+        var request = JsonSerializer.Serialize(new
+        {
+            requestId = "population-001",
+            type = "population.generate",
+            payload = new { config = new PopulationConfig { Count = 12 } }
+        }, new JsonSerializerOptions { IncludeFields = true });
+        using var response = JsonDocument.Parse(new BridgeMessageProcessor().Process(request));
+        var root = response.RootElement;
+        Assert(root.GetProperty("ok").GetBoolean(), "population.generate bridge command failed.");
+        var payload = root.GetProperty("payload");
+        Assert(payload.GetProperty("profiles").GetArrayLength() == 12, "population.generate profile count changed.");
+        Assert(payload.GetProperty("summary").GetProperty("count").GetInt32() == 12, "population.generate summary missing.");
+        Assert(payload.GetProperty("validation").GetProperty("valid").GetBoolean(), "population.generate returned invalid data.");
+    }
+
+    private static void BridgeSimulationCommands()
+    {
+        using var simulations = new SimulationApplicationService(backgroundLoop: false);
+        var bridge = new BridgeMessageProcessor(simulations: simulations);
+        var input = new SimulationStartInput
+        {
+            Name = "bridge-test",
+            Layout = new LayoutDefinition
+            {
+                Width = 6, Height = 4, Entrance = new Position2D(1, 1), Checkout = new Position2D(1, 2),
+                SpawnRateCurve = new[] { new SpawnRatePoint { Minute = 0, Rate = 600 } }
+            },
+            Population = new PopulationDefinition
+            {
+                PopulationId = "bridge-population",
+                NPCProfiles = new[] { new NPCProfile { Id = "npc-1", TargetCategory = "missing", WalkingSpeed = 1.2 } },
+                Metadata = new PopulationMetadata { GeneratorName = "test", GeneratorVersion = "1" }
+            },
+            Config = new SimulationConfig { DurationMinutes = 1, TickSeconds = 0.2 }
+        };
+        var options = new JsonSerializerOptions { IncludeFields = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var startRequest = JsonSerializer.Serialize(new { requestId = "start", type = "simulation.start", payload = new { input } }, options);
+        using var start = JsonDocument.Parse(bridge.Process(startRequest));
+        Assert(start.RootElement.GetProperty("ok").GetBoolean() && start.RootElement.GetProperty("payload").GetProperty("running").GetBoolean(), "simulation.start failed.");
+        Assert(start.RootElement.GetProperty("payload").GetProperty("time").GetDouble() > 0, "simulation.start must advance the first live tick immediately.");
+        Assert(start.RootElement.GetProperty("payload").GetProperty("counters").GetProperty("spawned").GetInt32() == 1, "simulation.start must admit the first NPC immediately.");
+
+        using var pause = JsonDocument.Parse(bridge.Process("{\"requestId\":\"pause\",\"type\":\"simulation.pause\",\"payload\":{}}"));
+        Assert(!pause.RootElement.GetProperty("payload").GetProperty("running").GetBoolean(), "simulation.pause failed.");
+        using var step = JsonDocument.Parse(bridge.Process("{\"requestId\":\"step\",\"type\":\"simulation.step\",\"payload\":{}}"));
+        Assert(step.RootElement.GetProperty("payload").GetProperty("time").GetDouble() > 0, "simulation.step did not advance core time.");
+        using var reset = JsonDocument.Parse(bridge.Process("{\"requestId\":\"reset\",\"type\":\"simulation.reset\",\"payload\":{}}"));
+        Assert(reset.RootElement.GetProperty("payload").GetProperty("time").GetDouble() == 0, "simulation.reset did not rebuild the session.");
+    }
+
+    private static void BridgeHistoryAndReplay(string directory)
+    {
+        var store = new JsonHistoryStore(Path.Combine(directory, "history"));
+        using var bridge = new BridgeMessageProcessor(history: store);
+        var result = new SimResult
+        {
+            Id = "bridge-result", CreatedAt = DateTimeOffset.UtcNow, Name = "Bridge result",
+            Summary = new SimulationSummary { DurationSeconds = 2, Spawned = 1, Completed = true },
+            Replay = new ReplayData
+            {
+                SampleSeconds = 1,
+                Agents = new[]
+                {
+                    new AgentTrajectory
+                    {
+                        Id = "npc-1",
+                        Samples = new[] { new TrajectorySample { Time = 0, Status = "WAITING" }, new TrajectorySample { Time = 1, X = 1, Status = "LEFT" } }
+                    }
+                }
+            }
+        };
+        var options = new JsonSerializerOptions { IncludeFields = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var saveRequest = JsonSerializer.Serialize(new { requestId = "history-save", type = "history.save", payload = new { result } }, options);
+        using var saved = JsonDocument.Parse(bridge.Process(saveRequest));
+        Assert(saved.RootElement.GetProperty("ok").GetBoolean(), "history.save bridge command failed.");
+        var resultB = new SimResult
+        {
+            Id = "bridge-result-b", CreatedAt = result.CreatedAt.AddMinutes(1), Name = "Bridge result B",
+            Summary = new SimulationSummary { DurationSeconds = 2, Spawned = 1, Converted = 1, Purchases = 1, Revenue = 20, Completed = true },
+            Purchases = new[] { new PurchaseRecord { NpcId = "npc-1", ProductId = "p1", Price = 20, Type = "main" } },
+            Replay = new ReplayData()
+        };
+        var saveRequestB = JsonSerializer.Serialize(new { requestId = "history-save-b", type = "history.save", payload = new { result = resultB } }, options);
+        using var savedB = JsonDocument.Parse(bridge.Process(saveRequestB));
+        Assert(savedB.RootElement.GetProperty("ok").GetBoolean(), "Second history.save bridge command failed.");
+        using var listed = JsonDocument.Parse(bridge.Process("{\"requestId\":\"history-list\",\"type\":\"history.list\",\"payload\":{}}"));
+        Assert(listed.RootElement.GetProperty("payload").GetProperty("items").GetArrayLength() == 2, "history.list bridge command failed.");
+        using var read = JsonDocument.Parse(bridge.Process("{\"requestId\":\"history-read\",\"type\":\"history.read\",\"payload\":{\"id\":\"bridge-result\"}}"));
+        Assert(read.RootElement.GetProperty("payload").GetProperty("id").GetString() == "bridge-result", "history.read bridge command failed.");
+        using var replay = JsonDocument.Parse(bridge.Process("{\"requestId\":\"replay\",\"type\":\"replay.project\",\"payload\":{\"id\":\"bridge-result\"}}"));
+        Assert(replay.RootElement.GetProperty("payload").GetProperty("agents")[0].GetProperty("samples").GetArrayLength() == 2, "replay.project bridge command failed.");
+        using var kpis = JsonDocument.Parse(bridge.Process("{\"requestId\":\"kpi\",\"type\":\"kpi.project\",\"payload\":{\"id\":\"bridge-result\"}}"));
+        Assert(kpis.RootElement.GetProperty("payload").GetProperty("metrics").GetArrayLength() == 7, "kpi.project bridge command failed.");
+        using var comparison = JsonDocument.Parse(bridge.Process("{\"requestId\":\"compare\",\"type\":\"compare.results\",\"payload\":{\"runAId\":\"bridge-result\",\"runBId\":\"bridge-result-b\"}}"));
+        Assert(comparison.RootElement.GetProperty("payload").GetProperty("runAId").GetString() == "bridge-result"
+            && comparison.RootElement.GetProperty("payload").GetProperty("runBId").GetString() == "bridge-result-b", "compare.results bridge command failed.");
+        File.WriteAllText(Path.Combine(directory, "history", "corrupt.sim-result.json"), "{broken");
+        using var corrupt = JsonDocument.Parse(bridge.Process("{\"requestId\":\"corrupt\",\"type\":\"history.read\",\"payload\":{\"id\":\"corrupt\"}}"));
+        Assert(!corrupt.RootElement.GetProperty("ok").GetBoolean()
+            && corrupt.RootElement.GetProperty("error").GetProperty("code").GetString() == "corrupted_history", "Corrupted history bridge error mapping changed.");
+    }
+
+    private static void StartupErrorHandling(string directory)
+    {
+        var missingUi = Path.Combine(directory, "missing-ui");
+        var failed = false;
+        try { LocalUiAssets.Verify(missingUi, Path.Combine(missingUi, "desktop-bridge.js")); }
+        catch (FileNotFoundException exception)
+        {
+            var message = DesktopStartupErrors.Message(exception);
+            failed = message.Contains("WebView2 Runtime", StringComparison.Ordinal) && message.Contains("Required local UI asset", StringComparison.Ordinal);
+        }
+        Assert(failed, "WebView2/local-asset startup failure did not produce an actionable message.");
+    }
+
+    private static void ReleaseSmokeFlow(string directory)
+    {
+        var output = Path.Combine(directory, "release-smoke");
+        var exitCode = ReleaseSmokeRunner.Run(AppContext.BaseDirectory, output);
+        Assert(exitCode == 0, "Release smoke runner failed: " + File.ReadAllText(Path.Combine(output, "qa-smoke-report.json")));
+        using var report = JsonDocument.Parse(File.ReadAllText(Path.Combine(output, "qa-smoke-report.json")));
+        Assert(report.RootElement.GetProperty("ok").GetBoolean()
+            && report.RootElement.GetProperty("flow").GetArrayLength() == 7, "Release smoke flow report changed.");
     }
 
     private static ProjectDocument ValidProject() => new ProjectDocument

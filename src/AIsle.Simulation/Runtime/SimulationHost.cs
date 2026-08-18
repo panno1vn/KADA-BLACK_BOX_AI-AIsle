@@ -9,7 +9,7 @@ namespace AIsle.Simulation.Runtime
     public sealed class SimulationHost
     {
         private const double DistancePenaltyFloor = 0.25;
-        private readonly LayoutDefinition _layout; private readonly ProductDefinition[] _catalog; private readonly PopulationDefinition _population; private readonly SimulationConfig _config;
+        private readonly LayoutDefinition _layout; private readonly ProductDefinition[] _catalog; private readonly SimulationConfig _config;
         private readonly Random _random; private readonly HashSet<string> _catalogCategories;
         public readonly PathGrid Grid; public readonly List<NPCRuntimeState> Agents = new List<NPCRuntimeState>(); public readonly List<SimulationEvent> Events = new List<SimulationEvent>(); public readonly List<PurchaseRecord> Purchases = new List<PurchaseRecord>();
         public double Time { get; private set; } public double Revenue { get; private set; } public bool Completed { get; private set; }
@@ -18,7 +18,8 @@ namespace AIsle.Simulation.Runtime
 
         public SimulationHost(LayoutDefinition layout, ProductDefinition[] catalog, PopulationDefinition population, SimulationConfig config)
         {
-            _layout = layout ?? throw new ArgumentNullException(nameof(layout)); _catalog = catalog ?? Array.Empty<ProductDefinition>(); _population = population ?? throw new ArgumentNullException(nameof(population)); _config = config ?? new SimulationConfig();
+            _layout = layout ?? throw new ArgumentNullException(nameof(layout)); _catalog = catalog ?? Array.Empty<ProductDefinition>(); if (population == null) throw new ArgumentNullException(nameof(population)); _config = config ?? new SimulationConfig();
+            SimulationConfigValidator.ThrowIfInvalid(_config);
             _random = new Random();
             _catalogCategories = new HashSet<string>(_catalog.Select(product => product.Category), StringComparer.Ordinal); Grid = new PathGrid(_layout, _config);
             var profiles = population.NPCProfiles ?? Array.Empty<NPCProfile>(); var spawns = MakeSpawnTimes(profiles.Length);
@@ -71,9 +72,51 @@ namespace AIsle.Simulation.Runtime
             for (var index = 0; index < Agents.Count; index++) if (Time >= Agents[index].Spawn && !double.IsPositiveInfinity(Agents[index].Spawn)) RecordTrajectory(Agents[index], true);
             return new SimResult
             {
-                Id = "sim-" + Guid.NewGuid().ToString("N"), Name = name ?? string.Empty, Layout = _layout, Catalog = _catalog, Population = _population, Config = _config,
+                Id = "sim-" + Guid.NewGuid().ToString("N"), CreatedAt = DateTimeOffset.UtcNow, Name = name ?? string.Empty,
                 Summary = new SimulationSummary { DurationSeconds = Time, Revenue = Revenue, Purchases = Purchases.Count, Spawned = Spawned, Converted = Converted, MainBuyers = MainBuyers, ImpulseBuyers = ImpulseBuyers, NotFound = NotFound, Unreachable = Unreachable, StuckRecoveries = StuckRecoveries, Completed = Completed },
                 Events = Events.ToArray(), Purchases = Purchases.ToArray(), Replay = new ReplayData { SampleSeconds = SimulationMath.Clamp(_config.TrajectorySampleSeconds, 0.05, 10.0), Agents = Agents.Select(agent => new AgentTrajectory { Id = agent.Profile.Id, Spawn = agent.Spawn, Samples = agent.Trajectory.ToArray() }).ToArray() }
+            };
+        }
+
+        public SimulationStateProjection ProjectState(bool running)
+        {
+            var agents = new SimulationAgentProjection[Agents.Count];
+            var active = 0;
+            var completedAgents = 0;
+            for (var index = 0; index < Agents.Count; index++)
+            {
+                var agent = Agents[index];
+                if (agent.Finished) completedAgents++;
+                else if (Time >= agent.Spawn) active++;
+                agents[index] = new SimulationAgentProjection
+                {
+                    Id = agent.Profile.Id,
+                    X = agent.X,
+                    Y = agent.Y,
+                    Status = agent.Status,
+                    TargetId = agent.Status == "CHECKOUT" ? "checkout"
+                        : agent.Status == "LEAVING" ? "entrance"
+                        : agent.CurrentShelf
+                };
+            }
+
+            return new SimulationStateProjection
+            {
+                Time = Time,
+                Running = running && !Completed,
+                Completed = Completed,
+                Agents = agents,
+                Counters = new SimulationCountersProjection
+                {
+                    Active = active,
+                    Spawned = Spawned,
+                    CompletedAgents = completedAgents,
+                    Converted = Converted,
+                    Purchases = Purchases.Count,
+                    Revenue = Revenue,
+                    Unreachable = Unreachable,
+                    StuckRecoveries = StuckRecoveries
+                }
             };
         }
 
@@ -128,7 +171,7 @@ namespace AIsle.Simulation.Runtime
 
         private double[] MakeSpawnTimes(int count)
         {
-            var curve=_layout.SpawnRateCurve??Array.Empty<SpawnRatePoint>();if(curve.Length==0){var meanRate=count/Math.Max(_config.DurationMinutes,1e-9);curve=new[]{new SpawnRatePoint{Minute=0,Rate=meanRate},new SpawnRatePoint{Minute=_config.DurationMinutes,Rate=meanRate}};}var sampled=PoissonSpawnSampler.Sample(curve,_config.DurationMinutes*60.0,count);var result=new double[count];for(var index=0;index<count;index++)result[index]=index<sampled.Length?sampled[index]:double.PositiveInfinity;return result;
+            var curve=_layout.SpawnRateCurve??Array.Empty<SpawnRatePoint>();if(curve.Length==0){var meanRate=count/Math.Max(_config.DurationMinutes,1e-9);curve=new[]{new SpawnRatePoint{Minute=0,Rate=meanRate},new SpawnRatePoint{Minute=_config.DurationMinutes,Rate=meanRate}};}var sampled=PoissonSpawnSampler.Sample(curve,_config.DurationMinutes*60.0,count);var result=new double[count];for(var index=0;index<count;index++)result[index]=index<sampled.Length?sampled[index]:double.PositiveInfinity;if(count>0)result[0]=0.0;return result;
         }
 
         private SimulationEvent Emit(NPCRuntimeState agent,string type,string message,double probability=0,double roll=0,bool bought=false,string targetCategory="",string productId="",string purchaseType="")

@@ -1,4 +1,4 @@
-import {DEFAULT_PARAMETERS, LiveSimulation, createRng, generatePopulation, manualPopulation} from './live-engine.js';
+import {DEFAULT_PARAMETERS, LiveSimulation, createRng, createRunSeed, generatePopulation, manualPopulation} from './live-engine.js';
 import {createSimResult} from './sim-result.js';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -11,6 +11,7 @@ const escapeHTML=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 
 let layout,catalog,simulation=null,simResult=null,manualRows=[],parameters={...DEFAULT_PARAMETERS};
 let selected=null,tool='select',draft=null,drag=null,playing=false,lastFrame=0,accumulator=0,dirty=true;
+let lastRunSeed=null;
 const colors={WAITING:'#8b6b4a',DECIDING:'#a87bca',TRANSIT:'#5fa8d3',DWELL:'#ffca58',PURCHASED:'#5dba4f',CHECKOUT:'#e05252',LEAVING:'#e05252'};
 let currentTab='setup';
 let lastPurchaseCount=0;
@@ -31,7 +32,6 @@ function bind(){
   $$('.tools button').forEach(button=>button.onclick=()=>{$$('.tools button').forEach(x=>x.classList.toggle('active',x===button));tool=button.dataset.tool;$('#stage-status').textContent='EDIT MODE'});
   $('#npc-count').oninput=e=>{$('#npc-output').textContent=e.target.value;markDirty()};
   $('#duration').oninput=e=>{$('#duration-output').textContent=e.target.value+' min';markDirty()};
-  $('#seed').oninput=()=>markDirty();
   $('#population-mode').onchange=()=>{$('#npc-count').disabled=$('#population-mode').value==='manual';markDirty()};
   $('#manual-btn').onclick=openManual;$('#apply-manual').onclick=applyManual;
   $('#parameter-btn').onclick=()=>{$('#parameter-dialog').showModal()};
@@ -65,13 +65,13 @@ function parameterLabel(key){return key.replace(/([A-Z])/g,' $1').replace(/^./,x
 function parameterStep(key){return['maxShelfVisits','maxReplans'].includes(key)?1:['purchaseNeedA','purchaseValenceB','purchaseBiasC','utilityNeedWeight','utilityExploreWeight','dwellScale','stuckTimeout'].includes(key)?.1:.01}
 function applyParameters(){for(const input of $$('[data-param]')){const value=Number(input.value);if(!Number.isFinite(value))return toast(`${input.dataset.param} is not a number`);parameters[input.dataset.param]=value}parameters.tickSeconds=clamp(parameters.tickSeconds,.02,2);parameters.trajectorySampleSeconds=clamp(parameters.trajectorySampleSeconds,.05,10);parameters.maxShelfVisits=clamp(Math.round(parameters.maxShelfVisits),1,10);parameters.maxReplans=clamp(Math.round(parameters.maxReplans),0,8);parameters.stuckTimeout=clamp(parameters.stuckTimeout,.2,10);parameters.pathCellSize=clamp(parameters.pathCellSize,.1,.75);parameters.impulseBase=clamp(parameters.impulseBase,0,1);$('#parameter-dialog').close();markDirty('Parameter set changed. Reset/Run will use the new constants.');toast('Parameters applied')}
 
-function population(){if($('#population-mode').value==='manual'){if(!manualRows.length)throw new Error('Enter at least one manual NPC.');return manualPopulation(manualRows)}return generatePopulation(catalog,Number($('#npc-count').value),createRng(Number($('#seed').value)))}
-function createSimulation(){const pop=population();simulation=new LiveSimulation({layout,catalog,population:pop,parameters,seed:Number($('#seed').value),durationMinutes:Number($('#duration').value)});simResult=null;dirty=false;selected=null;lastPurchaseCount=0;lastFinishedCount=0;updateMetrics();renderInspector();renderEvents();draw();return simulation}
-function toggleRun(){try{if(dirty||!simulation)createSimulation();playing=!playing;$('#play-btn').textContent=playing?'❚❚ Pause':'▶ Run live';$('#stage-status').textContent=playing?'RUNNING LIVE':'PAUSED';if(playing){lastFrame=performance.now();accumulator=0;requestAnimationFrame(frame)}}catch(error){toast(error.message);showSystemEvent(error.message)}}
-function resetSimulation(){playing=false;try{createSimulation();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='RESET · T=0';showSystemEvent('Reset with identical seed. Press Run live or Step.')}catch(error){toast(error.message)}}
+function population(seed){if($('#population-mode').value==='manual'){if(!manualRows.length)throw new Error('Enter at least one manual NPC.');return manualPopulation(manualRows)}return generatePopulation(catalog,Number($('#npc-count').value),createRng(seed))}
+function createSimulation(seed=createRunSeed(lastRunSeed)){lastRunSeed=seed;const pop=population(seed);simulation=new LiveSimulation({layout,catalog,population:pop,parameters,seed,durationMinutes:Number($('#duration').value)});simResult=null;dirty=false;selected=null;lastPurchaseCount=0;lastFinishedCount=0;updateMetrics();renderInspector();renderEvents();draw();return simulation}
+function toggleRun(){try{if(dirty||!simulation||simulation.completed)createSimulation();playing=!playing;$('#play-btn').textContent=playing?'❚❚ Pause':'▶ Run live';$('#stage-status').textContent=playing?'RUNNING LIVE':'PAUSED';if(playing){lastFrame=performance.now();accumulator=0;if(simulation.time===0&&!simulation.completed){simulation.step(parameters.tickSeconds);updateAll()}requestAnimationFrame(frame)}}catch(error){toast(error.message);showSystemEvent(error.message)}}
+function resetSimulation(){playing=false;try{createSimulation();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='RESET · T=0';showSystemEvent('Reset with a new random run. Press Run live or Step.')}catch(error){toast(error.message)}}
 function singleStep(){playing=false;try{if(dirty||!simulation)createSimulation();simulation.step(parameters.tickSeconds);$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent=`SINGLE STEP · Δt=${parameters.tickSeconds}s`;updateAll()}catch(error){toast(error.message)}}
 function frame(now){if(!playing||!simulation)return;const realDelta=Math.min(.1,(now-lastFrame)/1000),speed=Number($('#speed').value);lastFrame=now;accumulator+=realDelta*speed;let safety=0;while(accumulator>=parameters.tickSeconds&&safety++<200){simulation.step(parameters.tickSeconds);accumulator-=parameters.tickSeconds}updateAll();if(simulation.completed){playing=false;$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='COMPLETE';saveLiveResult()}else requestAnimationFrame(frame)}
-function seekTo(target){playing=false;try{if(!simulation||dirty||target<simulation.time){createSimulation()}while(simulation.time<target&&!simulation.completed)simulation.step(Math.min(parameters.tickSeconds,target-simulation.time));updateAll();$('#stage-status').textContent='PAUSED · DETERMINISTIC SEEK'}catch(error){toast(error.message)}}
+function seekTo(target){playing=false;try{if(!simulation||dirty)createSimulation();else if(target<simulation.time)createSimulation(simulation.seed);while(simulation.time<target&&!simulation.completed)simulation.step(Math.min(parameters.tickSeconds,target-simulation.time));updateAll();$('#stage-status').textContent='PAUSED · DETERMINISTIC SEEK'}catch(error){toast(error.message)}}
 function updateAll(){updateMetrics();updateCashier();renderEvents();renderInspector();draw()}
 
 function updateMetrics(){const s=simulation?.snapshot()||{revenue:0,conversionRate:0,purchases:0,notFoundRate:0,spawned:0};const cells=$$('#metrics>div');if(cells.length>=3){setMetric(cells[0],pct(s.conversionRate),`${simulation?.stats.converted||0} converted`);setMetric(cells[1],s.purchases,`${simulation?.stats.mainBuyers||0} main · ${simulation?.stats.impulseBuyers||0} impulse`);setMetric(cells[2],pct(s.notFoundRate),`${simulation?.stats.notFound||0} outside catalog`)}}

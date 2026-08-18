@@ -1,5 +1,4 @@
 using System;
-using AIsle.Contracts.Population;
 
 namespace AIsle.Contracts.Simulation
 {
@@ -45,10 +44,13 @@ namespace AIsle.Contracts.Simulation
     }
     [Serializable] public sealed class SimResult
     {
-        public string SchemaVersion = "aisle.sim-result.v1"; public string Id = string.Empty; public string Name = string.Empty;
-        public LayoutDefinition Layout = new LayoutDefinition(); public ProductDefinition[] Catalog = Array.Empty<ProductDefinition>();
-        public PopulationDefinition Population = new PopulationDefinition(); public SimulationConfig Config = new SimulationConfig();
+        public string SchemaVersion = SimulationSchemas.SimResultV1; public string Id = string.Empty; public DateTimeOffset CreatedAt = DateTimeOffset.UtcNow; public string Name = string.Empty;
         public SimulationSummary Summary = new SimulationSummary(); public SimulationEvent[] Events = Array.Empty<SimulationEvent>();
         public PurchaseRecord[] Purchases = Array.Empty<PurchaseRecord>(); public ReplayData Replay = new ReplayData();
+    }
+
+    public static class SimulationSchemas
+    {
+        public const string SimResultV1 = "aisle.sim-result.v1";
     }
 }

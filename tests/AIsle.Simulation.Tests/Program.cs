@@ -11,7 +11,9 @@ internal static class Program
     {
         try
         {
-            TestPoissonSpawn(); TestNeedAndAffect(); TestPathRules(); TestUtility(); TestUnreachableAndPhantom(); TestFullJourneyAndResult();
+            TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility();
+            TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestNoPurchaseJourney();
+            TestFullJourneyAndResult(); TestStateProjection();
             Console.WriteLine("PASS: C# simulation baseline verification completed."); return 0;
         }
         catch(Exception exception) { Console.Error.WriteLine("FAIL: " + exception); return 1; }
@@ -21,7 +23,9 @@ internal static class Program
     {
         var gaps = new System.Collections.Generic.List<double>(); var curve = new[] { new SpawnRatePoint { Minute=0,Rate=12 }, new SpawnRatePoint { Minute=10,Rate=12 } };
         for(var run=1;run<=80;run++){var arrivals=PoissonSpawnSampler.Sample(curve,600,int.MaxValue);var previous=0.0;for(var index=0;index<arrivals.Length;index++){gaps.Add(arrivals[index]-previous);previous=arrivals[index];}}
-        var mean=gaps.Average();Assert(Math.Abs(mean-5.0)<0.3,"Poisson mean interval outside tolerance: "+mean);Console.WriteLine("PASS RUN2-02 Poisson spawn mean="+mean.ToString("F3"));
+        var mean=gaps.Average();Assert(Math.Abs(mean-5.0)<0.3,"Poisson mean interval outside tolerance: "+mean);
+        var layout=OpenLayout(Array.Empty<ShelfDefinition>());layout.SpawnRateCurve=curve;var host=new SimulationHost(layout,Array.Empty<ProductDefinition>(),Population(Profile("immediate","")),new SimulationConfig{DurationMinutes=10,TickSeconds=.2});Assert(host.Agents[0].Spawn==0,"First live NPC must be scheduled at T=0");host.Step(.2);Assert(host.Spawned==1&&host.Agents[0].Status!="WAITING","First live NPC did not start on the first tick");
+        Console.WriteLine("PASS RUN2-02 Poisson spawn mean="+mean.ToString("F3")+"; first NPC immediate");
     }
 
     private static void TestNeedAndAffect()
@@ -33,7 +37,20 @@ internal static class Program
     private static void TestPathRules()
     {
         var config=new SimulationConfig{PathCellSize=0.2,ObstacleMargin=0.2};var sealedLayout=new LayoutDefinition{Width=6,Height=4,Entrance=new Position2D(1,2),Checkout=new Position2D(1.5,2),Walls=new[]{new WallDefinition{Id="barrier",X1=3,Y1=0,X2=3,Y2=4}}};
-        var sealedGrid=new PathGrid(sealedLayout,config);Assert(sealedGrid.FindPath(new Position2D(1,2),new Position2D(5,2))==null,"Sealed wall was crossed");sealedLayout.Walls[0].Y2=2.8;var gapGrid=new PathGrid(sealedLayout,config);var path=gapGrid.FindPath(new Position2D(1,1),new Position2D(5,1));Assert(path!=null&&path.Count>2,"A* did not route through gap");for(var i=1;i<path.Count;i++)Assert(gapGrid.LineIsWalkable(path[i-1],path[i]),"Smoothed path is blocked");Console.WriteLine("PASS RUN2-07 A* hard invariants");
+        var sealedGrid=new PathGrid(sealedLayout,config);Assert(sealedGrid.FindPath(new Position2D(1,2),new Position2D(5,2))==null,"Sealed wall was crossed");sealedLayout.Walls[0].Y2=2.8;var gapGrid=new PathGrid(sealedLayout,config);var path=gapGrid.FindPath(new Position2D(1,1),new Position2D(5,1));Assert(path!=null&&path.Count>2,"A* did not route through gap");for(var i=1;i<path.Count;i++)Assert(gapGrid.LineIsWalkable(path[i-1],path[i]),"Smoothed path is blocked");
+        var cornerLayout=new LayoutDefinition{Width=5,Height=5,Entrance=new Position2D(1,1),Checkout=new Position2D(4,4),Walls=new[]{new WallDefinition{Id="vertical",X1=2,Y1=0,X2=2,Y2=2},new WallDefinition{Id="horizontal",X1=0,Y1=2,X2=2,Y2=2}}};
+        var cornerGrid=new PathGrid(cornerLayout,new SimulationConfig{PathCellSize=0.2,ObstacleMargin=0.12});var cornerPath=cornerGrid.FindPath(new Position2D(1,1),new Position2D(3,3));Assert(cornerPath==null,"A* escaped through a diagonally touching blocked corner");
+        Console.WriteLine("PASS S4.2 A* wall, corner and unreachable invariants");
+    }
+
+    private static void TestConfigValidation()
+    {
+        SimulationConfigValidator.ThrowIfInvalid(new SimulationConfig());
+        foreach(var invalid in new[]{new SimulationConfig{TickSeconds=0},new SimulationConfig{PathCellSize=0},new SimulationConfig{ImpulseBase=2},new SimulationConfig{MaxReplans=9}})
+        {
+            var rejected=false;try{SimulationConfigValidator.ThrowIfInvalid(invalid);}catch(ArgumentException){rejected=true;}Assert(rejected,"Invalid SimulationConfig was accepted");
+        }
+        Console.WriteLine("PASS S4.1 SimulationConfig defaults and bounds");
     }
 
     private static void TestUtility()
@@ -54,7 +71,38 @@ internal static class Program
         var shelf=new ShelfDefinition{Id="s1",Label="Drink",X=3,Y=1.2,Width=1,Height=1,Valence=0.5};var layout=OpenLayout(new[]{shelf});layout.SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=600},new SpawnRatePoint{Minute=1,Rate=600}};
         var catalog=new[]{new ProductDefinition{Id="drink",Name="Drink",Category="drink",ShelfId="s1",Price=12.5}};var profile=Profile("buyer","drink");profile.InitialNeed=1;profile.DwellSeconds=0.2;profile.WalkingSpeed=1.5;
         var config=new SimulationConfig{DurationMinutes=1,TickSeconds=0.1,TopKChoices=1,DecisionNoise=0,PurchaseNeedA=10,PurchaseValenceB=0,PurchaseBiasC=10,TrajectorySampleSeconds=0.2};var host=new SimulationHost(layout,catalog,Population(profile),config);host.Agents[0].Spawn=0;host.RunToCompletion(5000);
-        Assert(host.Events.Any(item=>item.Type=="decision")&&host.Events.Any(item=>item.Type=="purchase")&&host.Events.Any(item=>item.Type=="checkout")&&host.Events.Any(item=>item.Type=="left"),"Full event journey incomplete");Assert(host.Purchases.Count>=1,"Purchase missing");Assert(host.Agents[0].Trajectory.Count>2,"Trajectory missing");var result=host.BuildResult("baseline");Assert(result.SchemaVersion=="aisle.sim-result.v1"&&result.Summary.Completed&&result.Replay.Columns.Length==5,"SimResult contract invalid");var json=JsonSerializer.Serialize(result,new JsonSerializerOptions{IncludeFields=true});var roundTrip=JsonSerializer.Deserialize<SimResult>(json,new JsonSerializerOptions{IncludeFields=true});Assert(roundTrip!=null&&roundTrip.Purchases.Length==result.Purchases.Length&&roundTrip.Replay.Agents[0].Samples.Length>2,"SimResult serialization failed");Console.WriteLine("PASS RUN2-08..15 full journey, trace, trajectory and SimResult");
+        Assert(host.Events.Any(item=>item.Type=="decision")&&host.Events.Any(item=>item.Type=="purchase")&&host.Events.Any(item=>item.Type=="checkout")&&host.Events.Any(item=>item.Type=="left"),"Full event journey incomplete");Assert(host.Purchases.Count>=1,"Purchase missing");Assert(host.Agents[0].Trajectory.Count>2,"Trajectory missing");var result=host.BuildResult("baseline");Assert(result.SchemaVersion=="aisle.sim-result.v1"&&result.Summary.Completed&&result.Replay.Columns.Length==5,"SimResult contract invalid");AssertClose(result.Purchases.Sum(item=>item.Price),result.Summary.Revenue,1e-12,"Revenue and purchase records disagree");Assert(result.Summary.Purchases==result.Purchases.Length&&result.Summary.Converted==host.Agents.Count(item=>item.Converted),"Result counters disagree with runtime state");Assert(result.Replay.Agents.SelectMany(item=>item.Samples).All(item=>host.Grid.IsPointWalkable(new Position2D(item.X,item.Y))),"Journey trajectory penetrated geometry");var json=JsonSerializer.Serialize(result,new JsonSerializerOptions{IncludeFields=true});var roundTrip=JsonSerializer.Deserialize<SimResult>(json,new JsonSerializerOptions{IncludeFields=true});Assert(roundTrip!=null&&roundTrip.Purchases.Length==result.Purchases.Length&&roundTrip.Replay.Agents[0].Samples.Length>2,"SimResult serialization failed");Console.WriteLine("PASS RUN2-08..15 full journey, trace, trajectory and SimResult");
+    }
+
+    private static void TestNoPurchaseJourney()
+    {
+        var shelf=new ShelfDefinition{Id="s1",Label="Drink",Category="drink",X=3,Y=1.2,Width=1,Height=1,Valence=0};var layout=OpenLayout(new[]{shelf});
+        var catalog=new[]{new ProductDefinition{Id="drink",Name="Drink",Category="drink",ShelfId="s1",Price=12.5}};var profile=Profile("browser","drink");profile.DwellSeconds=0.1;
+        var config=new SimulationConfig{DurationMinutes=1,TickSeconds=0.1,TopKChoices=1,DecisionNoise=0,PurchaseNeedA=0,PurchaseValenceB=0,PurchaseBiasC=-100,ImpulseBase=0,MaxShelfVisits=1};
+        var host=new SimulationHost(layout,catalog,Population(profile),config);host.Agents[0].Spawn=0;host.RunToCompletion(5000);
+        Assert(host.Completed&&host.Purchases.Count==0,"No-purchase journey did not terminate cleanly");Assert(host.Events.Any(item=>item.Type=="purchase-roll"&&!item.Bought)&&host.Events.Any(item=>item.Type=="left"),"No-purchase journey trace incomplete");
+        Console.WriteLine("PASS S4.3 no-purchase and exit journey");
+    }
+
+    private static void TestBoundedRecoveryAndAbandon()
+    {
+        var shelf=new ShelfDefinition{Id="s1",Label="Shelf",Category="drink",X=1.8,Y=0.8,Width=.6,Height=.6,Valence=0};
+        var layout=new LayoutDefinition{Width=6,Height=4,Entrance=new Position2D(1,2),Checkout=new Position2D(1.4,2),Shelves=new[]{shelf},Walls=new[]{new WallDefinition{Id="barrier",X1=3,Y1=0,X2=3,Y2=4}},SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=600}}};
+        var config=new SimulationConfig{DurationMinutes=1,TickSeconds=.2,PathCellSize=.2,ObstacleMargin=.2,StuckTimeout=.2,MaxReplans=2,TopKChoices=1,DecisionNoise=0};
+        var host=new SimulationHost(layout,new[]{new ProductDefinition{Id="p",Name="P",Category="drink",ShelfId="s1",Price=1}},Population(Profile("recover","drink")),config);var agent=host.Agents[0];agent.Spawn=0;host.Step(.2);
+        agent.Status="TRANSIT";agent.CurrentShelf="s1";agent.Path=new System.Collections.Generic.List<Position2D>{agent.Position(),new Position2D(3,2)};agent.PathIndex=1;agent.RouteTarget=new Position2D(5,2);agent.RouteStatus="TRANSIT";
+        for(var tick=0;tick<30&&!host.Events.Any(item=>item.Type=="abandon");tick++)host.Step(.2);
+        Assert(host.Events.Count(item=>item.Type=="replan")<=config.MaxReplans+1,"Recovery exceeded its configured bound");Assert(host.Events.Any(item=>item.Type=="abandon"),"Failed route was not abandoned; events="+string.Join(",",host.Events.Select(item=>item.Type)));Assert(agent.X<3,"Recovery crossed sealed geometry");host.RunToCompletion(5000);Assert(host.Completed&&agent.Finished,"Blocked-target journey did not terminate");
+        Console.WriteLine("PASS S4.2 bounded replan and abandon");
+    }
+
+    private static void TestStateProjection()
+    {
+        var host=new SimulationHost(OpenLayout(Array.Empty<ShelfDefinition>()),Array.Empty<ProductDefinition>(),Population(Profile("projection","missing")),new SimulationConfig{DurationMinutes=1});host.Agents[0].Spawn=0;host.Step(.2);
+        var projection=host.ProjectState(false);Assert(projection.Agents.Length==1&&projection.Agents[0].Id=="projection"&&projection.Counters.Spawned==1,"State projection changed");
+        var json=JsonSerializer.Serialize(projection,new JsonSerializerOptions{IncludeFields=true});using var document=JsonDocument.Parse(json);var agent=document.RootElement.GetProperty("Agents")[0];
+        Assert(agent.TryGetProperty("X",out _)&&agent.TryGetProperty("Y",out _)&&agent.TryGetProperty("Status",out _)&&agent.TryGetProperty("TargetId",out _),"Projection is missing required fields");Assert(!agent.TryGetProperty("Path",out _)&&!agent.TryGetProperty("Profile",out _),"Projection leaked internal simulation objects");
+        Console.WriteLine("PASS S4.5 serializable minimal projection");
     }
 
     private static LayoutDefinition OpenLayout(ShelfDefinition[] shelves)=>new LayoutDefinition{Width=12,Height=4,Entrance=new Position2D(1,1.7),Checkout=new Position2D(1,2.7),Shelves=shelves,SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=600}}};

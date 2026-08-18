@@ -3,12 +3,12 @@
   "CategoryIds": ["drinks", "snacks", "essentials", "fresh-food", "personal-care"],
   "DistributionTargets": {
     "WalkingSpeed": {"Enabled": true, "Mean": 1.25, "StandardDeviation": 0.2, "Weight": 1.0, "Tolerance": 0.12},
-    "Patience": {"Enabled": true, "Mean": 0.58, "StandardDeviation": 0.2, "Weight": 1.0, "Tolerance": 0.12},
-    "Exploration": {"Enabled": true, "Mean": 0.62, "StandardDeviation": 0.22, "Weight": 1.0, "Tolerance": 0.12},
-    "Sociability": {"Enabled": true, "Mean": 0.45, "StandardDeviation": 0.2, "Weight": 0.8, "Tolerance": 0.14},
-    "Impulsiveness": {"Enabled": true, "Mean": 0.52, "StandardDeviation": 0.23, "Weight": 0.8, "Tolerance": 0.14},
-    "CrowdTolerance": {"Enabled": true, "Mean": 0.5, "StandardDeviation": 0.2, "Weight": 0.8, "Tolerance": 0.14},
-    "PriceSensitivity": {"Enabled": true, "Mean": 0.55, "StandardDeviation": 0.21, "Weight": 0.8, "Tolerance": 0.14}
+    "InitialNeed": {"Enabled": true, "Mean": 0.58, "StandardDeviation": 0.2, "Weight": 1.0, "Tolerance": 0.12},
+    "InitialExplorationNeed": {"Enabled": true, "Mean": 0.62, "StandardDeviation": 0.22, "Weight": 1.0, "Tolerance": 0.12},
+    "AffectAttractor": {"Enabled": true, "Mean": 0.2, "StandardDeviation": 0.25, "Weight": 0.8, "Tolerance": 0.18},
+    "AffectStability": {"Enabled": true, "Mean": 0.6, "StandardDeviation": 0.15, "Weight": 0.8, "Tolerance": 0.14},
+    "AffectDispersion": {"Enabled": true, "Mean": 0.4, "StandardDeviation": 0.15, "Weight": 0.8, "Tolerance": 0.14},
+    "AffectRecovery": {"Enabled": true, "Mean": 0.15, "StandardDeviation": 0.08, "Weight": 0.8, "Tolerance": 0.12}
   },
   "GeneratorSettings": {
     "EvolutionPopulationSize": 256,

@@ -18,6 +18,7 @@ namespace AIsle.DesktopApp
         {
             InitializeComponent();
             Loaded += OnLoaded;
+            Closed += (_, _) => _bridge?.Dispose();
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -65,10 +66,7 @@ namespace AIsle.DesktopApp
         private void ShowStartupError(Exception exception)
         {
             StudioWebView.Visibility = Visibility.Collapsed;
-            StartupErrorText.Text =
-                "WebView2 hoặc gói giao diện local chưa sẵn sàng. " +
-                "Hãy cài Microsoft Edge WebView2 Runtime và chạy lại ứng dụng.\n\n" +
-                exception.Message;
+            StartupErrorText.Text = DesktopStartupErrors.Message(exception);
             StartupErrorPanel.Visibility = Visibility.Visible;
         }
     }

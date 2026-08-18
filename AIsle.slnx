@@ -1,8 +1,10 @@
 <Solution>
   <Project Path="src/AIsle.Contracts/AIsle.Contracts.csproj" />
   <Project Path="src/AIsle.Simulation/AIsle.Simulation.csproj" />
+  <Project Path="tests/AIsle.Benchmarks/AIsle.Benchmarks.csproj" />
   <Project Path="src/AIsle.DesktopApp/AIsle.DesktopApp.csproj" />
   <Project Path="tests/AIsle.DesktopApp.Tests/AIsle.DesktopApp.Tests.csproj" />
   <Project Path="tests/AIsle.Population.Tests/AIsle.Population.Tests.csproj" />
+  <Project Path="tests/AIsle.Results.Tests/AIsle.Results.Tests.csproj" />
   <Project Path="tests/AIsle.Simulation.Tests/AIsle.Simulation.Tests.csproj" />
 </Solution>

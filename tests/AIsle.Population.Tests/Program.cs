@@ -49,7 +49,7 @@ internal static class Program
         var serialized = JsonSerializer.Serialize(first, JsonOptions);
         var roundTrip = JsonSerializer.Deserialize<PopulationDefinition>(serialized, JsonOptions);
         Assert(roundTrip != null && roundTrip.NPCProfiles.Length == first.NPCProfiles.Length, scenario + ": serialization round-trip failed.");
-        Assert(roundTrip.NPCProfiles.All(profile => profile != null && double.IsFinite(profile.Patience)), scenario + ": round-trip contains invalid values.");
+        Assert(roundTrip.NPCProfiles.All(profile => profile != null && double.IsFinite(profile.InitialNeed) && !string.IsNullOrWhiteSpace(profile.TargetCategory)), scenario + ": round-trip contains invalid active values.");
         Console.WriteLine("PASS invariant scenario " + scenario + " count=" + expected.Count);
     }
 
@@ -65,7 +65,7 @@ internal static class Program
         var config = new PopulationConfig { Count = 2 };
         var population = new GeneticPopulationGenerator().Generate(config);
         population.NPCProfiles[1].Id = population.NPCProfiles[0].Id;
-        population.NPCProfiles[0].Patience = double.NaN;
+        population.NPCProfiles[0].InitialNeed = double.NaN;
         var result = new PopulationValidator().Validate(population, config);
         Assert(!result.Valid && result.Errors.Length >= 2, "Validator accepted invalid population.");
         try { new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 0 }); }
@@ -80,13 +80,27 @@ internal static class Program
         AssertClose(2.0, stats.Mean, 1e-12, "Mean incorrect.");
         AssertClose(2.0, stats.Median, 1e-12, "Median incorrect.");
         AssertClose(Math.Sqrt(2.0 / 3.0), stats.StandardDeviation, 1e-12, "Population std incorrect.");
+        Assert(stats.Percentile10 <= stats.Percentile25 && stats.Percentile25 <= stats.Percentile50
+            && stats.Percentile50 <= stats.Percentile75 && stats.Percentile75 <= stats.Percentile90,
+            "Percentiles are not ordered.");
+
+        var config = new PopulationConfig { Count = 120 };
+        config.DistributionTargets.InitialNeed = new DistributionTarget
+        {
+            Enabled = true, Mean = 0.65, StandardDeviation = 0.08, Weight = 1.0, Tolerance = 0.18
+        };
+        var generated = new GeneticPopulationGenerator().Generate(config);
+        var generatedStats = PopulationStatistics.Calculate(generated).InitialNeed;
+        Assert(Math.Abs(generatedStats.Mean - 0.65) <= 0.18, "Generated distribution mean is outside configured sanity tolerance.");
+        Assert(generatedStats.Min >= config.ParameterRanges.InitialNeed.Min && generatedStats.Max <= config.ParameterRanges.InitialNeed.Max,
+            "Generated distribution escaped configured bounds.");
         Console.WriteLine("PASS Math.NET statistics checks");
     }
 
     private static void RunFitnessChecks()
     {
         var config = new PopulationConfig();
-        config.DistributionTargets.Patience = new DistributionTarget { Enabled = true, Mean = 0.8, StandardDeviation = 0.1, Weight = 1.0, Tolerance = 0.2 };
+        config.DistributionTargets.InitialNeed = new DistributionTarget { Enabled = true, Mean = 0.8, StandardDeviation = 0.1, Weight = 1.0, Tolerance = 0.2 };
         var near = new AIsleNpcChromosome(config);
         var far = new AIsleNpcChromosome(config);
         near.SetValueAt(1, 0.8);
@@ -121,9 +135,10 @@ internal static class Program
 
     private static NPCProfile CreateProfile(string id, double speed) => new NPCProfile
     {
-        Id = id, WalkingSpeed = speed, Patience = 0.5, Exploration = 0.5, Sociability = 0.5,
-        Impulsiveness = 0.5, CrowdTolerance = 0.5, PriceSensitivity = 0.5,
-        CategoryPreferences = new[] { new CategoryPreference("essentials", 1.0) }, ShoppingMission = ShoppingMission.Routine
+        Id = id, WalkingSpeed = speed, InitialNeed = 0.5, NeedGrowthPerMinute = 0.01,
+        InitialExplorationNeed = 0.4, ExplorationGrowthPerMinute = 0.01, AffectAttractor = 0.2,
+        AffectStability = 0.6, AffectDispersion = 0.4, AffectRecovery = 0.15,
+        DwellSeconds = 10, TargetCategory = "essentials"
     };
 
     private static string FindRepositoryRoot()

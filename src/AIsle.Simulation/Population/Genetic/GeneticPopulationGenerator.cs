@@ -57,48 +57,24 @@ namespace AIsle.Simulation.Population.Genetic
         private static NPCProfile ToProfile(AIsleNpcChromosome chromosome, PopulationConfig config)
         {
             var categories = config.CategoryIds ?? Array.Empty<string>();
-            var preferences = new CategoryPreference[categories.Length];
-            var total = 0.0;
-            for (var index = 0; index < categories.Length; index++)
-            {
-                total += Math.Max(0.0, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + index));
-            }
-
-            for (var index = 0; index < categories.Length; index++)
-            {
-                var raw = Math.Max(0.0, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + index));
-                preferences[index] = new CategoryPreference(categories[index], total <= 1e-12 ? 1.0 / categories.Length : raw / total);
-            }
+            var selector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount)));
+            var categoryIndex = Math.Min(categories.Length - 1, (int)(selector * categories.Length));
 
             return new NPCProfile
             {
                 Id = "npc-" + Guid.NewGuid().ToString("N"),
                 WalkingSpeed = chromosome.ValueAt(0),
-                Patience = chromosome.ValueAt(1),
-                Exploration = chromosome.ValueAt(2),
-                Sociability = chromosome.ValueAt(3),
-                Impulsiveness = chromosome.ValueAt(4),
-                CrowdTolerance = chromosome.ValueAt(5),
-                PriceSensitivity = chromosome.ValueAt(6),
-                CategoryPreferences = preferences,
-                ShoppingMission = SelectMission(chromosome.ValueAt(AIsleNpcChromosome.TraitCount + categories.Length), config.ShoppingMissionWeights)
+                InitialNeed = chromosome.ValueAt(1),
+                NeedGrowthPerMinute = chromosome.ValueAt(2),
+                InitialExplorationNeed = chromosome.ValueAt(3),
+                ExplorationGrowthPerMinute = chromosome.ValueAt(4),
+                AffectAttractor = chromosome.ValueAt(5),
+                AffectStability = chromosome.ValueAt(6),
+                AffectDispersion = chromosome.ValueAt(7),
+                AffectRecovery = chromosome.ValueAt(8),
+                DwellSeconds = chromosome.ValueAt(9),
+                TargetCategory = categories[categoryIndex]
             };
-        }
-
-        private static ShoppingMission SelectMission(double value, ShoppingMissionWeight[] missionWeights)
-        {
-            var weights = missionWeights ?? Array.Empty<ShoppingMissionWeight>();
-            var total = 0.0;
-            for (var index = 0; index < weights.Length; index++) total += Math.Max(0.0, weights[index].Weight);
-            if (weights.Length == 0 || total <= 0.0) return ShoppingMission.Routine;
-            var cursor = Math.Max(0.0, Math.Min(0.999999999999, value)) * total;
-            var cumulative = 0.0;
-            for (var index = 0; index < weights.Length; index++)
-            {
-                cumulative += Math.Max(0.0, weights[index].Weight);
-                if (cursor < cumulative) return weights[index].Mission;
-            }
-            return weights[weights.Length - 1].Mission;
         }
     }
 }

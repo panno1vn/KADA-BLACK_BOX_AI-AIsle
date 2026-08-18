@@ -7,6 +7,8 @@ namespace AIsle.Contracts.Population
     {
         public string Id = string.Empty;
         public double WalkingSpeed;
+        // These legacy traits remain serializable for backward compatibility only.
+        // The active S3/S4 runtime does not consume them.
         public double Patience;
         public double Exploration;
         public double Sociability;

@@ -28,13 +28,16 @@ namespace AIsle.Simulation.Population
             {
                 Count = profiles.Length,
                 WalkingSpeed = CalculateMetric(profiles, profile => profile.WalkingSpeed),
-                Patience = CalculateMetric(profiles, profile => profile.Patience),
-                Exploration = CalculateMetric(profiles, profile => profile.Exploration),
-                Sociability = CalculateMetric(profiles, profile => profile.Sociability),
-                Impulsiveness = CalculateMetric(profiles, profile => profile.Impulsiveness),
-                CrowdTolerance = CalculateMetric(profiles, profile => profile.CrowdTolerance),
-                PriceSensitivity = CalculateMetric(profiles, profile => profile.PriceSensitivity),
-                CategoryPreferenceFrequency = CalculateCategoryFrequency(profiles)
+                InitialNeed = CalculateMetric(profiles, profile => profile.InitialNeed),
+                NeedGrowthPerMinute = CalculateMetric(profiles, profile => profile.NeedGrowthPerMinute),
+                InitialExplorationNeed = CalculateMetric(profiles, profile => profile.InitialExplorationNeed),
+                ExplorationGrowthPerMinute = CalculateMetric(profiles, profile => profile.ExplorationGrowthPerMinute),
+                AffectAttractor = CalculateMetric(profiles, profile => profile.AffectAttractor),
+                AffectStability = CalculateMetric(profiles, profile => profile.AffectStability),
+                AffectDispersion = CalculateMetric(profiles, profile => profile.AffectDispersion),
+                AffectRecovery = CalculateMetric(profiles, profile => profile.AffectRecovery),
+                DwellSeconds = CalculateMetric(profiles, profile => profile.DwellSeconds),
+                TargetCategoryFrequency = CalculateCategoryFrequency(profiles)
             };
         }
 
@@ -73,24 +76,11 @@ namespace AIsle.Simulation.Population
             var preferredCounts = new Dictionary<string, int>(StringComparer.Ordinal);
             for (var profileIndex = 0; profileIndex < profiles.Length; profileIndex++)
             {
-                var preferences = profiles[profileIndex].CategoryPreferences ?? Array.Empty<CategoryPreference>();
-                for (var preferenceIndex = 0; preferenceIndex < preferences.Length; preferenceIndex++)
+                var categoryId = profiles[profileIndex].TargetCategory;
+                if (!string.IsNullOrWhiteSpace(categoryId))
                 {
-                    var preference = preferences[preferenceIndex];
-                    if (preference == null || string.IsNullOrWhiteSpace(preference.CategoryId))
-                    {
-                        continue;
-                    }
-
-                    totals[preference.CategoryId] = totals.TryGetValue(preference.CategoryId, out var total)
-                        ? total + preference.Weight
-                        : preference.Weight;
-                    if (preference.Weight > 0.0)
-                    {
-                        preferredCounts[preference.CategoryId] = preferredCounts.TryGetValue(preference.CategoryId, out var count)
-                            ? count + 1
-                            : 1;
-                    }
+                    totals[categoryId] = totals.TryGetValue(categoryId, out var total) ? total + 1.0 : 1.0;
+                    preferredCounts[categoryId] = preferredCounts.TryGetValue(categoryId, out var count) ? count + 1 : 1;
                 }
             }
 
