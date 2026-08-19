@@ -394,3 +394,10 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Release/launcher: Self-contained publish thành công sau khi cho phép NuGet restore; release có `UI/native-simulation.mjs` với SHA-256 trùng source; `--qa-smoke` report `ok=true` cho launch/project/population/run/history/replay/compare. Chạy trực tiếp Desktop cho process `AIsleDesktop` PID 21680 responding, không có `crash_log.txt`; đã dừng đúng PID sau smoke để không khóa executable và không tái tạo MSB3021/MSB3027.
 - Trạng thái: Blocker bridge của Task 10 đã được gỡ; SYSTEM và integration tự động đạt. Manual M1–M9 vẫn cần chủ dự án quan sát/click trên cửa sổ thật (đặc biệt M2–M9 về hình ảnh slot/queue/facing); không tự tuyên bố đã nhìn thấy thao tác UI khi smoke chỉ xác nhận launcher/process. Không mở checkout/entrance queue hoặc Task 11.
 - Phạm vi Git: Chỉ local trên `develop`; chưa stage, commit hoặc push. Không sửa Contracts public, ShoppingDecisionSystem, purchase formula, Population chromosome/GeneticSharp, history/KPI schema, vendored RVO2, Mobile/Unity/backend.
+
+## 2026-08-19 13:42 (UTC+07:00) — Codex — Đã đồng bộ Task 10 lên develop
+
+- Đã làm: Commit toàn bộ batch Task 10 bằng commit `57fd2cb` (`feat: add shelf interaction queue and native simulation UI`) và push fast-forward từ `5ab9873` lên `origin/develop`.
+- Kiểm soát conflict: Fetch trước kiểm thử và ngay trước push đều xác nhận remote không có commit mới; local/remote trước push `1/0`; không merge, không rebase và không force-push.
+- Kiểm tra: Release build 0 warning/0 error; Desktop, Results, Simulation, Population và benchmark correctness pass; 13/13 file JavaScript test pass, gồm Task 10 queue/native UI và renderer.
+- Asset: `git ls-files asset` và cây `origin/develop` dưới thư mục gốc `asset/` đều rỗng; `/asset/` tiếp tục được ignore, ảnh local không bị đẩy.
