@@ -272,6 +272,26 @@ internal static class Program
         using var comparison = JsonDocument.Parse(bridge.Process("{\"requestId\":\"compare\",\"type\":\"compare.results\",\"payload\":{\"runAId\":\"bridge-result\",\"runBId\":\"bridge-result-b\"}}"));
         Assert(comparison.RootElement.GetProperty("payload").GetProperty("runAId").GetString() == "bridge-result"
             && comparison.RootElement.GetProperty("payload").GetProperty("runBId").GetString() == "bridge-result-b", "compare.results bridge command failed.");
+
+        using var liveSimulations = new SimulationApplicationService(backgroundLoop: false);
+        using var liveBridge = new BridgeMessageProcessor(simulations: liveSimulations, history: store);
+        var liveInput = new SimulationStartInput
+        {
+            Name = "live-save-test",
+            Layout = new LayoutDefinition { Width = 6, Height = 4, Entrance = new Position2D(1, 1), Checkout = new Position2D(1, 2) },
+            Population = new PopulationDefinition { NPCProfiles = new[] { new NPCProfile { Id = "npc-1", TargetCategory = "missing", WalkingSpeed = 1.2 } } },
+            Config = new SimulationConfig { DurationMinutes = 1, TickSeconds = 0.2 }
+        };
+        liveBridge.Process(JsonSerializer.Serialize(new { requestId = "start", type = "simulation.start", payload = new { input = liveInput } }, options));
+        liveBridge.Process("{\"requestId\":\"step\",\"type\":\"simulation.step\",\"payload\":{}}");
+        var resJson = liveBridge.Process("{\"requestId\":\"res\",\"type\":\"simulation.result\",\"payload\":{\"name\":\"Live Run 1\"}}");
+        using var resDoc = JsonDocument.Parse(resJson);
+        var resPayload = resDoc.RootElement.GetProperty("payload");
+        var savePayload = JsonSerializer.Serialize(new { requestId = "save-live", type = "history.save", payload = new { result = resPayload } }, options);
+        var saveResp = liveBridge.Process(savePayload);
+        using var saveDoc = JsonDocument.Parse(saveResp);
+        Assert(saveDoc.RootElement.GetProperty("ok").GetBoolean(), "Saving simulation.result output to history.save failed: " + saveResp);
+
         File.WriteAllText(Path.Combine(directory, "history", "corrupt.sim-result.json"), "{broken");
         using var corrupt = JsonDocument.Parse(bridge.Process("{\"requestId\":\"corrupt\",\"type\":\"history.read\",\"payload\":{\"id\":\"corrupt\"}}"));
         Assert(!corrupt.RootElement.GetProperty("ok").GetBoolean()

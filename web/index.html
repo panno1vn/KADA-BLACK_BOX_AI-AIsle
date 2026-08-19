@@ -593,7 +593,7 @@
     </div>
     
     <header class="bg-surface docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] z-40 relative border-b border-surface-container-low">
-      <div class="flex justify-between items-center px-gutter py-4 w-full max-w-7xl mx-auto">
+      <div class="flex justify-between items-center px-6 py-3 w-full mx-auto">
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
           <span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary drop-shadow-sm font-bold">
@@ -601,40 +601,41 @@
           </span>
         </div>
         <div class="flex items-center gap-3">
-          <button id="btn-results-back-setup" type="button" class="btn-tactile bg-surface-container border border-outline text-on-surface font-button-text text-sm py-2 px-4 rounded-full hover:bg-surface-container-high flex items-center gap-1.5 cursor-pointer">
+          <button id="btn-results-back-setup" type="button" class="btn-tactile bg-surface-container border border-outline text-on-surface font-button-text text-sm py-2 px-5 rounded-full hover:bg-surface-container-high flex items-center gap-1.5 cursor-pointer shadow-xs">
             <span class="material-symbols-outlined text-sm">edit</span> Về Setup
           </button>
-          <button id="btn-results-back-simulate" type="button" class="btn-tactile bg-primary text-on-primary font-button-text text-sm py-2 px-4 rounded-full hover:brightness-110 flex items-center gap-1.5 cursor-pointer">
+          <button id="btn-results-back-simulate" type="button" class="btn-tactile bg-primary text-on-primary font-button-text text-sm py-2 px-5 rounded-full hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-xs">
             <span class="material-symbols-outlined text-sm">play_arrow</span> Mô phỏng
           </button>
         </div>
       </div>
     </header>
     
-    <main class="flex-grow w-full max-w-7xl mx-auto px-container-padding-mobile md:px-container-padding-desktop py-section-gap relative z-10 flex flex-col items-center py-8 justify-between min-h-[80vh]">
-      <div class="w-full backdrop-blur-md rounded-[32px] p-2 md:p-8 border-[3px] border-surface-container shadow-[0_30px_60px_rgba(104,93,74,0.08)] relative overflow-hidden md:px-12 bg-surface max-h-[60vh] overflow-y-auto">
-        <div class="absolute -top-10 -left-10 w-32 h-32 bg-primary-container rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-        <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary-container rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-        <div class="relative z-10 w-full overflow-x-auto rounded-2xl bg-surface-container-lowest border-2 border-surface-container-high pb-4">
-          
-          <div class="grid grid-cols-4 gap-4 px-6 py-4 bg-surface-container-low border-b-2 border-surface-container border-dashed font-label-md text-label-md text-primary tracking-wide">
-            <div>Period</div>
-            <div>Peak Time</div>
-            <div class="text-right">Visitors</div>
-            <div class="text-right">Revenue</div>
+    <main class="flex-grow w-full max-w-[96%] 2xl:max-w-[90%] mx-auto px-4 py-4 relative z-10 flex flex-col items-center justify-between min-h-[85vh]">
+      <div class="w-full flex-1 flex flex-col backdrop-blur-md rounded-[28px] p-4 md:p-6 border-[3px] border-surface-container shadow-[0_20px_50px_rgba(104,93,74,0.08)] relative overflow-hidden bg-surface">
+        <div class="absolute -top-10 -left-10 w-48 h-48 bg-primary-container rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+        <div class="absolute -bottom-10 -right-10 w-56 h-56 bg-secondary-container rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+        
+        <div class="relative z-10 w-full flex-1 flex flex-col overflow-hidden rounded-2xl bg-surface-container-lowest border-2 border-surface-container-high shadow-inner">
+          <div class="grid grid-cols-4 gap-4 px-6 py-4 bg-surface-container-low border-b-2 border-surface-container border-dashed font-label-md text-label-md text-primary tracking-wide shrink-0">
+            <div>Period / Tên phiên</div>
+            <div>Thời gian</div>
+            <div class="text-right">Khách hàng</div>
+            <div class="text-right">Doanh thu</div>
           </div>
           
-          <div id="results-table-body" class="flex flex-col divide-y divide-surface-container-low min-h-[120px]">
-            <div id="results-empty-state" class="py-12 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-3xl opacity-50">receipt_long</span>
-              <span>Chưa có phiên mô phỏng nào được lưu. Hãy chạy một phiên để xem kết quả!</span>
+          <div id="results-table-body" class="flex flex-col divide-y divide-surface-container-low overflow-y-auto flex-1 min-h-[250px] max-h-[58vh]">
+            <div id="results-empty-state" class="py-16 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2 my-auto">
+              <span class="material-symbols-outlined text-4xl opacity-50">receipt_long</span>
+              <span class="text-base font-semibold">Chưa có phiên mô phỏng nào được lưu.</span>
+              <span class="text-xs">Hãy chạy một phiên mô phỏng để xem kết quả chi tiết!</span>
             </div>
           </div>
         </div>
       </div>
       
-      <div class="mb-8 mt-8">
-        <button id="btn-evaluate" class="btn-tactile group bg-secondary text-on-secondary font-button-text text-button-text px-12 py-5 rounded-full border-b-[6px] border-on-secondary-fixed-variant hover:bg-[#8f6456] flex items-center gap-3 shadow-xl shadow-secondary/20">
+      <div class="mt-4 mb-2">
+        <button id="btn-evaluate" class="btn-tactile group bg-secondary text-on-secondary font-button-text text-button-text px-12 py-4 rounded-full border-b-[6px] border-on-secondary-fixed-variant hover:bg-[#8f6456] flex items-center gap-3 shadow-xl shadow-secondary/20 cursor-pointer hover:scale-105 active:scale-95 transition-all">
           Đánh giá
           <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform duration-300">arrow_forward</span>
         </button>
@@ -802,81 +803,42 @@
   
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface px-4 py-2 rounded-lg opacity-0 pointer-events-none transition-opacity z-50"></div>
 
-  <!-- Custom Navigation & Setup Script (For charts & screen switching) -->
+  <!-- Custom Setup Script for Charts -->
   <script>
-    // Navigation logic (simple)
-    document.addEventListener('DOMContentLoaded', () => {
-        const screens = document.querySelectorAll('.screen');
-        const btnNew = document.getElementById('btn-new');
-        const btnLoad = document.getElementById('btn-load');
-        const btnRunSim = document.getElementById('btn-run-sim');
-        const btnEvaluate = document.getElementById('btn-evaluate');
-
-        function switchScreen(id) {
-            screens.forEach(s => s.classList.remove('active'));
-            const target = document.getElementById(id);
-            if (target) target.classList.add('active');
-            
-            // Move canvas if needed
-            if (id === 'screen-setup' || id === 'screen-simulate') {
-                const canvas = document.getElementById('scene');
-                if(canvas) {
-                    if(id === 'screen-setup') {
-                        document.getElementById('canvas-wrapper')?.appendChild(canvas);
-                    } else if(id === 'screen-simulate') {
-                        document.getElementById('sim-canvas-container')?.appendChild(canvas);
-                    }
-                }
-                const tab = id === 'screen-setup' ? 'setup' : 'simulate';
-                if (typeof window.switchTab === 'function') {
-                    window.switchTab(tab);
-                }
-            }
-            
-            if (id === 'screen-analytics') {
-                initCharts();
-            }
+    window.initCharts = function() {
+      if(window.chartsInited) return;
+      const barCanvas = document.getElementById('barChart');
+      const pieCanvas = document.getElementById('pieChart');
+      const lineCanvas = document.getElementById('lineChart');
+      if(!barCanvas || !pieCanvas || !lineCanvas) return;
+      window.chartsInited = true;
+      
+      const colors = { primary: '#f7e7ce', secondary: '#ffccbb', tertiary: '#d4efdf' };
+      
+      new Chart(barCanvas, {
+        type: 'bar',
+        data: {
+          labels: ['Spring', 'Summer', 'Autumn', 'Winter'],
+          datasets: [{ label: 'Treats', data: [65, 85, 120, 90], backgroundColor: colors.primary }]
         }
-
-        if(btnNew) btnNew.addEventListener('click', () => switchScreen('screen-setup'));
-        if(btnLoad) btnLoad.addEventListener('click', () => switchScreen('screen-setup'));
-        if(btnRunSim) btnRunSim.addEventListener('click', () => switchScreen('screen-simulate'));
-        if(btnEvaluate) btnEvaluate.addEventListener('click', () => switchScreen('screen-analytics'));
-        const btnBackSetup = document.getElementById('btn-back-setup');
-        if(btnBackSetup) btnBackSetup.addEventListener('click', () => switchScreen('screen-setup'));
-
-        // Initialize Charts (condensed for space)
-        function initCharts() {
-            if(window.chartsInited) return;
-            window.chartsInited = true;
-            
-            const colors = { primary: '#f7e7ce', secondary: '#ffccbb', tertiary: '#d4efdf' };
-            
-            new Chart(document.getElementById('barChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Spring', 'Summer', 'Autumn', 'Winter'],
-                    datasets: [{ label: 'Treats', data: [65, 85, 120, 90], backgroundColor: colors.primary }]
-                }
-            });
-            
-            new Chart(document.getElementById('pieChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Yarn Balls', 'Catnip', 'Cozy Beds'],
-                    datasets: [{ data: [45, 30, 25], backgroundColor: [colors.primary, colors.secondary, colors.tertiary] }]
-                }
-            });
-            
-            new Chart(document.getElementById('lineChart'), {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{ label: 'Visitors', data: [12, 19, 15, 25, 32, 45, 50], backgroundColor: colors.tertiary }]
-                }
-            });
+      });
+      
+      new Chart(pieCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Yarn Balls', 'Catnip', 'Cozy Beds'],
+          datasets: [{ data: [45, 30, 25], backgroundColor: [colors.primary, colors.secondary, colors.tertiary] }]
         }
-    });
+      });
+      
+      new Chart(lineCanvas, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{ label: 'Visitors', data: [12, 19, 15, 25, 32, 45, 50], backgroundColor: colors.tertiary }]
+        }
+      });
+    };
   </script>
   
   <script type="module" src="app.js"></script>

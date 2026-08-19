@@ -49,12 +49,6 @@ function switchTab(tab){
       window.initCharts();
     }
   }
-  if(tab==='setup'&&playing){
-    playing=false;
-    simulation?.pause().catch(error=>showSystemEvent(error.message));
-    $('#play-btn').textContent='▶ Run live';
-    $('#stage-status').textContent='PAUSED';
-  }
   if(tab==='setup'){
     tool='select';
     $$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool==='select'));
@@ -70,6 +64,26 @@ function switchTab(tab){
   requestAnimationFrame(()=>{resizeCanvas();draw()});
 }
 window.switchTab = switchTab;
+
+async function returnToSetup(){
+  if(playing){
+    playing=false;
+    try{await simulation?.pause();}catch(e){}
+  }
+  const current=simulation;
+  simulation=null;
+  simResult=null;
+  $('#play-btn').textContent='▶ Run live';
+  $('#stage-status').textContent='EDIT MODE';
+  $('#clock').textContent='00:00';
+  $('#timeline').value=0;
+  $('#active-count').textContent='0 active NPC';
+
+  if(current&&((current.time||0)>0||(current.snapshot?.()?.spawned||0)>0)){
+    await saveSimulationSession(current, true);
+  }
+  switchTab('setup');
+}
 function triggerCashierReaction(type='happy'){const avatar=$('#cashier-avatar'),mood=$('#cashier-mood');if(!avatar)return;avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.classList.remove('happy','sad');void avatar.offsetWidth;if(type==='happy'){avatar.classList.add('cashier-react');mood.textContent=cashierMoods[Math.floor(Math.random()*cashierMoods.length)];mood.classList.add('happy')}else if(type==='smile'){avatar.classList.add('cashier-smile');mood.textContent='Cảm ơn quý khách~';mood.classList.add('happy')}else if(type==='sad'){avatar.classList.add('cashier-sad');mood.textContent='Trời ơi, hổng mua gì sao...';mood.classList.add('sad')}clearTimeout(triggerCashierReaction.t);triggerCashierReaction.t=setTimeout(()=>{avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.textContent='Đang chờ khách...';mood.classList.remove('happy','sad')},2800)}
 function updateCashier(){if(!simulation)return;const s=simulation.snapshot();const served=simulation.stats.converted||0;const rev=s.revenue||0;$('#cashier-served').textContent=served;$('#cashier-revenue').textContent=money(rev);if(s.purchases>lastPurchaseCount&&lastPurchaseCount>=0){const latest=simulation.purchases[simulation.purchases.length-1];if(latest&&latest.price<10000){triggerCashierReaction('smile')}else{triggerCashierReaction('happy')}}else{const finishedCount=simulation.agents.filter(a=>a.finished).length;if(finishedCount>lastFinishedCount){const finished=simulation.agents.filter(a=>a.finished);const last=finished[finished.length-1];if(!last.converted){triggerCashierReaction('sad')}}lastFinishedCount=finishedCount}lastPurchaseCount=s.purchases}
 
@@ -143,14 +157,19 @@ function bind(){
   $$('.tab-btn').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));
   const inputRunName=$('#run-name');if(inputRunName)inputRunName.oninput=()=>markDirty('Tên cửa hàng đã thay đổi.');
   const btnNew=$('#btn-new');if(btnNew)btnNew.onclick=()=>switchTab('setup');
-  const btnLoad=$('#btn-load');if(btnLoad)btnLoad.onclick=()=>switchTab('results');
-  const btnRunSim=$('#btn-run-sim');if(btnRunSim)btnRunSim.onclick=()=>{checkLayoutAndNotify();switchTab('simulate');};
-  const btnBackSetup=$('#btn-back-setup');if(btnBackSetup)btnBackSetup.onclick=()=>switchTab('setup');
+  const btnLoad=$('#btn-load');if(btnLoad)btnLoad.onclick=()=>{loadHistoryList();switchTab('results');};
+  const btnRunSim=$('#btn-run-sim');
+  if(btnRunSim)btnRunSim.onclick=()=>{
+    checkLayoutAndNotify();
+    switchTab('simulate');
+  };
+  const btnBackSetup=$('#btn-back-setup');
+  if(btnBackSetup)btnBackSetup.onclick=()=>returnToSetup();
   const btnEvaluate=$('#btn-evaluate');if(btnEvaluate)btnEvaluate.onclick=()=>switchTab('analytics');
-  const btnResBackSetup=$('#btn-results-back-setup');if(btnResBackSetup)btnResBackSetup.onclick=()=>switchTab('setup');
+  const btnResBackSetup=$('#btn-results-back-setup');if(btnResBackSetup)btnResBackSetup.onclick=()=>returnToSetup();
   const btnResBackSim=$('#btn-results-back-simulate');if(btnResBackSim)btnResBackSim.onclick=()=>switchTab('simulate');
-  const btnAnaBackSetup=$('#btn-analytics-back-setup');if(btnAnaBackSetup)btnAnaBackSetup.onclick=()=>switchTab('setup');
-  const btnAnaBackRes=$('#btn-analytics-back-results');if(btnAnaBackRes)btnAnaBackRes.onclick=()=>switchTab('results');
+  const btnAnaBackSetup=$('#btn-analytics-back-setup');if(btnAnaBackSetup)btnAnaBackSetup.onclick=()=>returnToSetup();
+  const btnAnaBackRes=$('#btn-analytics-back-results');if(btnAnaBackRes)btnAnaBackRes.onclick=()=>{loadHistoryList();switchTab('results');};
   const btnWarnBack=$('#btn-warning-back-setup');if(btnWarnBack)btnWarnBack.onclick=()=>{$('#layout-warning-dialog')?.close();switchTab('setup');};
   const btnWarnCont=$('#btn-warning-continue');if(btnWarnCont)btnWarnCont.onclick=()=>{$('#layout-warning-dialog')?.close();};
   const toggleSidebarBtn=$('#toggle-sidebar-btn');
@@ -249,8 +268,8 @@ async function population(){if($('#population-mode').value==='manual'){if(!manua
 function mapManualProfile(profile){return{id:profile.id,walkingSpeed:profile.speed,patience:.5,exploration:profile.needExplore,sociability:.5,impulsiveness:.5,crowdTolerance:.5,priceSensitivity:.5,targetCategory:profile.target||'',initialNeed:profile.needProduct,needGrowthPerMinute:profile.needGrowth,initialExplorationNeed:profile.needExplore,explorationGrowthPerMinute:profile.exploreGrowth,affectAttractor:profile.attractor,affectStability:profile.stability,affectDispersion:profile.dispersion,affectRecovery:profile.recovery,dwellSeconds:profile.dwell,categoryPreferences:[],shoppingMission:0}}
 function simulationInput(profiles){return{name:$('#run-name').value,layout:{width:layout.width,height:layout.height,walls:layout.walls,shelves:layout.shelves.map(shelf=>({...shelf,width:shelf.w,height:shelf.h})),entrance:layout.entrance,checkout:layout.checkout,spawnRateCurve:layout.spawnRateCurve||[]},catalog:catalog.map(product=>({...product,shelfId:product.shelf})),population:{populationId:`desktop-${crypto.randomUUID()}`,npcProfiles:profiles,metadata:{generatorName:$('#population-mode').value==='manual'?'manual-input':'GeneticSharp',generatorVersion:'desktop-bridge'}},config:{...parameters,durationMinutes:Number($('#duration').value)}}}
 async function createSimulation(){if(!window.aisleBridge?.request)throw new Error('Run Live requires the AIsle Desktop bridge.');checkLayoutAndNotify();const profiles=await population();const adapter=new NativeSimulationAdapter(window.aisleBridge,profiles,durationSeconds());await adapter.start(simulationInput(profiles));await adapter.setSpeed(Number($('#speed').value));simulation=adapter;lastRunSeed=adapter.seed;npcRenderer.reset(adapter.seed,performance.now());simResult=null;dirty=false;selected=null;lastPurchaseCount=0;lastFinishedCount=0;updateAll();return simulation}
-async function toggleRun(){try{if(dirty||!simulation||simulation.completed){await createSimulation();playing=simulation.running}else if(playing){await simulation.pause();playing=false}else{await simulation.setSpeed(Number($('#speed').value));await simulation.resume();playing=simulation.running}$('#play-btn').textContent=playing?'❚❚ Pause':'▶ Run live';$('#stage-status').textContent=playing?'RUNNING LIVE':'PAUSED';if(playing){lastFrame=0;requestAnimationFrame(frame)}}catch(error){playing=false;toast(error.message);showSystemEvent(error.message)}}
-async function resetSimulation(){playing=false;try{await createSimulation();await simulation.reset();await simulation.pause();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='RESET · T=0';showSystemEvent('Reset with a new random run. Press Run live or Step.')}catch(error){toast(error.message);showSystemEvent(error.message)}}
+async function toggleRun(){try{if(dirty||!simulation||simulation.completed){await createSimulation();playing=simulation.running}else if(playing){await simulation.pause();playing=false;await saveSimulationSession(simulation,true)}else{await simulation.setSpeed(Number($('#speed').value));await simulation.resume();playing=simulation.running}$('#play-btn').textContent=playing?'❚❚ Pause':'▶ Run live';$('#stage-status').textContent=playing?'RUNNING LIVE':'PAUSED';if(playing){lastFrame=0;requestAnimationFrame(frame)}}catch(error){playing=false;toast(error.message);showSystemEvent(error.message)}}
+async function resetSimulation(){playing=false;try{if(simulation&&((simulation.time||0)>0||(simulation.snapshot?.()?.spawned||0)>0)){await saveSimulationSession(simulation,true)}await createSimulation();await simulation.reset();await simulation.pause();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='RESET · T=0';showSystemEvent('Reset với phiên chạy ngẫu nhiên mới. Bấm Run live để bắt đầu.')}catch(error){toast(error.message);showSystemEvent(error.message)}}
 async function singleStep(){playing=false;try{const created=dirty||!simulation||simulation.completed;if(created){await createSimulation();await simulation.pause()}else await simulation.step();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent=`SINGLE STEP · Δt=${parameters.tickSeconds}s`;updateAll()}catch(error){toast(error.message);showSystemEvent(error.message)}}
 async function frame(now){
   if(!playing||!simulation)return;
@@ -269,7 +288,8 @@ async function frame(now){
     playing=false;
     $('#play-btn').textContent='▶ Run live';
     $('#stage-status').textContent='COMPLETE';
-    await saveLiveResult();
+    const finishedSim=simulation;
+    await saveSimulationSession(finishedSim,true);
     updateResultsScreen();
     switchTab('results');
   }else requestAnimationFrame(frame);
@@ -312,24 +332,47 @@ function renderHistoryRow(item){
 async function loadHistoryList(){
   const tableBody=$('#results-table-body');
   if(!tableBody)return;
-  let items=[];
+  let bridgeItems=[];
+  let localItems=[];
   try{
     if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
       const res=await window.aisleBridge.request('history.list');
-      items=res?.items||res?.Items||[];
+      bridgeItems=res?.items||res?.Items||[];
     }
   }catch(e){
     console.warn('history.list error:',e);
   }
-  if(!items.length){
-    try{
-      items=JSON.parse(localStorage.getItem('aisle_history_runs')||'[]');
-    }catch(e){}
+  try{
+    localItems=JSON.parse(localStorage.getItem('aisle_history_runs')||'[]');
+  }catch(e){}
+
+  const map=new Map();
+  for(const item of [...bridgeItems, ...localItems]){
+    const key=item.id||item.Id||(item.createdAt||item.CreatedAt||'')+(item.name||item.Name||'');
+    if(key && !map.has(key)){
+      map.set(key, item);
+    }
   }
-  if(items.length>0){
-    const emptyState=$('#results-empty-state');
+  const merged=[...map.values()];
+  merged.sort((a,b)=>{
+    const da=new Date(a.createdAt||a.CreatedAt||0).getTime();
+    const db=new Date(b.createdAt||b.CreatedAt||0).getTime();
+    return db-da;
+  });
+
+  const emptyState=$('#results-empty-state');
+  if(merged.length>0){
     if(emptyState)emptyState.remove();
-    tableBody.innerHTML=items.map(renderHistoryRow).join('');
+    tableBody.innerHTML=merged.map(renderHistoryRow).join('');
+  }else{
+    if(!emptyState){
+      tableBody.innerHTML=`
+        <div id="results-empty-state" class="py-12 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-3xl opacity-50">receipt_long</span>
+          <span>Chưa có phiên mô phỏng nào được lưu. Hãy chạy một phiên để xem kết quả!</span>
+        </div>
+      `;
+    }
   }
 }
 
@@ -401,29 +444,86 @@ function openManual(){const columns='npc_id,target_category,need_product,need_gr
 function applyManual(){try{const lines=$('#manual-editor').value.trim().split(/\r?\n/),headers=lines.shift().split(',').map(x=>x.trim());manualRows=lines.filter(Boolean).map(line=>Object.fromEntries(headers.map((h,i)=>[h,line.split(',')[i]?.trim()??''])));manualPopulation(manualRows);if(!manualRows.length)throw new Error('Enter at least one NPC row.');$('#manual-count').textContent=manualRows.length;$('#population-mode').value='manual';$('#npc-count').disabled=true;$('#manual-dialog').close();markDirty(`${manualRows.length} manual NPC inputs applied.`)}catch(error){$('#manual-error').textContent=error.message;$('#manual-error').style.color='#e05252'}}
 async function saveProject(){try{const result=await api('/api/project',{method:'POST',body:JSON.stringify({layout,catalog})});$('#save-state').textContent='● Saved';if(result.warnings?.length){const message=`Saved with warning: ${result.warnings.join(' ')}`;showSystemEvent(message);toast(`${result.warnings.length} layout warning${result.warnings.length>1?'s':''}`)}}catch(error){$('#save-state').textContent='● Unsaved';showSystemEvent(error.message);toast(error.message)}}
 async function currentSimResult(){if(simResult&&simulation.completed)return simResult;const result=await simulation.result($('#run-name').value);if(simulation.completed)simResult=result;return result}
-async function saveLiveResult(){
-  if(!simulation)return;
+async function saveSimulationSession(simToSave = simulation, force = false){
+  if(!simToSave) return;
+  const snap = simToSave.snapshot?.() || {};
+  if(!simToSave.completed && !force && (simToSave.time || 0) < 0.1 && (snap.spawned || 0) < 1) return;
+
+  const runName = $('#run-name')?.value?.trim() || 'Cửa hàng tiện lợi Cozy';
+  const nowIso = new Date().toISOString();
+  let runId = simToSave.seed || ('sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
+
   try{
-    const result=await currentSimResult();
-    let savedId=result.id;
-    if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
-      const saved=await window.aisleBridge.request('history.save',{result});
-      savedId=saved?.id||result.id;
-      showSystemEvent(`Run saved to history: ${savedId}`);
+    let res = null;
+    if(typeof simToSave.result === 'function'){
+      try{
+        res = await simToSave.result(runName);
+      }catch(e){
+        console.warn('simToSave.result failed:', e);
+      }
     }
+
+    if(!res){
+      res = {
+        schemaVersion: 'aisle.sim-result.v1',
+        id: runId,
+        createdAt: nowIso,
+        name: runName,
+        summary: {
+          durationSeconds: simToSave.time || 0,
+          revenue: snap.revenue || 0,
+          purchases: snap.purchases || 0,
+          spawned: snap.spawned || 0,
+          converted: (simToSave.stats?.converted) || 0,
+          mainBuyers: (simToSave.stats?.mainBuyers) || 0,
+          impulseBuyers: (simToSave.stats?.impulseBuyers) || 0,
+          notFound: (simToSave.stats?.notFound) || 0,
+          unreachable: (simToSave.stats?.unreachable) || 0,
+          stuckRecoveries: (simToSave.stats?.stuckRecoveries) || 0,
+          completed: Boolean(simToSave.completed)
+        },
+        events: simToSave.events || [],
+        purchases: simToSave.purchases || [],
+        replay: { sampleSeconds: 0.5, columns: ['time','x','y','status','shelfId'], agents: [] }
+      };
+    }
+
+    let savedId = res.id || runId;
+
+    if(window.aisleBridge && typeof window.aisleBridge.request === 'function'){
+      try{
+        const saved = await window.aisleBridge.request('history.save', { result: res });
+        if(saved?.id) savedId = saved.id;
+        showSystemEvent(`Đã lưu phiên vào lịch sử: ${savedId}`);
+      }catch(bridgeErr){
+        console.warn('history.save bridge error, retrying with new ID:', bridgeErr);
+        res.id = 'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        try{
+          const saved = await window.aisleBridge.request('history.save', { result: res });
+          if(saved?.id) savedId = saved.id;
+          showSystemEvent(`Đã lưu phiên vào lịch sử: ${savedId}`);
+        }catch(e2){
+          console.error('Second history.save attempt failed:', e2);
+        }
+      }
+    }
+
     try{
-      const localRuns=JSON.parse(localStorage.getItem('aisle_history_runs')||'[]');
-      localRuns.unshift({
+      const localRuns = JSON.parse(localStorage.getItem('aisle_history_runs') || '[]');
+      const filtered = localRuns.filter(r => r.id !== savedId);
+      filtered.unshift({
         id: savedId,
-        name: result.name||$('#run-name')?.value||'Phiên mô phỏng',
-        createdAt: result.createdAt||new Date().toISOString(),
-        summary: result.summary
+        name: res.name || runName,
+        createdAt: res.createdAt || nowIso,
+        summary: res.summary || snap
       });
-      localStorage.setItem('aisle_history_runs',JSON.stringify(localRuns.slice(0,50)));
+      localStorage.setItem('aisle_history_runs', JSON.stringify(filtered.slice(0, 100)));
     }catch(e){}
+
     await loadHistoryList();
   }catch(error){
-    showSystemEvent(`History save failed: ${error.message}`);
+    console.error('saveSimulationSession error:', error);
+    showSystemEvent(`History save error: ${error.message}`);
   }
 }
 async function exportSimulation(){if(!simulation||dirty)return toast('Run or Step the current inputs before exporting.');const payload=await currentSimResult(),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`aisle-${payload.id}.sim-result.json`;a.click();URL.revokeObjectURL(a.href)}
