@@ -14,6 +14,7 @@ namespace AIsle.Simulation.Runtime
         public double DwellLeft; public List<string> Visited = new List<string>(); public bool BoughtMain; public bool BoughtImpulse; public bool Converted;
         public string CurrentShelf = string.Empty; public bool Finished; public double StuckFor; public int Replans;
         public Position2D RouteTarget; public string RouteStatus = string.Empty; public double StridePhase;
+        internal ShelfAccessPhase ShelfAccessPhase; internal string InteractionSlotId = string.Empty; internal ShelfSide QueueSide; internal int QueueIndex = -1;
         public double LastTrajectoryTime = double.NegativeInfinity; public string LastTrajectoryStatus = string.Empty;
         public readonly List<TrajectorySample> Trajectory = new List<TrajectorySample>();
 

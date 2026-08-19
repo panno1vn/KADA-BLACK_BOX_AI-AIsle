@@ -58,6 +58,24 @@ test('R10 reset clears state; live and replay positions reuse one renderer/model
   assert.equal(renderer.states.get('npc-a').modelIndex, liveModel);
 });
 
+test('T10 F1-F5 shelf-facing override is stable and has priority over stale movement', async () => {
+  const cases = [
+    [{ facingDx: 0, facingDy: 1 }, 0],
+    [{ facingDx: 0, facingDy: -1 }, 4],
+    [{ facingDx: 1, facingDy: 0 }, 6],
+    [{ facingDx: -1, facingDy: 0 }, 2],
+  ];
+  for (const [facing, expected] of cases) {
+    const renderer = await readyRenderer();
+    const context = fakeContext();
+    renderer.reset(88, 0);
+    renderer.draw(context, [{ id: 'shelf-npc', x: 2, y: 2, status: 'DWELL', ...facing }], { runSeed: 88, animationTimeMs: 0, running: true });
+    renderer.draw(context, [{ id: 'shelf-npc', x: 2, y: 2, status: 'DWELL', ...facing }], { runSeed: 88, animationTimeMs: 500, running: true });
+    assert.equal(renderer.states.get('shelf-npc').direction, expected);
+    assert.equal(renderer.states.get('shelf-npc').frame, 0);
+  }
+});
+
 test('renderer benchmark records 200/500/1000 NPC frame cost and bounded state', async () => {
   for (const count of [200, 500, 1000]) {
     const renderer = await readyRenderer();

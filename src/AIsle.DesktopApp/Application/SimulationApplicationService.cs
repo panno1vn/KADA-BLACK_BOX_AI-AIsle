@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using AIsle.Contracts.Simulation;
 using AIsle.Simulation.Runtime;
@@ -13,6 +15,11 @@ namespace AIsle.DesktopApp.Application
         private SimulationHost? _host;
         private SimulationStartInput? _input;
         private bool _running;
+        private double _speedMultiplier = 1.0;
+        private double _accumulatorSeconds;
+        private long _lastTimerTimestamp;
+
+        private static readonly double[] SupportedSpeeds = { 1.0, 2.0, 3.0, 5.0, 15.0, 30.0 };
 
         public SimulationApplicationService(bool backgroundLoop = true)
         {
@@ -85,6 +92,57 @@ namespace AIsle.DesktopApp.Application
             lock (_gate) return RequireHost().ProjectState(_running);
         }
 
+        public SimulationSessionSnapshot Snapshot()
+        {
+            lock (_gate)
+            {
+                var host = RequireHost();
+                return new SimulationSessionSnapshot
+                {
+                    RunId = host.RunId,
+                    SpeedMultiplier = _speedMultiplier,
+                    State = host.ProjectState(_running),
+                    Summary = new SimulationSummary
+                    {
+                        DurationSeconds = host.Time,
+                        Revenue = host.Revenue,
+                        Purchases = host.Purchases.Count,
+                        Spawned = host.Spawned,
+                        Converted = host.Converted,
+                        MainBuyers = host.MainBuyers,
+                        ImpulseBuyers = host.ImpulseBuyers,
+                        NotFound = host.NotFound,
+                        Unreachable = host.Unreachable,
+                        StuckRecoveries = host.StuckRecoveries,
+                        Completed = host.Completed
+                    },
+                    Events = host.Events.ToArray(),
+                    Purchases = host.Purchases.ToArray()
+                };
+            }
+        }
+
+        public SimulationSessionSnapshot SetSpeed(double multiplier)
+        {
+            lock (_gate)
+            {
+                if (!SupportedSpeeds.Contains(multiplier))
+                    throw new ArgumentException("Simulation speed must be one of: 1, 2, 3, 5, 15, 30.", nameof(multiplier));
+                RequireHost();
+                _speedMultiplier = multiplier;
+                return Snapshot();
+            }
+        }
+
+        public SimResult Result(string? name = null)
+        {
+            lock (_gate)
+            {
+                var host = RequireHost();
+                return host.BuildResult(string.IsNullOrWhiteSpace(name) ? _input!.Name : name);
+            }
+        }
+
         public void Dispose()
         {
             lock (_gate)
@@ -105,8 +163,10 @@ namespace AIsle.DesktopApp.Application
         {
             _timer?.Dispose();
             _timer = null;
+            _accumulatorSeconds = 0.0;
+            _lastTimerTimestamp = Stopwatch.GetTimestamp();
             if (!_backgroundLoop || !_running || _host == null || _input == null) return;
-            var milliseconds = Math.Max(20, (int)Math.Round(_input.Config.TickSeconds * 1000.0));
+            const int milliseconds = 20;
             _timer = new Timer(Tick, null, milliseconds, milliseconds);
         }
 
@@ -115,7 +175,16 @@ namespace AIsle.DesktopApp.Application
             lock (_gate)
             {
                 if (!_running || _host == null || _input == null) return;
-                _host.Step(_input.Config.TickSeconds);
+                var now = Stopwatch.GetTimestamp();
+                var realSeconds = Math.Min(0.25, (now - _lastTimerTimestamp) / (double)Stopwatch.Frequency);
+                _lastTimerTimestamp = now;
+                _accumulatorSeconds += realSeconds * _speedMultiplier;
+                var steps = 0;
+                while (_accumulatorSeconds + 1e-9 >= _input.Config.TickSeconds && steps++ < 200 && !_host.Completed)
+                {
+                    _host.Step(_input.Config.TickSeconds);
+                    _accumulatorSeconds -= _input.Config.TickSeconds;
+                }
                 if (_host.Completed)
                 {
                     _running = false;

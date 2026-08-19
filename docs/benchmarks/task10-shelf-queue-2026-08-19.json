@@ -1,0 +1,113 @@
+{
+  "timestampUtc": "2026-08-19T06:15:57.5171776+00:00",
+  "machine": "KHANGCUTE",
+  "framework": ".NET 10.0.9",
+  "scenarios": [
+    {
+      "npcCount": 200,
+      "ticks": 15,
+      "runtimeMilliseconds": 226.8753,
+      "tickMilliseconds": 15.125020000000001,
+      "allocatedMegabytes": 73.26544952392578,
+      "workingSetMegabytes": 31.0078125,
+      "events": 603,
+      "replaySamples": 841,
+      "correct": true
+    },
+    {
+      "npcCount": 500,
+      "ticks": 15,
+      "runtimeMilliseconds": 274.3716,
+      "tickMilliseconds": 18.29144,
+      "allocatedMegabytes": 157.46639251708984,
+      "workingSetMegabytes": 35.296875,
+      "events": 1503,
+      "replaySamples": 1741,
+      "correct": true
+    },
+    {
+      "npcCount": 1000,
+      "ticks": 15,
+      "runtimeMilliseconds": 543.4191,
+      "tickMilliseconds": 36.22794,
+      "allocatedMegabytes": 297.9502410888672,
+      "workingSetMegabytes": 39.40234375,
+      "events": 3004,
+      "replaySamples": 3241,
+      "correct": true
+    }
+  ],
+  "avoidanceScenarios": [
+    {
+      "npcCount": 50,
+      "ticks": 121,
+      "runtimeMilliseconds": 113.1575,
+      "tickMilliseconds": 0.9351859504132232,
+      "collisionPairTicks": 0,
+      "overlapPairTicks": 117,
+      "progressedAgents": 50,
+      "geometrySafe": true,
+      "correct": true
+    },
+    {
+      "npcCount": 100,
+      "ticks": 121,
+      "runtimeMilliseconds": 192.9358,
+      "tickMilliseconds": 1.5945107438016528,
+      "collisionPairTicks": 0,
+      "overlapPairTicks": 1028,
+      "progressedAgents": 96,
+      "geometrySafe": true,
+      "correct": true
+    },
+    {
+      "npcCount": 200,
+      "ticks": 121,
+      "runtimeMilliseconds": 369.189,
+      "tickMilliseconds": 3.0511487603305785,
+      "collisionPairTicks": 0,
+      "overlapPairTicks": 3647,
+      "progressedAgents": 191,
+      "geometrySafe": true,
+      "correct": true
+    }
+  ],
+  "shelfQueueScenarios": [
+    {
+      "npcCount": 20,
+      "ticks": 901,
+      "runtimeMilliseconds": 118.0958,
+      "tickMilliseconds": 0.13107192008879023,
+      "p95TickMilliseconds": 0.167,
+      "severeOverlapPairTicks": 0,
+      "completedAgents": 10,
+      "maxQueueLength": 6,
+      "geometrySafe": true,
+      "correct": true
+    },
+    {
+      "npcCount": 50,
+      "ticks": 901,
+      "runtimeMilliseconds": 216.7571,
+      "tickMilliseconds": 0.24057391786903443,
+      "p95TickMilliseconds": 0.4317,
+      "severeOverlapPairTicks": 0,
+      "completedAgents": 9,
+      "maxQueueLength": 22,
+      "geometrySafe": true,
+      "correct": true
+    },
+    {
+      "npcCount": 100,
+      "ticks": 901,
+      "runtimeMilliseconds": 339.1832,
+      "tickMilliseconds": 0.3764519422863485,
+      "p95TickMilliseconds": 0.6511,
+      "severeOverlapPairTicks": 0,
+      "completedAgents": 30,
+      "maxQueueLength": 26,
+      "geometrySafe": true,
+      "correct": true
+    }
+  ]
+}

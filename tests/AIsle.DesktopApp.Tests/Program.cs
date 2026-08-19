@@ -214,6 +214,16 @@ internal static class Program
         Assert(step.RootElement.GetProperty("payload").GetProperty("time").GetDouble() > 0, "simulation.step did not advance core time.");
         using var reset = JsonDocument.Parse(bridge.Process("{\"requestId\":\"reset\",\"type\":\"simulation.reset\",\"payload\":{}}"));
         Assert(reset.RootElement.GetProperty("payload").GetProperty("time").GetDouble() == 0, "simulation.reset did not rebuild the session.");
+        using var speed = JsonDocument.Parse(bridge.Process("{\"requestId\":\"speed\",\"type\":\"simulation.speed\",\"payload\":{\"multiplier\":3}}"));
+        Assert(speed.RootElement.GetProperty("ok").GetBoolean(), "simulation.speed failed.");
+        Assert(speed.RootElement.GetProperty("payload").GetProperty("speedMultiplier").GetDouble() == 3, "simulation.speed did not preserve the selected multiplier.");
+        using var invalidSpeed = JsonDocument.Parse(bridge.Process("{\"requestId\":\"speed-invalid\",\"type\":\"simulation.speed\",\"payload\":{\"multiplier\":4}}"));
+        Assert(!invalidSpeed.RootElement.GetProperty("ok").GetBoolean(), "simulation.speed accepted a non-preset multiplier.");
+        using var snapshot = JsonDocument.Parse(bridge.Process("{\"requestId\":\"snapshot\",\"type\":\"simulation.snapshot\",\"payload\":{}}"));
+        var runId = snapshot.RootElement.GetProperty("payload").GetProperty("runId").GetString();
+        Assert(!string.IsNullOrWhiteSpace(runId), "simulation.snapshot run identity is missing.");
+        using var result = JsonDocument.Parse(bridge.Process("{\"requestId\":\"result\",\"type\":\"simulation.result\",\"payload\":{\"name\":\"UI result\"}}"));
+        Assert(result.RootElement.GetProperty("payload").GetProperty("id").GetString() == runId, "simulation.result identity must stay stable for the session.");
     }
 
     private static void BridgeHistoryAndReplay(string directory)

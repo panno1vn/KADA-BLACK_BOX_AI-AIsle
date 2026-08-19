@@ -147,11 +147,15 @@ export class NpcSpriteRenderer {
     const dx = agent.x - state.lastX;
     const dy = agent.y - state.lastY;
     const moved = (dx * dx) + (dy * dy) >= this.movementEpsilon * this.movementEpsilon;
-    if (moved) {
+    const facingOverride = Number.isFinite(agent.facingDx) && Number.isFinite(agent.facingDy)
+      && ((agent.facingDx * agent.facingDx) + (agent.facingDy * agent.facingDy) >= this.movementEpsilon * this.movementEpsilon);
+    if (facingOverride) {
+      state.direction = directionIndexFromDelta(agent.facingDx, agent.facingDy, state.direction, this.movementEpsilon);
+    } else if (moved) {
       state.direction = directionIndexFromDelta(dx, dy, state.direction, this.movementEpsilon);
       state.lastMovedAt = animationTimeMs;
     }
-    if (running && (moved || animationTimeMs - state.lastMovedAt <= 250))
+    if (!facingOverride && running && (moved || animationTimeMs - state.lastMovedAt <= 250))
       state.frame = walkingFrameAt(animationTimeMs - this.animationEpoch, this.fps, state.phaseOffset);
     state.lastX = agent.x;
     state.lastY = agent.y;

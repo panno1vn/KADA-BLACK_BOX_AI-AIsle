@@ -73,6 +73,9 @@ namespace AIsle.DesktopApp.Bridge
                     "simulation.pause" => SimulationCommand(requestId, _simulations.Pause),
                     "simulation.step" => SimulationCommand(requestId, _simulations.Step),
                     "simulation.reset" => SimulationCommand(requestId, _simulations.Reset),
+                    "simulation.snapshot" => SimulationSnapshot(requestId),
+                    "simulation.speed" => SetSimulationSpeed(requestId, payload),
+                    "simulation.result" => SimulationResult(requestId, payload),
                     "history.save" => SaveHistory(requestId, payload),
                     "history.list" => Success(requestId, _history.List()),
                     "history.read" => ReadHistory(requestId, payload),
@@ -150,6 +153,31 @@ namespace AIsle.DesktopApp.Bridge
             {
                 throw new BridgeRequestException(exception.Message);
             }
+        }
+
+        private string SimulationSnapshot(string requestId)
+        {
+            try { return Success(requestId, _simulations.Snapshot()); }
+            catch (InvalidOperationException exception) { throw new BridgeRequestException(exception.Message); }
+        }
+
+        private string SetSimulationSpeed(string requestId, JsonElement payload)
+        {
+            if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty("multiplier", out var multiplierJson)
+                || multiplierJson.ValueKind != JsonValueKind.Number || !multiplierJson.TryGetDouble(out var multiplier))
+                throw new BridgeRequestException("simulation.speed payload must contain a numeric multiplier.");
+            try { return Success(requestId, _simulations.SetSpeed(multiplier)); }
+            catch (ArgumentException exception) { throw new BridgeRequestException(exception.Message); }
+            catch (InvalidOperationException exception) { throw new BridgeRequestException(exception.Message); }
+        }
+
+        private string SimulationResult(string requestId, JsonElement payload)
+        {
+            string? name = null;
+            if (payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("name", out var nameJson)
+                && nameJson.ValueKind == JsonValueKind.String) name = nameJson.GetString();
+            try { return Success(requestId, _simulations.Result(name)); }
+            catch (InvalidOperationException exception) { throw new BridgeRequestException(exception.Message); }
         }
 
         private string SaveHistory(string requestId, JsonElement payload)

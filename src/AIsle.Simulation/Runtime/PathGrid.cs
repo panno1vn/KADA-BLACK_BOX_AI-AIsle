@@ -6,10 +6,10 @@ namespace AIsle.Simulation.Runtime
 {
     public sealed class PathGrid
     {
-        private readonly LayoutDefinition _layout; private readonly double _cell; private readonly int _cols; private readonly int _rows; private readonly bool[] _blocked;
+        private readonly LayoutDefinition _layout; private readonly double _cell; private readonly double _obstacleMargin; private readonly double _effectiveAgentRadius; private readonly int _cols; private readonly int _rows; private readonly bool[] _blocked;
         public PathGrid(LayoutDefinition layout, SimulationConfig config)
         {
-            _layout = layout ?? throw new ArgumentNullException(nameof(layout)); _cell = config.PathCellSize;
+            _layout = layout ?? throw new ArgumentNullException(nameof(layout)); _cell = config.PathCellSize; _obstacleMargin = config.ObstacleMargin; _effectiveAgentRadius = config.CollisionRadius * 0.5;
             _cols = (int)Math.Ceiling(layout.Width / _cell); _rows = (int)Math.Ceiling(layout.Height / _cell); _blocked = new bool[_cols * _rows]; Mark(config.ObstacleMargin);
         }
         private int Key(int column, int row) => row * _cols + column;
@@ -79,14 +79,53 @@ namespace AIsle.Simulation.Runtime
 
         public List<PathAccess> ShelfAccessPaths(ShelfDefinition shelf, Position2D from)
         {
-            var gap = Math.Max(0.42, _cell * 2.0); var points = new[] { new Position2D(shelf.X-gap,shelf.Y+shelf.Height/2), new Position2D(shelf.X+shelf.Width+gap,shelf.Y+shelf.Height/2), new Position2D(shelf.X+shelf.Width/2,shelf.Y-gap), new Position2D(shelf.X+shelf.Width/2,shelf.Y+shelf.Height+gap) };
             var result = new List<PathAccess>();
-            for (var index = 0; index < points.Length; index++)
+            var slots = ShelfInteractionSlots(shelf);
+            for (var index = 0; index < slots.Count; index++)
             {
-                points[index].X = SimulationMath.Clamp(points[index].X, 0.2, _layout.Width - 0.2); points[index].Y = SimulationMath.Clamp(points[index].Y, 0.2, _layout.Height - 0.2);
-                if (!IsPointWalkable(points[index])) continue; var path = FindPath(from, points[index]); if (path != null) result.Add(new PathAccess { Point = points[index], Path = path, Length = PathLength(path) });
+                var slot = slots[index]; var path = FindPath(from, slot.Position);
+                if (path != null) result.Add(new PathAccess { Point = slot.Position, Path = path, Length = PathLength(path), Side = slot.Side, Index = slot.Index, Facing = slot.Facing });
             }
-            result.Sort((left, right) => left.Length.CompareTo(right.Length)); return result;
+            result.Sort((left, right) => left.Length.CompareTo(right.Length) != 0 ? left.Length.CompareTo(right.Length) : string.CompareOrdinal(left.Key, right.Key)); return result;
+        }
+
+        public List<ShelfInteractionSlotGeometry> ShelfInteractionSlots(ShelfDefinition shelf)
+        {
+            if (shelf == null) throw new ArgumentNullException(nameof(shelf));
+            var result = new List<ShelfInteractionSlotGeometry>();
+            var stopTolerance = Math.Max(0.01, Math.Min(0.05, _cell * 0.2));
+            var spacing = Math.Max((_effectiveAgentRadius * 2.0) + stopTolerance, _cell);
+            var cornerPadding = Math.Max(_effectiveAgentRadius + stopTolerance, _cell * 0.5);
+            var offset = Math.Max(_effectiveAgentRadius + stopTolerance, _obstacleMargin + _cell);
+            AddSideSlots(result, shelf, ShelfSide.North, shelf.Width, cornerPadding, spacing, offset);
+            AddSideSlots(result, shelf, ShelfSide.East, shelf.Height, cornerPadding, spacing, offset);
+            AddSideSlots(result, shelf, ShelfSide.South, shelf.Width, cornerPadding, spacing, offset);
+            AddSideSlots(result, shelf, ShelfSide.West, shelf.Height, cornerPadding, spacing, offset);
+            return result;
+        }
+
+        private void AddSideSlots(List<ShelfInteractionSlotGeometry> result, ShelfDefinition shelf, ShelfSide side, double sideLength, double cornerPadding, double spacing, double offset)
+        {
+            if (!double.IsFinite(sideLength) || sideLength <= 0.0 || sideLength + 1e-9 < cornerPadding * 2.0) return;
+            var usableLength = Math.Max(0.0, sideLength - (cornerPadding * 2.0));
+            var count = Math.Max(1, (int)Math.Floor(usableLength / spacing) + 1);
+            var step = count == 1 ? 0.0 : usableLength / (count - 1);
+            for (var index = 0; index < count; index++)
+            {
+                var along = count == 1 ? sideLength * 0.5 : cornerPadding + (index * step);
+                Position2D position; Position2D facing;
+                switch (side)
+                {
+                    case ShelfSide.North: position = new Position2D(shelf.X + along, shelf.Y - offset); facing = new Position2D(0, 1); break;
+                    case ShelfSide.East: position = new Position2D(shelf.X + shelf.Width + offset, shelf.Y + along); facing = new Position2D(-1, 0); break;
+                    case ShelfSide.South: position = new Position2D(shelf.X + along, shelf.Y + shelf.Height + offset); facing = new Position2D(0, -1); break;
+                    default: position = new Position2D(shelf.X - offset, shelf.Y + along); facing = new Position2D(1, 0); break;
+                }
+                if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || position.X < 0 || position.Y < 0 || position.X > _layout.Width || position.Y > _layout.Height) continue;
+                if (position.X >= shelf.X && position.X <= shelf.X + shelf.Width && position.Y >= shelf.Y && position.Y <= shelf.Y + shelf.Height) continue;
+                if (!IsPointWalkable(position)) continue;
+                result.Add(new ShelfInteractionSlotGeometry { ShelfId = shelf.Id, Side = side, Index = index, Position = position, Facing = facing });
+            }
         }
 
         private List<Position2D> Smooth(List<Position2D> points)
@@ -115,5 +154,7 @@ namespace AIsle.Simulation.Runtime
             public GridNode Pop(){var root=_items[0];var last=_items[_items.Count-1];_items.RemoveAt(_items.Count-1);if(_items.Count>0){var index=0;while(true){var left=index*2+1;var right=left+1;if(left>=_items.Count)break;var child=right<_items.Count&&_items[right].Score<_items[left].Score?right:left;if(_items[child].Score>=last.Score)break;_items[index]=_items[child];index=child;}_items[index]=last;}return root;}
         }
     }
-    public sealed class PathAccess { public Position2D Point; public List<Position2D> Path; public double Length; }
+    public enum ShelfSide { North, East, South, West }
+    public sealed class ShelfInteractionSlotGeometry { public string ShelfId = string.Empty; public ShelfSide Side; public int Index; public Position2D Position = new Position2D(); public Position2D Facing = new Position2D(); public string Key => ShelfId + ":" + Side + ":" + Index; }
+    public sealed class PathAccess { public Position2D Point; public List<Position2D> Path; public double Length; public ShelfSide Side; public int Index; public Position2D Facing; public string Key => Side + ":" + Index; }
 }

@@ -19,7 +19,8 @@ internal static class Program
                 Machine = Environment.MachineName,
                 Framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
                 Scenarios = new[] { Run(200), Run(500), Run(1000) },
-                AvoidanceScenarios = new[] { RunAvoidance(50), RunAvoidance(100), RunAvoidance(200) }
+                AvoidanceScenarios = new[] { RunAvoidance(50), RunAvoidance(100), RunAvoidance(200) },
+                ShelfQueueScenarios = new[] { RunShelfQueue(20), RunShelfQueue(50), RunShelfQueue(100) }
             };
             var json = JsonSerializer.Serialize(report, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true });
             Console.WriteLine(json);
@@ -29,7 +30,7 @@ internal static class Program
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, json);
             }
-            if (report.Scenarios.Any(item => !item.Correct) || report.AvoidanceScenarios.Any(item => !item.Correct)) return 1;
+            if (report.Scenarios.Any(item => !item.Correct) || report.AvoidanceScenarios.Any(item => !item.Correct) || report.ShelfQueueScenarios.Any(item => !item.Correct)) return 1;
             return 0;
         }
         catch (Exception exception)
@@ -97,6 +98,29 @@ internal static class Program
         return new AvoidanceBenchmarkScenario{NpcCount=count,Ticks=ticks,RuntimeMilliseconds=stopwatch.Elapsed.TotalMilliseconds,TickMilliseconds=ticks==0?0:stopwatch.Elapsed.TotalMilliseconds/ticks,CollisionPairTicks=collisions,OverlapPairTicks=overlaps,ProgressedAgents=progressed,GeometrySafe=geometrySafe,Correct=host.Completed&&collisions==0&&progressed>=Math.Ceiling(count*.8)&&geometrySafe};
     }
 
+    private static ShelfQueueBenchmarkScenario RunShelfQueue(int count)
+    {
+        GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var config=new SimulationConfig{DurationMinutes=1.5,TickSeconds=.1,TrajectorySampleSeconds=1,PathCellSize=.2,ObstacleMargin=.12,CollisionRadius=.32,MaxShelfVisits=1,TopKChoices=1,DecisionNoise=0,PurchaseNeedA=10,PurchaseBiasC=10,PurchaseValenceB=0};
+        var shelf=new ShelfDefinition{Id="hotspot",Label="Hotspot",Category="beverage",X=10,Y=5.5,Width=2,Height=1,Valence=.4};
+        var layout=new LayoutDefinition{Width=20,Height=12,Entrance=new Position2D(1,1),Checkout=new Position2D(2,10.5),Shelves=new[]{shelf},SpawnRateCurve=new[]{new SpawnRatePoint{Minute=0,Rate=100000}}};
+        var host=new SimulationHost(layout,new[]{new ProductDefinition{Id="p",Name="Water",Category="beverage",ShelfId="hotspot",Price=10}},Population(count),config);
+        for(var index=0;index<count;index++){var agent=host.Agents[index];agent.Spawn=0;agent.X=.8+((index%10)*.4);agent.Y=2+((index/10)*.4);agent.Profile.DwellSeconds=.3;agent.Profile.InitialNeed=1;}
+        var tickSamples=new System.Collections.Generic.List<double>();var total=Stopwatch.StartNew();long severeOverlap=0;var geometrySafe=true;var ticks=0;
+        while(!host.Completed&&ticks<2000)
+        {
+            var tick=Stopwatch.StartNew();host.Step(config.TickSeconds);tick.Stop();tickSamples.Add(tick.Elapsed.TotalMilliseconds);ticks++;
+            for(var first=0;first<count;first++)
+            {
+                if(host.Agents[first].Finished)continue;
+                geometrySafe&=host.Grid.IsPointWalkable(host.Agents[first].Position());
+                for(var second=first+1;second<count;second++)if(!host.Agents[second].Finished&&host.Agents[first].CurrentShelf=="hotspot"&&host.Agents[second].CurrentShelf=="hotspot"&&Distance(host.Agents[first].Position(),host.Agents[second].Position())<config.CollisionRadius*.5)severeOverlap++;
+            }
+        }
+        total.Stop();tickSamples.Sort();var p95=tickSamples.Count==0?0:tickSamples[Math.Min(tickSamples.Count-1,(int)Math.Floor(tickSamples.Count*.95))];var completedAgents=host.Agents.Count(agent=>agent.Finished);
+        return new ShelfQueueBenchmarkScenario{NpcCount=count,Ticks=ticks,RuntimeMilliseconds=total.Elapsed.TotalMilliseconds,TickMilliseconds=ticks==0?0:total.Elapsed.TotalMilliseconds/ticks,P95TickMilliseconds=p95,SevereOverlapPairTicks=severeOverlap,CompletedAgents=completedAgents,MaxQueueLength=host.MaxShelfQueueLength,GeometrySafe=geometrySafe,Correct=host.Completed&&severeOverlap==0&&completedAgents>0&&host.MaxShelfQueueLength>0&&geometrySafe};
+    }
+
     private static double Distance(Position2D first,Position2D second){var dx=first.X-second.X;var dy=first.Y-second.Y;return Math.Sqrt((dx*dx)+(dy*dy));}
 
     private static LayoutDefinition Layout() => new LayoutDefinition
@@ -132,6 +156,7 @@ internal static class Program
         public string Framework { get; set; } = string.Empty;
         public BenchmarkScenario[] Scenarios { get; set; } = Array.Empty<BenchmarkScenario>();
         public AvoidanceBenchmarkScenario[] AvoidanceScenarios { get; set; } = Array.Empty<AvoidanceBenchmarkScenario>();
+        public ShelfQueueBenchmarkScenario[] ShelfQueueScenarios { get; set; } = Array.Empty<ShelfQueueBenchmarkScenario>();
     }
 
     private sealed class BenchmarkScenario
@@ -156,6 +181,20 @@ internal static class Program
         public long CollisionPairTicks { get; set; }
         public long OverlapPairTicks { get; set; }
         public int ProgressedAgents { get; set; }
+        public bool GeometrySafe { get; set; }
+        public bool Correct { get; set; }
+    }
+
+    private sealed class ShelfQueueBenchmarkScenario
+    {
+        public int NpcCount { get; set; }
+        public int Ticks { get; set; }
+        public double RuntimeMilliseconds { get; set; }
+        public double TickMilliseconds { get; set; }
+        public double P95TickMilliseconds { get; set; }
+        public long SevereOverlapPairTicks { get; set; }
+        public int CompletedAgents { get; set; }
+        public int MaxQueueLength { get; set; }
         public bool GeometrySafe { get; set; }
         public bool Correct { get; set; }
     }

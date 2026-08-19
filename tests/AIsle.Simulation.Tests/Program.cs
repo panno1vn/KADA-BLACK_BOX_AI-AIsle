@@ -16,7 +16,7 @@ internal static class Program
         {
             TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility(); TestShoppingDecisionSeparation();
             TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestMovementAndArrival(); TestNoPurchaseJourney();
-            TestFullJourneyAndResult(); TestStateProjection();
+            TestFullJourneyAndResult(); TestStateProjection(); TestShelfInteractionSlots(); TestShelfReservationAndQueue(); TestShelfQueueJourney();
             TestRvoHeadOn(); TestRvoCrossingAndCrowd(); TestRvoFallbackAndNoNeighbor();
             Console.WriteLine("PASS: C# simulation baseline verification completed."); return 0;
         }
@@ -45,6 +45,89 @@ internal static class Program
         var cornerLayout=new LayoutDefinition{Width=5,Height=5,Entrance=new Position2D(1,1),Checkout=new Position2D(4,4),Walls=new[]{new WallDefinition{Id="vertical",X1=2,Y1=0,X2=2,Y2=2},new WallDefinition{Id="horizontal",X1=0,Y1=2,X2=2,Y2=2}}};
         var cornerGrid=new PathGrid(cornerLayout,new SimulationConfig{PathCellSize=0.2,ObstacleMargin=0.12});var cornerPath=cornerGrid.FindPath(new Position2D(1,1),new Position2D(3,3));Assert(cornerPath==null,"A* escaped through a diagonally touching blocked corner");
         Console.WriteLine("PASS S4.2 A* wall, corner and unreachable invariants");
+    }
+
+    private static void TestShelfInteractionSlots()
+    {
+        var config = new SimulationConfig { PathCellSize = .2, ObstacleMargin = .12, CollisionRadius = .32 };
+        var shelf = new ShelfDefinition { Id = "slots", Label = "Slots", X = 3, Y = 2, Width = 2, Height = 1 };
+        var layout = new LayoutDefinition { Width = 8, Height = 6, Entrance = new Position2D(1, 3), Checkout = new Position2D(1.5, 3), Shelves = new[] { shelf } };
+        var grid = new PathGrid(layout, config);
+        var slots = grid.ShelfInteractionSlots(shelf);
+        Assert(slots.Count(item => item.Side == ShelfSide.North) > 1 && slots.Count(item => item.Side == ShelfSide.South) > 1, "I1 horizontal shelf did not derive multiple North/South slots.");
+        Assert(slots.Count(item => item.Side == ShelfSide.East) > 1 && slots.Count(item => item.Side == ShelfSide.West) > 1, "I2 vertical side did not derive multiple slots.");
+        Assert(slots.All(item => grid.IsPointWalkable(item.Position)), "I5 generated slot is not walkable.");
+        Assert(slots.All(item => item.Position.X < shelf.X || item.Position.X > shelf.X + shelf.Width || item.Position.Y < shelf.Y || item.Position.Y > shelf.Y + shelf.Height), "I5 generated slot lies inside shelf geometry.");
+        var minimumCornerDistance = config.CollisionRadius * .5 - 1e-9;
+        Assert(slots.Where(item => item.Side is ShelfSide.North or ShelfSide.South).All(item => item.Position.X - shelf.X >= minimumCornerDistance && shelf.X + shelf.Width - item.Position.X >= minimumCornerDistance), "I4 horizontal corner padding is below agent radius.");
+        var shortShelf = new ShelfDefinition { Id = "short", X = 6, Y = 4, Width = .25, Height = .25 };
+        var shortLayout = new LayoutDefinition { Width = 8, Height = 6, Entrance = new Position2D(1, 3), Checkout = new Position2D(1.5, 3), Shelves = new[] { shortShelf } };
+        Assert(new PathGrid(shortLayout, config).ShelfInteractionSlots(shortShelf).Count <= 4, "I3 short shelf generated excessive capacity.");
+        var northY = slots.First(item => item.Side == ShelfSide.North).Position.Y;
+        layout.Walls = new[] { new WallDefinition { Id = "north-block", X1 = shelf.X - .5, Y1 = northY, X2 = shelf.X + shelf.Width + .5, Y2 = northY } };
+        var blockedSlots = new PathGrid(layout, config).ShelfInteractionSlots(shelf);
+        Assert(blockedSlots.All(item => item.Side != ShelfSide.North), "I6 blocked North side remained usable.");
+        Assert(blockedSlots.Any(item => item.Side != ShelfSide.North), "I6 blocking one side removed every other accessible side.");
+        Console.WriteLine("PASS T10 I1-I7 dynamic shelf interaction slot geometry and reachability");
+    }
+
+    private static void TestShelfReservationAndQueue()
+    {
+        var config = new SimulationConfig { PathCellSize = .2, ObstacleMargin = .12, CollisionRadius = .32 };
+        var shelf = new ShelfDefinition { Id = "capacity", X = 3, Y = 2, Width = 1, Height = 1 };
+        var layout = new LayoutDefinition { Width = 8, Height = 8, Entrance = new Position2D(1, 3), Checkout = new Position2D(1.5, 3), Shelves = new[] { shelf } };
+        var grid = new PathGrid(layout, config);
+        var runtime = new ShelfInteractionRuntime(layout, grid, config);
+        var owners = new List<string>();
+        foreach (var slot in runtime.Slots)
+        {
+            var owner = "owner-" + owners.Count;
+            Assert(runtime.TryReserve(slot, owner), "R1 free slot could not be reserved.");
+            Assert(!runtime.TryReserve(slot, "duplicate"), "R1 slot accepted a second owner.");
+            owners.Add(owner);
+        }
+        Assert(runtime.Slots.Select(item => item.OwnerNpcId).Distinct().Count() == runtime.Slots.Count, "R2 multiple capacity did not retain distinct owners.");
+        var a = runtime.TryJoinQueue(shelf.Id, "A", new Position2D(1, 3));
+        var b = runtime.TryJoinQueue(shelf.Id, "B", new Position2D(1, 3));
+        var c = runtime.TryJoinQueue(shelf.Id, "C", new Position2D(1, 3));
+        Assert(a != null && b != null && c != null && runtime.TotalQueueLength == 3, "R3/Q1 full shelf did not create queue entries.");
+        Assert(new[] { a.Position.X + ":" + a.Position.Y, b.Position.X + ":" + b.Position.Y, c.Position.X + ":" + c.Position.Y }.Distinct().Count() == 3, "Q2 queue positions are not unique.");
+        var side = a.Side;
+        var released = runtime.Slots.First(item => item.Side == side);
+        runtime.ReleaseSlot(released.OwnerNpcId);
+        var positions = new Dictionary<string, Position2D> { ["A"] = a.Position, ["B"] = b.Position, ["C"] = c.Position };
+        var promotedA = runtime.TryPromote(shelf.Id, side, id => positions.TryGetValue(id, out var position) ? position : null);
+        Assert(promotedA != null && promotedA.NpcId == "A" && promotedA.Slot.OwnerNpcId == "A", "Q1/Q3 FIFO head was not reserved before promotion.");
+        runtime.ReleaseSlot("A");
+        var promotedB = runtime.TryPromote(shelf.Id, side, id => positions.TryGetValue(id, out var position) ? position : null);
+        Assert(promotedB != null && promotedB.NpcId == "B", "Q5 newer queue member bypassed the FIFO head.");
+        runtime.ReleaseSlot("B");
+        var promotedC = runtime.TryPromote(shelf.Id, side, id => positions.TryGetValue(id, out var position) ? position : null);
+        Assert(promotedC != null && promotedC.NpcId == "C" && runtime.TotalQueueLength == 0, "Q4 queue did not compact/promote in FIFO order.");
+        Console.WriteLine("PASS T10 R1-R6/Q1-Q6 unique reservation and FIFO queue lifecycle");
+    }
+
+    private static void TestShelfQueueJourney()
+    {
+        var shelf = new ShelfDefinition { Id = "hotspot", Label = "Hotspot", Category = "drink", X = 4, Y = 3, Width = 1, Height = 1, Valence = .5 };
+        var layout = new LayoutDefinition { Width = 10, Height = 8, Entrance = new Position2D(1, 4), Checkout = new Position2D(2, 4), Shelves = new[] { shelf }, SpawnRateCurve = new[] { new SpawnRatePoint { Minute = 0, Rate = 100000 } } };
+        var profiles = Enumerable.Range(0, 20).Select(index => { var profile = Profile("queue-" + index, "drink"); profile.WalkingSpeed = 1.5; profile.DwellSeconds = .3; profile.InitialNeed = 1; return profile; }).ToArray();
+        var config = new SimulationConfig { DurationMinutes = 5, TickSeconds = .1, PathCellSize = .2, ObstacleMargin = .12, CollisionRadius = .32, MaxShelfVisits = 1, TopKChoices = 1, DecisionNoise = 0, PurchaseNeedA = 10, PurchaseBiasC = 10, PurchaseValenceB = 0 };
+        var host = new SimulationHost(layout, new[] { new ProductDefinition { Id = "drink", Name = "Drink", Category = "drink", ShelfId = shelf.Id, Price = 10 } }, Population(profiles), config);
+        for (var index = 0; index < host.Agents.Count; index++)
+        {
+            var agent = host.Agents[index]; agent.Spawn = 0; agent.X = .8 + ((index % 5) * .4); agent.Y = 3.2 + ((index / 5) * .4);
+        }
+        for (var tick = 0; tick < 6000 && !host.Completed; tick++)
+        {
+            host.Step(config.TickSeconds);
+            var owned = host.Interactions.Slots.Where(item => !string.IsNullOrEmpty(item.OwnerNpcId)).Select(item => item.OwnerNpcId).ToArray();
+            Assert(owned.Distinct().Count() == owned.Length, "R1 duplicate slot owner appeared during same-tick crowd processing.");
+        }
+        Assert(host.MaxShelfQueueLength > 0 && host.Events.Any(item => item.Type == "queue-join") && host.Events.Any(item => item.Type == "queue-promote"), "R3/Q3 hotspot did not exercise queue and promotion.");
+        Assert(host.Completed && host.Agents.All(item => item.Finished), "C5 full shelf journey did not terminate: time=" + host.Time + ", queue=" + host.Interactions.TotalQueueLength + ", states=" + string.Join(",", host.Agents.GroupBy(item => item.Status).Select(group => group.Key + "=" + group.Count())));
+        Assert(host.Interactions.Slots.All(item => item.State == ShelfSlotState.Free) && host.Interactions.TotalQueueLength == 0, "R4-R6 completed journey leaked slot or queue ownership.");
+        Console.WriteLine("PASS T10 C1/C3-C5 20-agent shelf queue journey terminates without reservation leaks");
     }
 
     private static void TestConfigValidation()
