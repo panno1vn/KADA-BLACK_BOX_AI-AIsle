@@ -265,3 +265,8 @@ dialog::backdrop {
     background: rgba(44, 34, 30, 0.75) !important;
     backdrop-filter: blur(8px) !important;
 }
+
+/* Hide desktop bridge floating badge */
+#desktop-bridge-status {
+    display: none !important;
+}

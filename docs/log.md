@@ -673,3 +673,24 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
   3. Cập nhật `saveLiveResult()` để vừa lưu qua C# bridge vừa ghi nhận ngay vào danh sách hiển thị và bộ nhớ đệm lâu dài.
 - Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và các phiên chạy được lưu trữ vĩnh viễn, khi tắt app mở lại danh sách vẫn còn nguyên vẹn.
 - Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 21:41 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Chuẩn hóa tên thương hiệu toàn bộ các màn hình sang `AISLE` (AISLE Setup, AISLE Sim, AISLE Analytics), ẩn mục chọn Population source (do mặc định dùng GA, không nhập manual) và ẩn nhãn `Desktop bridge: ready` ở góc màn hình.
+- Đã sửa/đã làm:
+  1. Thay đổi tên hiển thị ở tất cả các màn hình (`screen-welcome`, `screen-setup`, `screen-simulate`, `screen-results`, `screen-analytics`) thành `AISLE`, với subtitle tương ứng `AISLE Setup` và `AISLE Sim`.
+  2. Ẩn khối chọn `Population source` và nút `Edit manual NPCs...` trong thanh bên trái (`#setup-sidebar`) trong `web/index.html`, giữ mặc định chạy Genetic Algorithm (GA) ổn định.
+  3. Thêm CSS ẩn hoàn toàn nhãn nổi `#desktop-bridge-status` (`Desktop bridge: ready`) trong `web/purrfect-theme.css`.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị thương hiệu AISLE chuẩn xác, giao diện sạch đẹp.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 21:46 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Xóa bỏ nút cài đặt thông số (nút icon bánh răng Parameter) bên cạnh dropdown chọn tốc độ trong thanh công cụ mô phỏng.
+- Đã sửa/đã làm:
+  1. Gỡ bỏ hoàn toàn `#parameter-btn` và đường phân cách bên cạnh ô chọn tốc độ trong `web/index.html`.
+  2. Giữ thanh công cụ mô phỏng gọn gàng chỉ gồm: cụm điều khiển trái `[ ▶ Run live ] [ ↻ ]`, đồng hồ thời gian ở giữa, và ô chọn tốc độ `5x` ở mép phải.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop thanh thoát, sạch sẽ.
+- Phạm vi đồng bộ: Local trên `develop`.

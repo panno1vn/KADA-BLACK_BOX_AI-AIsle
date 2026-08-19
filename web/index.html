@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purrfect Pantry - AIsle Simulation Studio</title>
+  <title>AISLE - Shop Simulation Studio</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -139,10 +139,10 @@
       <!-- Branding / App Name -->
       <div class="text-center mb-6">
         <h1 class="font-display-lg text-display-lg text-primary drop-shadow-md">
-          Purrfect Pantry
+          AISLE
         </h1>
         <p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-xs mx-auto">
-          Organize your cozy space.
+          Shop Simulation Studio
         </p>
       </div>
       <!-- Large Cozy Illustrative Hero with Embedded Actions -->
@@ -176,8 +176,8 @@
       <div class="flex items-center gap-3 shrink-0">
         <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
         <div>
-          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">Purrfect Pantry</h1>
-          <p class="font-label-md text-label-md text-on-surface-variant">Shop Simulation</p>
+          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">AISLE Setup</p>
         </div>
       </div>
       
@@ -209,10 +209,10 @@
           <!-- Simulation Input -->
           <div class="flex flex-col gap-4">
             <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2">SIMULATION INPUT</h2>
-            <div>
+            <div style="display:none;">
               <label class="font-label-md text-label-md text-on-surface block mb-2">Population source</label>
               <select id="population-mode" class="w-full bg-surface border-2 border-outline-variant rounded-xl p-3 text-on-surface focus:border-primary focus:ring-0 font-body-md appearance-none cursor-pointer">
-                <option value="ga">Generate with GA</option>
+                <option value="ga" selected>Generate with GA</option>
                 <option value="manual">Manual NPC input</option>
               </select>
             </div>
@@ -239,7 +239,7 @@
               </div>
             </div>
             <input id="seed" type="number" value="42" style="display:none;">
-            <button id="manual-btn" class="w-full bg-surface border border-outline text-on-surface font-label-md py-2 rounded-xl flex justify-between px-3 items-center mt-2">
+            <button id="manual-btn" style="display:none;" class="w-full bg-surface border border-outline text-on-surface font-label-md py-2 rounded-xl flex justify-between px-3 items-center mt-2">
               Edit manual NPCs… <b id="manual-count" class="bg-primary text-on-primary px-2 rounded-md">0</b>
             </button>
           </div>
@@ -423,8 +423,8 @@
       <div class="flex items-center gap-3 shrink-0">
         <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
         <div>
-          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">Purrfect Pantry</h1>
-          <p class="font-label-md text-label-md text-on-surface-variant">Shop Simulation</p>
+          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">AISLE Sim</p>
         </div>
       </div>
       
@@ -432,7 +432,7 @@
       <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
         <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
           <span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span>
-          <span class="font-bold text-sm text-primary font-button-text">Simulation Mode Active</span>
+          <span class="font-bold text-sm text-primary font-button-text">AISLE Sim Active</span>
         </div>
       </div>
 
@@ -473,10 +473,6 @@
             <option value="15">15×</option>
             <option value="30">30×</option>
           </select>
-          <div class="w-px h-5 bg-outline-variant mx-0.5"></div>
-          <button id="parameter-btn" class="btn-tactile p-1.5 rounded-full hover:bg-surface-container text-on-surface-variant flex items-center cursor-pointer border border-transparent hover:border-outline-variant" title="Cấu hình thông số">
-            <span class="material-symbols-outlined text-xl">settings</span>
-          </button>
         </div>
       </div>
     </div>
@@ -599,8 +595,9 @@
     <header class="bg-surface docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] z-40 relative border-b border-surface-container-low">
       <div class="flex justify-between items-center px-gutter py-4 w-full max-w-7xl mx-auto">
         <div class="flex items-center gap-3">
-          <span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary drop-shadow-sm">
-            Purrfect Pantry
+          <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+          <span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary drop-shadow-sm font-bold">
+            AISLE
           </span>
         </div>
         <div class="flex items-center gap-3">
@@ -651,7 +648,7 @@
       <header class="bg-surface flex justify-between items-center px-gutter py-4 w-full z-10 shadow-[0_20px_40px_rgba(123,85,72,0.05)] md:shadow-none bg-opacity-90 backdrop-blur-sm sticky top-0 border-b border-surface-variant">
         <h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary-fixed-dim drop-shadow-sm flex items-center gap-2 pl-4">
           <span class="material-symbols-outlined text-3xl">storefront</span>
-          Purrfect Pantry Analytics
+          AISLE Analytics
         </h1>
         <div class="flex items-center gap-3 pr-4">
           <button id="btn-analytics-back-setup" type="button" class="btn-tactile bg-surface-container border border-outline text-on-surface font-button-text text-sm py-2 px-4 rounded-full hover:bg-surface-container-high flex items-center gap-1.5 cursor-pointer">
