@@ -361,3 +361,10 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Đã làm: Fetch xác nhận local/remote `0/0`; bỏ toàn bộ năm file `asset/` đang được track khỏi Git index; thêm `/asset/` vào `.gitignore`; giữ nguyên 14 file ảnh local trong thư mục này. Asset runtime đã chuẩn hóa tại `src/AIsle.DesktopApp/UI/assets/` vẫn thuộc code sản phẩm và được giữ lại.
 - Kiểm tra: Release build đạt 0 warning/0 error; Desktop, Results, Simulation và Population verification pass; toàn bộ 11 JavaScript test pass, gồm renderer R1–R10 và benchmark 200/500/1000 NPC.
 - Trạng thái: Sẵn sàng commit và push theo fast-forward; không force-push, không chạm nhánh `main`.
+
+## 2026-08-19 12:20 (UTC+07:00) — Codex — Đã đồng bộ Task 9 và loại asset khỏi develop
+
+- Đã làm: Commit `4d34279` (`feat: add pixel NPC renderer and exclude source assets`) và push fast-forward từ `f56d35b` lên `origin/develop`. Năm file từng được Git track trong thư mục gốc `asset/` đã bị xóa khỏi nhánh; `/asset/` được ignore để không tái xuất hiện trong các lần push sau.
+- Bảo toàn local: 14 file ảnh nguồn trong `D:\Big\KADA\test\asset` vẫn còn trên ổ đĩa và không được Git track. Bốn sprite runtime tại `src/AIsle.DesktopApp/UI/assets/npc/` là thành phần ứng dụng, không thuộc thư mục gốc bị loại.
+- Kiểm soát conflict: Fetch ngay trước commit và ngay trước push xác nhận remote không có commit mới; push fast-forward, không merge, không rebase, không force-push.
+- Trạng thái: Thành công; tiếp tục commit riêng mục nhật ký này rồi xác nhận local/remote đồng bộ `0/0`.
