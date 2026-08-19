@@ -281,35 +281,52 @@ namespace RVO
          */
         public float doStep()
         {
-            if (workers_ == null)
-            {
-                workers_ = new Worker[numWorkers_];
-                doneEvents_ = new ManualResetEvent[workers_.Length];
-
-                for (int block = 0; block < workers_.Length; ++block)
-                {
-                    doneEvents_[block] = new ManualResetEvent(false);
-                    workers_[block] = new Worker(block * getNumAgents() / workers_.Length, (block + 1) * getNumAgents() / workers_.Length, doneEvents_[block]);
-                }
-            }
-
             kdTree_.buildAgentTree();
 
-            for (int block = 0; block < workers_.Length; ++block)
+            int agentCount = getNumAgents();
+            if (agentCount > 0)
             {
-                doneEvents_[block].Reset();
-                ThreadPool.QueueUserWorkItem(workers_[block].step);
+                int workerCount = numWorkers_ <= 1 ? 1 : Math.Min(numWorkers_, agentCount);
+                if (workerCount <= 1)
+                {
+                    for (int agentNo = 0; agentNo < agentCount; ++agentNo)
+                    {
+                        agents_[agentNo].computeNeighbors();
+                        agents_[agentNo].computeNewVelocity();
+                    }
+
+                    for (int agentNo = 0; agentNo < agentCount; ++agentNo)
+                    {
+                        agents_[agentNo].update();
+                    }
+                }
+                else
+                {
+                    var doneEvents = new ManualResetEvent[workerCount];
+                    for (int block = 0; block < workerCount; ++block)
+                    {
+                        doneEvents[block] = new ManualResetEvent(false);
+                        var worker = new Worker(block * agentCount / workerCount, (block + 1) * agentCount / workerCount, doneEvents[block]);
+                        ThreadPool.QueueUserWorkItem(worker.step);
+                    }
+
+                    WaitHandle.WaitAll(doneEvents);
+
+                    for (int block = 0; block < workerCount; ++block)
+                    {
+                        doneEvents[block].Reset();
+                        var worker = new Worker(block * agentCount / workerCount, (block + 1) * agentCount / workerCount, doneEvents[block]);
+                        ThreadPool.QueueUserWorkItem(worker.update);
+                    }
+
+                    WaitHandle.WaitAll(doneEvents);
+
+                    for (int block = 0; block < workerCount; ++block)
+                    {
+                        doneEvents[block].Dispose();
+                    }
+                }
             }
-
-            WaitHandle.WaitAll(doneEvents_);
-
-            for (int block = 0; block < workers_.Length; ++block)
-            {
-                doneEvents_[block].Reset();
-                ThreadPool.QueueUserWorkItem(workers_[block].update);
-            }
-
-            WaitHandle.WaitAll(doneEvents_);
 
             globalTime_ += timeStep_;
 

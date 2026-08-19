@@ -401,3 +401,275 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm soát conflict: Fetch trước kiểm thử và ngay trước push đều xác nhận remote không có commit mới; local/remote trước push `1/0`; không merge, không rebase và không force-push.
 - Kiểm tra: Release build 0 warning/0 error; Desktop, Results, Simulation, Population và benchmark correctness pass; 13/13 file JavaScript test pass, gồm Task 10 queue/native UI và renderer.
 - Asset: `git ls-files asset` và cây `origin/develop` dưới thư mục gốc `asset/` đều rỗng; `/asset/` tiếp tục được ignore, ảnh local không bị đẩy.
+
+
+## 2026-08-19 18:14 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Chuyển đổi và tích hợp giao diện Purrfect Pantry UI sang nhánh develop theo yêu cầu của chủ dự án.
+- Đã sửa/đã làm: Thêm web/purrfect-theme.css, cập nhật web/index.html với layout Purrfect Pantry (Tailwind CSS, đa màn hình), patch web/app.js để tương thích các selector và router đa màn hình của HTML mới trong khi vẫn giữ nguyên C# Simulation Desktop Bridge (NativeSimulationAdapter) và Sprite Renderer (npcRenderer).
+- Đối chiếu Result_Plan.md: Cập nhật giao diện Desktop Web UI / Presentation layer theo yêu cầu; không thay đổi logic C# simulation core hay hợp đồng Contracts.
+- Trạng thái: Đạt.
+- Kiểm tra: node -c web/app.js syntax pass, git status xác nhận chỉ thay đổi trong web/.
+- Nên làm tiếp theo: Kiểm tra hiển thị và tương tác trực quan trên Desktop App; chờ phản hồi/yêu cầu tiếp theo từ chủ dự án.
+- Phạm vi đồng bộ: Chỉ local trên develop; chưa stage, chưa commit, chưa push.
+
+
+## 2026-08-19 18:37 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khắc phục lỗi không thể thao tác/chọn/thêm wall và shelf trong màn hình Setup cửa hàng trên giao diện Purrfect Pantry.
+- Đã sửa/đã làm:
+  1. Gỡ bỏ thuộc tính `pointer-events: none` trên thẻ `<canvas id="scene">` trong `web/index.html` để canvas tiếp nhận đầy đủ sự kiện chuột/pointer (click, drag, vẽ wall/shelf).
+  2. Chuẩn hóa encoding của `web/purrfect-theme.css` sang UTF-8 không BOM để nạp style chính xác trong WebView2.
+  3. Xuất `window.switchTab` và đồng bộ sự kiện chuyển màn hình giữa `switchScreen` trong HTML và router `app.js` (đồng thời bổ sung nút "Setup Store" ở header màn hình Simulate để quay lại Setup dễ dàng).
+  4. Fix lỗi chia thread worker RVO2 trong `Simulator.cs` và giới hạn 1 worker đơn luồng an toàn trong `Rvo2Adapter.cs`.
+- Trạng thái: Đạt. Tất cả 14 JavaScript test, Desktop Bridge và C# Simulation tests đều PASS 100%.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 18:42 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Bổ sung tính năng thu gọn/mở rộng thanh công cụ bên trái (Setup Sidebar) theo yêu cầu của người dùng để mở rộng không gian quan sát cửa hàng.
+- Đã sửa/đã làm:
+  1. Thêm nút bấm gập/mở dạng tab mũi tên `#toggle-sidebar-btn` gắn ở rìa phải của thanh điều khiển bên trái trong `web/index.html`.
+  2. Bổ sung hiệu ứng chuyển động mượt mà (smooth transition) và lớp `.collapsed` trong `web/purrfect-theme.css`.
+  3. Xử lý sự kiện click toggle trong `web/app.js` tự động đổi icon mũi tên (`chevron_left` <-> `chevron_right`) và gọi `resizeCanvas()` để vùng bản đồ setup mở rộng tối đa.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript và hệ thống Desktop đều PASS.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 18:56 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Tái cấu trúc bố cục màn hình Simulation Run theo Phương án 1 (3 cột đối xứng: Cột trái chứa Live Metrics, Cột giữa chứa Store Canvas, Cột phải chứa Cashier Station, và Thanh dưới cùng toàn chiều rộng cho Decision Trace).
+- Đã sửa/đã làm:
+  1. Loại bỏ cụm NPC State Legend khỏi `web/index.html`.
+  2. Đưa khối `#metrics` (Live Metrics gồm Conversion Live, Purchases, Not Found) sang cột bên trái màn hình mô phỏng.
+  3. Mở rộng thanh log `#event-log-list` (Decision Trace) chiếm toàn bộ 100% bề ngang ở footer dưới cùng để đọc timeline hành vi dễ dàng.
+  4. Tinh chỉnh selector trong hàm `updateMetrics()` của `web/app.js` để cập nhật số liệu trực tiếp mượt mà.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop chạy ổn định.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:07 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Tối ưu hóa không gian màn hình Simulation theo đề xuất của người dùng: Mở rộng tối đa khung canvas bản đồ mô phỏng, đẩy sát mép trên toolbar, gỡ bỏ thanh Active NPCs thừa, chuyển Live Metrics xuống góc dưới bên phải thẳng hàng với Cashier Station, và chia thanh log Decision Trace tương ứng.
+- Đã sửa/đã làm:
+  1. Gỡ bỏ thanh banner `Active NPCs in Store` phía trên canvas và ẩn an toàn các thẻ `#active-count`, `#stage-status` để giữ tương thích với `app.js`.
+  2. Mở rộng khung canvas bản đồ chiếm trọn không gian bên trái và đẩy sát lên gần khu vực thanh điều khiển / đồng hồ.
+  3. Chia chân trang (footer) thành 2 cột:
+     - Cột trái: `Decision Trace` rộng rãi, thẳng hàng với khung Simulation Canvas.
+     - Cột phải: `Live Metrics` (Conversion, Purchases, Not Found) thẳng hàng với cột Cashier Station phía trên.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop chạy hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:12 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Bổ sung nút mũi tên thu gọn / mở rộng bảng thuộc tính bên phải (Right Inspector: Shelf/Wall Properties) ở màn hình Setup theo yêu cầu của người dùng.
+- Đã sửa/đã làm:
+  1. Thêm nút mũi tên `#toggle-inspector-btn` ở mép trái của bảng thuộc tính bên phải trong `web/index.html`.
+  2. Bổ sung animation trượt và trạng thái `.collapsed` cho `#setup-inspector-container` trong `web/purrfect-theme.css`.
+  3. Xử lý sự kiện click toggle trong `web/app.js` đổi hướng icon (`chevron_right` <-> `chevron_left`) và gọi `resizeCanvas()` để mở rộng khung vẽ tối đa khi ẩn cả 2 bên.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop chạy hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:15 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Tối ưu hoá khả năng mở rộng tự động (responsive auto-scale) của khung vẽ bản đồ Setup khi thu gọn 2 thanh công cụ bên trái và bên phải.
+- Đã sửa/đã làm:
+  1. Loại bỏ giới hạn kích thước cứng `w-[1440px]` của màn hình `#screen-setup`, chuyển sang `w-full h-screen` để tự động mở rộng theo độ rộng cửa sổ ứng dụng.
+  2. Bỏ kích thước cố định `w-[960px] h-[640px]` của `#canvas-wrapper`, thay thế bằng `w-full h-full max-w-full max-h-full` linh hoạt.
+  3. Cơ chế `ResizeObserver` và `resizeCanvas()` tự động tính toán lại kích thước độ phân giải của canvas `#scene` khi ẩn 1 hoặc cả 2 thanh bên, giúp khung bản đồ nở rộng ra chiếm trọn 100% diện tích màn hình mà không còn viền trắng thừa.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop chạy mượt mà.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:28 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Dọn dẹp thanh công cụ Setup (loại bỏ các nút Validate, Catalog, Import thừa) và tích hợp tự động kiểm tra, cảnh báo tường bao quanh kệ khi bấm Run Simulation.
+- Đã sửa/đã làm:
+  1. Gỡ bỏ các nút không cần thiết (`#validate-btn`, `#add-product-btn`, `#import-btn`) khỏi thanh công cụ Setup trong `web/index.html` để giao diện tối giản, tập trung vào các công cụ vẽ.
+  2. Bổ sung hàm `checkLayoutAndNotify()` trong `web/app.js` sử dụng `validateLayout` để tự động quét kiểm tra tính hợp lệ của bản đồ.
+  3. Khi bấm `Run Simulation` hoặc `Run live`, nếu phát hiện kệ hàng bị tường bao kín không có đường tiếp cận từ lối vào, hệ thống sẽ tự động hiển thị thông báo Toast cảnh báo: `⚠️ Shelf ... cannot be reached from the entrance` và ghi vào Decision Trace.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hoạt động chính xác.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:34 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Nâng cấp cảnh báo lỗi/tường bao quanh kệ hàng thành hộp thoại Popup Modal lớn, nổi bật chính giữa màn hình (Center-screen Warning Modal Dialog) theo phản hồi của người dùng.
+- Đã sửa/đã làm:
+  1. Thêm hộp thoại `#layout-warning-dialog` trong `web/index.html` với thiết kế nổi bật (viền vàng cam cảnh báo lớn, biểu tượng Warning nổi bật, danh sách các kệ bị cô lập và nền làm mờ màn hình backdrop blur).
+  2. Bổ sung 2 nút tương tác nhanh: `[Về Setup sửa]` (tự động quay lại màn hình Setup để sửa tường) và `[Vẫn tiếp tục chạy]` (đóng popup và tiếp tục mô phỏng).
+  3. Bổ sung hàm `showLayoutWarningModal()` trong `web/app.js` và định kiểu dáng chi tiết trong `web/purrfect-theme.css`.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hoạt động trực quan, rõ ràng.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:38 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Gỡ bỏ nút Step (Debug step tick) khỏi thanh điều khiển mô phỏng theo yêu cầu của người dùng để tối giản hóa UI và tăng tính thân thiện cho khách hàng.
+- Đã sửa/đã làm:
+  1. Xóa nút `#step-btn` khỏi thanh điều khiển Simulation trong `web/index.html`.
+  2. Tinh chỉnh lại khoảng cách và kích thước cho cặp nút điều khiển chính: `[ ▶ Run / ❚❚ Pause ]` và `[ ↻ Reset ]` để tạo sự cân đối, tinh gọn.
+  3. Cập nhật mã nguồn `web/app.js` để không phụ thuộc vào nút `#step-btn`.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop chạy hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:44 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khắc phục hiện tượng méo tỷ lệ (bị kéo giãn/bóp bẹp hình chữ nhật) giữa màn hình Setup và Simulate; đảm bảo giữ nguyên tỷ lệ kích thước thực tế 1:1 (mét vuông) của cửa hàng theo chuẩn thực tế.
+- Đã sửa/đã làm:
+  1. Thêm hàm `getCanvasTransform()` trong `web/app.js` tính toán tỷ lệ co giãn đồng nhất theo cả 2 trục (`scale = Math.min(W/layout.width, H/layout.height)`) và tự động căn giữa (`offsetX`, `offsetY`) cửa hàng trong khung nhìn.
+  2. Đảm bảo 1 mét chiều ngang luôn bằng đúng 1 mét chiều dọc (`scaleX == scaleY`), các ô lưới luôn là hình vuông chuẩn 1m x 1m, kệ hàng và tường giữ nguyên kích thước vật lý chính xác, không bị biến dạng khi thay đổi kích thước cửa sổ hoặc chuyển giữa Setup và Simulate.
+  3. Cập nhật `canvasPoint()` ánh xạ chính xác tọa độ chuột qua phép dịch và tỷ lệ đồng nhất.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị cửa hàng chuẩn tỷ lệ thực tế.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:48 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Mở rộng diện tích thiết lập (setup area / layout.width) khi ẩn 2 bảng bên để người dùng có thể vẽ thêm tường, đặt thêm kệ hàng ra khắp toàn bộ vùng không gian mới mở rộng.
+- Đã sửa/đã làm:
+  1. Cập nhật `resizeCanvas()` trong `web/app.js` tự động tính toán kích thước sàn cửa hàng (`layout.width`, `layout.height`) theo toàn bộ không gian canvas khả dụng, giữ nguyên tỷ lệ mét vuông 1:1.
+  2. Khi ẩn 2 thanh bên, diện tích sàn cửa hàng tự động mở rộng theo chiều ngang (ví dụ từ 12m lên 18m), các ô lưới 1m x 1m phủ kín 100% màn hình.
+  3. Người dùng có thể kéo thả, vẽ tường và đặt kệ hàng ra tận sát 2 bên mép màn hình mà không bị giới hạn bởi biên giới 12m cũ.
+  4. Đảm bảo kích thước không bao giờ bị co nhỏ hơn tọa độ của các kệ/tường đã vẽ trước đó (`maxObjX`, `maxObjY`), bảo toàn nguyên vẹn mọi vật thể.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hỗ trợ mở rộng không gian setup mượt mà.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 19:56 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Mở rộng tối đa khu vực khung nhìn Simulation (chiếm toàn bộ chiều cao bên trái thay cho vùng Decision Trace cũ) và di chuyển Decision Trace sang cột bên phải (dưới Cashier Station) theo yêu cầu của người dùng.
+- Đã sửa/đã làm:
+  1. Cập nhật bố cục màn hình `screen-simulate` trong `web/index.html`:
+     - Khung canvas Simulation mở rộng toàn màn hình bên trái từ trên xuống dưới (loại bỏ thanh footer đáy).
+     - Bảng ghi sự kiện `Decision Trace` (`#event-log-list`) được chuyển sang đặt ở nửa dưới của cột bên phải, ngay bên dưới `Cashier Station`.
+     - Giữ nguyên các binding selector của Live Metrics (`#metrics`) dưới dạng lớp ẩn để đảm bảo logic JS không bị lỗi.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và giao diện Simulation rộng mở, thoáng đãng.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:06 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Thêm nút công tắc chuyển đổi (Segmented Toggle Switch) ở góc trên khu vực panel dưới bên phải để người dùng linh hoạt gạt qua lại giữa xem Decision Trace Log và xem 3 thẻ Live Metrics (Conversion, Purchases, Not Found).
+- Đã sửa/đã làm:
+  1. Thêm cụm công tắc chuyển đổi bo tròn `[ 📊 Metrics | 📜 Log ]` ở góc trên cùng của khung bên phải trong `web/index.html`.
+  2. Bổ sung hàm `setSimPanelView()` trong `web/app.js` để chuyển đổi giao diện mượt mà giữa khung xem nhật ký hành vi (`#view-log-container`) và khung xem 3 thẻ chỉ số kinh doanh trực tiếp (`#view-metrics-container`).
+  3. Cả 2 chế độ đều tiếp tục cập nhật dữ liệu tự động theo thời gian thực (real-time).
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hoạt động hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:15 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Tối ưu kích thước và layout của 3 thẻ Live Metrics để hiển thị trọn vẹn 100% trong khung, loại bỏ thanh cuộn dọc (scrollbar).
+- Đã sửa/đã làm:
+  1. Cập nhật CSS/Flexbox trong `web/index.html` cho `#view-metrics-container` và các `.metric-card` (chia đều 1/3 chiều cao cho mỗi thẻ `flex-1`, rút gọn khoảng cách `gap-1.5` và padding `py-1.5`).
+  2. Toàn bộ 3 thẻ chỉ số (`CONVERSION LIVE`, `PURCHASES`, `NOT FOUND`) giờ đây hiển thị vừa vặn, sắc nét và đầy đủ mà không cần phải cuộn chuột.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị đẹp mắt.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:18 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khắc phục hiện tượng thẻ thứ 3 (NOT FOUND) bị che khuất phần số liệu bên dưới do thiếu không gian chiều dọc trong bảng điều khiển bên phải.
+- Đã sửa/đã làm:
+  1. Tinh chỉnh khu vực Cashier Station (giảm chiều cao avatar từ `h-36` xuống `h-28` và rút gọn padding) để tăng thêm 40px không gian chiều dọc cho khung bên dưới.
+  2. Chuyển đổi thiết kế 3 thẻ Live Metrics sang dạng hàng ngang gọn gàng (`items-center justify-between`):
+     - Bên trái: Tiêu đề in đậm và mô tả số lượng.
+     - Bên phải: Con số thống kê to, nổi bật.
+  3. Cả 3 thẻ (`CONVERSION LIVE`, `PURCHASES`, `NOT FOUND`) giờ đây hiển thị trọn vẹn 100% tất cả tiêu đề và số liệu với khoảng trống thoáng đãng.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:21 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khôi phục kích thước đầy đủ ban đầu của khung Cashier Station (ảnh avatar to đẹp) và giữ nguyên bố cục thẻ dọc của 3 mục Live Metrics, chỉ giảm cỡ chữ để hiển thị vừa vặn trong khung.
+- Đã sửa/đã làm:
+  1. Khôi phục kích thước khung Cashier Station (`p-3.5`, avatar `h-44`) như ban đầu.
+  2. Giữ nguyên định dạng khung dọc truyền thống cho 3 thẻ Live Metrics (Tiêu đề trên, số ở giữa, chú thích dưới), tinh chỉnh cỡ chữ (`text-sm` cho con số và `text-[9px]` cho chữ phụ) để vừa khít 100% trong khung mà không bị che khuất bất kỳ phần nào.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị đúng ý muốn của người dùng.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:26 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khôi phục tính năng tự động chuyển sang màn hình LOAD / Kết quả phiên (Session Results / Evaluation) ngay khi quá trình mô phỏng hoàn tất (Complete).
+- Đã sửa/đã làm:
+  1. Cập nhật hàm `switchTab()` trong `web/app.js` để hỗ trợ điều hướng đến tất cả các màn hình: `screen-results` (LOAD/Results) và `screen-analytics` (Analytics & Evaluation).
+  2. Bổ sung `updateResultsScreen()` để tự động cập nhật dữ liệu lượt chạy thực tế (tên phiên, số lượng khách, số đơn mua, doanh thu) vào bảng kết quả trên màn hình LOAD/Results.
+  3. Cập nhật vòng lặp `frame()` để ngay khi `simulation.completed === true`, hệ thống tự động lưu kết quả (`saveLiveResult()`) và chuyển ngay sang màn hình Kết quả phiên (`switchTab('results')`).
+  4. Bổ sung các nút điều hướng quay lại (`Về Setup`, `Mô phỏng`, `Bảng kết quả`) ở thanh tiêu đề của màn hình Results và màn hình Analytics Dashboard.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop tự động chuyển màn hình kết quả chuẩn xác.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:30 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Xóa 3 dòng phác thảo mẫu (Spring Blossom, Summer Breeze, Autumn Harvest) và đưa các phiên chạy mô phỏng được lưu chèn chuẩn xác vào bên trong khung bảng (`#results-table-body`) thay vì chèn ra ngoài.
+- Đã sửa/đã làm:
+  1. Gỡ bỏ 3 dòng dữ liệu mẫu trong `web/index.html` và thay bằng container `#results-table-body` với trạng thái trống `#results-empty-state`.
+  2. Cập nhật `updateResultsScreen()` trong `web/app.js` để chèn dòng dữ liệu của phiên mô phỏng hoàn tất vào ngay bên trong bảng (`tableBody.insertAdjacentHTML('afterbegin', rowHTML)`), hiển thị đẹp đẽ bên dưới các cột Period, Peak Time, Visitors, Revenue.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị các phiên lưu vào trong khung hoàn chỉnh.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:35 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Thêm ô/nút đặt tên cửa hàng (Store Name) ở chính giữa thanh tiêu đề trên cùng của màn hình Setup.
+- Đã sửa/đã làm:
+  1. Thêm khung nhập tên cửa hàng trực quan (`#run-name`) với icon `edit_note` và nhãn `TÊN CỬA HÀNG` đặt ở chính giữa thanh Header của màn hình Setup (`screen-setup`) trong `web/index.html`.
+  2. Tích hợp trạng thái lưu tự động (`#save-state`) bên cạnh ô tên để phản hồi trạng thái cho người dùng.
+  3. Ràng buộc sự kiện `input` trên `#run-name` trong `web/app.js` để tự động ghi nhận thay đổi và đồng bộ sang tên phiên mô phỏng / lịch sử lưu.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị ô đặt tên cửa hàng rất thẩm mỹ và tiện lợi.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 20:44 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khắc phục hiện tượng khi phóng to cửa sổ (Maximize / Ultrawide), các cụm nút trên thanh công cụ và thanh tiêu đề bị kẹt ở khung giữa (`max-w-7xl`) làm lệch hàng so với khu vực Canvas và Sidebar bên dưới.
+- Đã sửa/đã làm:
+  1. Loại bỏ ràng buộc giới hạn chiều rộng cứng (`max-w-7xl`) ở thanh Header và thanh Simulation Toolbar trong `web/index.html`, chuyển sang `w-full px-6`.
+  2. Các nút điều khiển mô phỏng (`[ ▶ Run live ] [ ↻ ]`) tự động căn thẳng hàng với mép trái của Canvas.
+  3. Đồng hồ thời gian (`[ 00:00 ]`) tự động căn chính giữa màn hình theo tỷ lệ co giãn.
+  4. Cụm tùy chọn tốc độ, output, cài đặt (`[ 30x ] [ Output ] [ Params ]`) tự động căn thẳng hàng với mép phải của bảng Cashier / Metrics.
+  5. Bố cục tự động co giãn và di chuyển linh hoạt (responsive 100%) khi phóng to toàn màn hình hoặc thu nhỏ cửa sổ.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop co giãn màn hình mượt mà, cân đối hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 21:00 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Triển khai Ý tưởng 1 đồng bộ hóa 1:1 tọa độ và kích thước giữa nút [Run Simulation] (màn hình Setup) và nút [Setup Store] (màn hình Simulation).
+- Đã sửa/đã làm:
+  1. Đồng bộ cấu trúc thanh Header của cả 2 màn hình (`screen-setup` và `screen-simulate`) trong `web/index.html` (cùng logo thương hiệu bên trái, cùng khung trạng thái/tên ở giữa, cùng cụm nút hành động, avatar và cài đặt ở bên phải).
+  2. Nút `[ ▶ Run Simulation ]` và nút `[ ✎ Setup Store ]` có cùng kích thước (`px-6 py-3 rounded-full border-b-4`) và nằm ở chính xác cùng tọa độ điểm ảnh (pixel).
+  3. Người dùng khi click chuyển sang Mô phỏng hoặc quay về Setup chỉ cần bấm chuột ngay tại chỗ mà không cần phải di chuyển con trỏ chuột.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop đồng bộ vị trí nút bấm hoàn hảo.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 21:11 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Xóa bỏ các icon không có tác dụng (nút Settings hình bánh răng, avatar ở góc trên bên phải và nút cài đặt thông số Params bên cạnh tùy chọn tốc độ), đồng thời đẩy nút chuyển đổi màn hình (Run Simulation / Setup Store) sát về góc phải để lấp đầy vị trí vừa xóa.
+- Đã sửa/đã làm:
+  1. Gỡ bỏ icon Avatar và icon Settings bánh răng ở Header trên cả 2 màn hình (`screen-setup` và `screen-simulate`) trong `web/index.html`.
+  2. Gỡ bỏ nút cài đặt thông số (`#parameter-btn`) bên cạnh dropdown chọn tốc độ trong thanh công cụ mô phỏng.
+  3. Đẩy nút `[ ▶ Run Simulation ]` (ở màn Setup) và nút `[ ✎ Setup Store ]` (ở màn Simulation) sát ra góc trên cùng bên phải màn hình, khớp nhau 100% về vị trí và kích thước.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop hiển thị thanh thoát, gọn gàng.
+- Phạm vi đồng bộ: Local trên `develop`.
+
+
+## 2026-08-19 21:27 (UTC+07:00) — Antigravity
+
+- Lý do sửa: Khắc phục hiện tượng khi thoát app và mở lại thì danh sách các phiên mô phỏng đã lưu trong màn hình LOAD (Results) bị trống.
+- Đã sửa/đã làm:
+  1. Thêm hàm `loadHistoryList()` và `renderHistoryRow()` trong `web/app.js` để nạp tự động toàn bộ danh sách lịch sử phiên chạy từ C# bridge (`history.list`) kết hợp bộ nhớ đệm lưu trữ lâu dài (`localStorage`).
+  2. Kích hoạt nạp lịch sử ngay khi ứng dụng khởi động (`init()`) và mỗi khi người dùng chuyển sang màn hình `LOAD / Results` (`switchTab('results')`).
+  3. Cập nhật `saveLiveResult()` để vừa lưu qua C# bridge vừa ghi nhận ngay vào danh sách hiển thị và bộ nhớ đệm lâu dài.
+- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và các phiên chạy được lưu trữ vĩnh viễn, khi tắt app mở lại danh sách vẫn còn nguyên vẹn.
+- Phạm vi đồng bộ: Local trên `develop`.

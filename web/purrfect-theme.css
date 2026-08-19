@@ -1,0 +1,267 @@
+/* purrfect-theme.css */
+
+/* Base body styles & texture */
+body {
+    -webkit-font-smoothing: antialiased;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Screen visibility: only .active screen is shown */
+/* !important keeps Tailwind utilities from overriding visibility */
+.screen { display: none !important; }
+.screen.active { display: flex !important; flex-direction: column; }
+
+/* Material Symbols utility */
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom subtle floating animations */
+@keyframes float-slow {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+}
+@keyframes float-fast {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-15px) rotate(4deg); }
+}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+.animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
+
+/* Global Button Hover Effects */
+button, .clickable-tool, a, .interactive, .interactive-legend {
+    transition: all 0.3s ease-out;
+}
+button:hover, .clickable-tool:hover, .interactive:hover, .interactive-legend:hover {
+    outline: 2px solid #685d4a !important;
+    outline-offset: 2px !important;
+    z-index: 50;
+}
+
+/* Squishy tactile button effect */
+.btn-tactile {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+}
+.btn-tactile:active {
+    transform: translateY(4px) scale(0.97) !important;
+    border-bottom-width: 0px !important;
+    margin-top: 4px;
+}
+
+/* Cozy Shadows */
+.cozy-shadow {
+    box-shadow: 0 12px 24px -10px #edbbab;
+}
+
+/* Grid Pattern for Canvas Area */
+.grid-pattern {
+    background-image: 
+        linear-gradient(to right, #cec5ba 1px, transparent 1px),
+        linear-gradient(to bottom, #cec5ba 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-color: #fbf9f1;
+}
+
+/* Furniture Pieces */
+.furniture-piece {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.furniture-piece:hover {
+    filter: brightness(0.95);
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px -4px rgba(123, 85, 72, 0.2);
+    z-index: 10;
+}
+.furniture-piece.selected {
+    outline: 3px dashed #685d4a;
+    outline-offset: 2px;
+    animation: pulse-border 2s infinite;
+}
+@keyframes pulse-border {
+    0% { outline-color: #685d4a; }
+    50% { outline-color: #ffccbb; }
+    100% { outline-color: #685d4a; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+    background: #cec5ba; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #7d766c; 
+}
+.scroll-hidden::-webkit-scrollbar {
+    display: none;
+}
+
+/* Tactile Card */
+.tactile-card {
+    background-color: #ffffff;
+    border: 2px solid #e4e3db;
+    box-shadow: 0 10px 30px -5px rgba(123, 85, 72, 0.08), 0 4px 6px -2px rgba(123, 85, 72, 0.04);
+    border-radius: 0.75rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.tactile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px -5px rgba(123, 85, 72, 0.12), 0 6px 8px -2px rgba(123, 85, 72, 0.06);
+}
+.tactile-card:active {
+    transform: translate(2px, 4px);
+    box-shadow: 2px 2px 0px 0px #eae8e0;
+}
+
+@keyframes gentle-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+.animate-excited {
+    animation: gentle-bounce 2s infinite ease-in-out;
+}
+
+/* Hover Effect for Simulation Controls */
+.hover-control-btn {
+    transition: all 0.2s ease-in-out;
+}
+.hover-control-btn:hover {
+    outline: 2px solid #685d4a !important;
+    outline-offset: -2px !important;
+    transform: scale(1.05) !important;
+}
+
+/* Chart Canvas adjustments */
+canvas {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Cashier emotion animations */
+.cashier-react { animation: cashierBounce .6s ease; }
+.cashier-smile { animation: cashierGentle .5s ease; }
+.cashier-sad { animation: cashierDroop .5s ease; }
+
+@keyframes cashierGentle {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+@keyframes cashierBounce {
+    0%   { transform: scale(1); }
+    20%  { transform: scale(1.06) rotate(-2deg); }
+    40%  { transform: scale(1.03) rotate(1deg); }
+    60%  { transform: scale(1.05) rotate(-1deg); }
+    80%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+@keyframes cashierDroop {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(.97) translateY(3px); }
+    100% { transform: scale(1); }
+}
+
+/* Dialog Styles */
+dialog {
+    border-radius: 12px;
+    padding: 24px;
+    border: 2px solid #cec5ba;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    background: #fbf9f1;
+    color: #1b1c17;
+}
+dialog::backdrop {
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+}
+
+/* Toast notification */
+#toast {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: .2s;
+}
+#toast.show {
+    opacity: 1;
+    transform: none;
+}
+
+/* Left Sidebar Collapsible Styling */
+#setup-sidebar-container {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#setup-sidebar-container #setup-sidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.2s ease;
+}
+#setup-sidebar-container.collapsed #setup-sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-right-width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+#toggle-sidebar-btn {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+#toggle-sidebar-btn:hover {
+    outline: 2px solid #685d4a !important;
+    outline-offset: 1px !important;
+}
+
+/* Right Inspector Collapsible Styling */
+#setup-inspector-container {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#setup-inspector-container #setup-inspector {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.2s ease;
+}
+#setup-inspector-container.collapsed #setup-inspector {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-left-width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+#toggle-inspector-btn {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+#toggle-inspector-btn:hover {
+    outline: 2px solid #685d4a !important;
+    outline-offset: 1px !important;
+}
+
+/* Layout Warning Dialog Styles */
+#layout-warning-dialog {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+#layout-warning-dialog::backdrop {
+    background: rgba(44, 34, 30, 0.75) !important;
+    backdrop-filter: blur(8px) !important;
+}

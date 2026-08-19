@@ -27,6 +27,7 @@ namespace AIsle.Simulation.Runtime.Avoidance
             {
                 var simulator = Simulator.Instance;
                 simulator.Clear();
+                simulator.SetNumWorkers(1);
                 simulator.setTimeStep(ToPositiveFloat(deltaSeconds, nameof(deltaSeconds)));
 
                 for (var index = 0; index < agents.Count; index++)

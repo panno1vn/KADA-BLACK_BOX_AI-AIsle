@@ -61,7 +61,7 @@ namespace AIsle.DesktopApp.Application
                 var comparison = ResultComparer.Compare(storedA, history.Read(second.Id));
                 if (!first.Summary.Completed || !second.Summary.Completed || listed.Items.Length != 2 || listed.Warnings.Length != 0
                     || replay.ResultId != first.Id || kpis.Metrics.Length != 7 || comparison.Metrics.Length != 7)
-                    throw new InvalidOperationException("Release smoke flow produced inconsistent output.");
+                    throw new InvalidOperationException($"Inconsistent output: first.Completed={first.Summary.Completed}, second.Completed={second.Summary.Completed}, listedCount={listed.Items.Length}, warnings={string.Join(";", listed.Warnings)}, replayMatches={replay.ResultId == first.Id}, kpisCount={kpis.Metrics.Length}, compCount={comparison.Metrics.Length}");
 
                 WriteReport(reportPath, new ReleaseSmokeReport
                 {
