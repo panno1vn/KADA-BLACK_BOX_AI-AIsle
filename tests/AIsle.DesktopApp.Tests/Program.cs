@@ -28,6 +28,7 @@ internal static class Program
             BridgeSimulationCommands();
             BridgeHistoryAndReplay(testDirectory);
             StartupErrorHandling(testDirectory);
+            PixelNpcAssetPackaging();
             ReleaseSmokeFlow(testDirectory);
             BridgeEnvelopeScenarios();
             Console.WriteLine("PASS: Desktop S1-S7 bridge, persistence, QA and application verification completed.");
@@ -279,6 +280,34 @@ internal static class Program
         }
         Assert(failed, "WebView2/local-asset startup failure did not produce an actionable message.");
     }
+
+    private static void PixelNpcAssetPackaging()
+    {
+        var uiRoot = LocalUiAssets.ResolveRoot(AppContext.BaseDirectory);
+        var renderer = Path.Combine(uiRoot, "npc-renderer.mjs");
+        var spriteRoot = Path.Combine(uiRoot, "assets", "npc");
+        Assert(File.Exists(renderer), "Pixel NPC renderer was not packaged.");
+        var expected = Enumerable.Range(0, 4)
+            .Select(index => Path.Combine(spriteRoot, $"npc_{index}.png"))
+            .ToArray();
+        Assert(expected.All(File.Exists), "One or more pixel NPC sheets were not packaged.");
+        foreach (var path in expected)
+        {
+            var bytes = File.ReadAllBytes(path);
+            Assert(bytes.Length > 29 && bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71, $"NPC asset is not a PNG: {path}");
+            var width = ReadBigEndianInt32(bytes, 16);
+            var height = ReadBigEndianInt32(bytes, 20);
+            var colorType = bytes[25];
+            Assert(width == 128 && height == 384 && width % 4 == 0 && height % 8 == 0, $"NPC sheet does not satisfy the normalized 8x4 contract: {path}");
+            Assert(colorType is 4 or 6, $"NPC sheet does not contain an alpha channel: {path}");
+        }
+
+        var app = File.ReadAllText(Path.Combine(uiRoot, "app.js"));
+        Assert(app.Contains("npcRenderer.draw", StringComparison.Ordinal) && !app.Contains("ctx.arc(agent.x", StringComparison.Ordinal), "Desktop app did not replace the legacy NPC dot renderer.");
+    }
+
+    private static int ReadBigEndianInt32(byte[] bytes, int offset) =>
+        (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
 
     private static void ReleaseSmokeFlow(string directory)
     {

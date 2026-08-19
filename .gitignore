@@ -6,6 +6,9 @@ runtime/*.db
 runtime/*_result.json
 runtime/history/
 
+# Local source artwork; production-ready UI assets live under src/AIsle.DesktopApp/UI/assets/.
+/asset/
+
 # Unity generated files (UnityApp source and ProjectSettings remain tracked).
 /Assets/
 /Library/
