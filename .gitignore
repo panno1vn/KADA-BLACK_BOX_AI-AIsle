@@ -14,6 +14,9 @@ runtime/history/
 # Local document exports must never be published with the simulator source tree.
 /docx/
 
+# Internal project documentation stays local and must not be published.
+/docs/
+
 # Unity generated files (UnityApp source and ProjectSettings remain tracked).
 /Assets/
 /Library/
