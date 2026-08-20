@@ -3,6 +3,8 @@ import {NativeSimulationAdapter} from './native-simulation.mjs';
 import {NpcSpriteRenderer, NPC_SPRITE_ASSETS} from './npc-renderer.mjs';
 import {validateLayout} from './layout-validation.js';
 import {loadDashboard} from './dashboard.js';
+import {canvasViewportTransform, clampShelfToLayout, expandLegacyFloor, floorTilePlan, panViewportByScreen, rotateShelfInLayout, zoomViewportAtPoint} from './store-geometry.mjs';
+import {createSimulationMusic} from './simulation-music.mjs';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -34,28 +36,30 @@ export const CATEGORY_NAMES={
 
 let layout,catalog,simulation=null,simResult=null,manualRows=[],parameters={...DEFAULT_PARAMETERS};
 let selected=null,tool='select',draft=null,drag=null,playing=false,lastFrame=0,dirty=true;
+let canvasViewport={zoom:3,panX:0,panY:0};
 let lastRunSeed=null;
 let liveHistory=[],maxRecordedTime=0,rewindTime=null;
 let historySortMode='date';
-const colors={WAITING:'#8b6b4a',DECIDING:'#a87bca',TRANSIT:'#5fa8d3',QUEUE:'#d59b45',DWELL:'#ffca58',PURCHASED:'#5dba4f',CHECKOUT:'#e05252',LEAVING:'#e05252'};
+const colors={WAITING:'#8b6b4a',DECIDING:'#a87bca',TRANSIT:'#5fa8d3',QUEUE:'#d59b45',DWELL:'#ffca58',PURCHASED:'#5dba4f',CHECKOUT_QUEUE:'#d59b45',CHECKOUT_SERVICE:'#e05252',LEAVING:'#e05252'};
 const npcRenderer=new NpcSpriteRenderer({assets:NPC_SPRITE_ASSETS});
+const simulationMusic=createSimulationMusic();
 
 const STORE_ASSETS = {
-  floor: { src: 'assets/asset/san.jpg', img: new Image(), ready: false },
-  wall: { src: 'assets/asset/wall.png', img: new Image(), ready: false },
-  entrance: { src: 'assets/asset/cua_vao.png', img: new Image(), ready: false },
-  checkout: { src: 'assets/asset/quay_thu_ngan.png', img: new Image(), ready: false },
-  beverage: { src: 'assets/asset/do_uong.jpg', img: new Image(), ready: false },
-  'instant-food': { src: 'assets/asset/hang_tuoi_song.png', img: new Image(), ready: false },
-  'fresh-food': { src: 'assets/asset/hang_tuoi_song.png', img: new Image(), ready: false },
-  'frozen-food': { src: 'assets/asset/hang_tuoi_song.png', img: new Image(), ready: false },
-  snack: { src: 'assets/asset/snack.png', img: new Image(), ready: false },
-  candy: { src: 'assets/asset/snack.png', img: new Image(), ready: false },
-  'personal-care': { src: 'assets/asset/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false },
-  'dry-food': { src: 'assets/asset/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false },
-  cleaning: { src: 'assets/asset/hoa_pham.png', img: new Image(), ready: false },
-  household: { src: 'assets/asset/hoa_pham.png', img: new Image(), ready: false },
-  defaultShelf: { src: 'assets/asset/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false }
+  floor: { src: 'assets/store/floor/san.jpg', img: new Image(), ready: false },
+  wall: { src: 'assets/store/fixtures/wall.png', img: new Image(), ready: false },
+  entrance: { src: 'assets/store/fixtures/cua_vao.png', img: new Image(), ready: false },
+  checkout: { src: 'assets/store/fixtures/quay_thu_ngan.png', img: new Image(), ready: false },
+  beverage: { src: 'assets/store/shelves/do_uong.jpg', img: new Image(), ready: false },
+  'instant-food': { src: 'assets/store/shelves/hang_tuoi_song.png', img: new Image(), ready: false },
+  'fresh-food': { src: 'assets/store/shelves/hang_tuoi_song.png', img: new Image(), ready: false },
+  'frozen-food': { src: 'assets/store/shelves/hang_tuoi_song.png', img: new Image(), ready: false },
+  snack: { src: 'assets/store/shelves/snack.png', img: new Image(), ready: false },
+  candy: { src: 'assets/store/shelves/snack.png', img: new Image(), ready: false },
+  'personal-care': { src: 'assets/store/shelves/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false },
+  'dry-food': { src: 'assets/store/shelves/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false },
+  cleaning: { src: 'assets/store/shelves/hoa_pham.png', img: new Image(), ready: false },
+  household: { src: 'assets/store/shelves/hoa_pham.png', img: new Image(), ready: false },
+  defaultShelf: { src: 'assets/store/shelves/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false }
 };
 
 const SHELF_CATEGORY_DIMENSIONS = {
@@ -82,11 +86,6 @@ function entityBounds(type, point){
   const size=STORE_ENTITY_DIMENSIONS[type];
   return point&&size?{x:point.x-size.w/2,y:point.y-size.h/2,w:size.w,h:size.h}:null;
 }
-function checkoutApproachPoint(point){
-  const size=STORE_ENTITY_DIMENSIONS.checkout;
-  return point?{x:point.x,y:point.y+size.h/2+.35}:null;
-}
-
 Object.values(STORE_ASSETS).forEach(asset => {
   asset.img.onload = () => { asset.ready = true; if(typeof draw === 'function') draw(); };
   asset.img.onerror = () => { asset.ready = false; };
@@ -114,6 +113,7 @@ const cashierMoodsSmile=['Dạ em chào quý khách ạ!','Dạ em cảm ơn qu�
 const cashierMoodsSad=['Dạ em cảm ơn quý khách đã ghé ạ.','Em chào quý khách, hẹn gặp lại ạ!'];
 const TAB_ORDER={welcome:0,setup:1,simulate:2,results:3,load:3,analytics:4};
 function switchTab(tab){
+  const previousTab=currentTab;
   if(tab!==currentTab && currentTab==='simulate' && playing){
     playing=false;
     simulation?.pause().catch(()=>{});
@@ -126,6 +126,8 @@ function switchTab(tab){
   const isForward=newIndex>oldIndex;
 
   currentTab=tab;
+  if(tab==='simulate'&&previousTab!=='simulate')simulationMusic.enter();
+  else if(tab!=='simulate'&&previousTab==='simulate')simulationMusic.leave();
   document.body.dataset.tab=tab;
   $$('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   $$('.nav-pill-btn').forEach(b=>b.classList.toggle('active',b.dataset.navTab===tab));
@@ -221,15 +223,8 @@ function updateCashier(){
   if(servedEl)servedEl.textContent=served;
   if(revEl)revEl.textContent=money(rev);
   
-  const checkoutPos=checkoutApproachPoint(layout?.checkout);
-  if(!checkoutPos)return;
-  
-  // Chỉ kích hoạt khi khách hàng thực sự đã đứng trước mặt quầy thu ngân.
-  const customerAtCounter=simulation.agents?.find(a=>{
-    if(a.finished)return false;
-    const dist=Math.hypot(a.x-checkoutPos.x,a.y-checkoutPos.y);
-    return dist<=0.4;
-  });
+  // Native core owns the single checkout service position and FIFO state.
+  const customerAtCounter=simulation.agents?.find(a=>!a.finished&&a.status==='CHECKOUT_SERVICE');
   
   if(customerAtCounter){
     if(!customerAtCounter._cashierTriggered){
@@ -283,7 +278,7 @@ function checkLayoutAndNotify(){
   return true;
 }
 
-async function init(){const project=await api('/api/project');layout=project.layout;catalog=project.catalog;await npcRenderer.load();bind();buildParameterLab();switchTab('welcome');renderObjects();renderInspector();draw();loadHistoryList();showSystemEvent('Ready. One click on Run live starts both the engine and visualization.')}
+async function init(){const project=await api('/api/project');const floorExpansion=expandLegacyFloor(project.layout);layout=floorExpansion.layout;catalog=project.catalog;await npcRenderer.load();bind();buildParameterLab();switchTab('welcome');renderObjects();renderInspector();draw();loadHistoryList();if(floorExpansion.expanded)await saveProject();showSystemEvent(floorExpansion.expanded?`Đã mở rộng mặt bằng từ ${floorExpansion.fromWidth} × ${floorExpansion.fromHeight} m lên 48 × 32 m.`:'Ready. One click on Run live starts both the engine and visualization.')}
 
 function updateToolButtons(activeTool){
   tool=activeTool;
@@ -306,6 +301,14 @@ function bind(){
   const resetParam=$('#reset-parameters');if(resetParam)resetParam.onclick=()=>{parameters={...DEFAULT_PARAMETERS};buildParameterLab()};
   const playBtn=$('#play-btn');if(playBtn)playBtn.onclick=toggleRun;
   const resetBtn=$('#reset-btn');if(resetBtn)resetBtn.onclick=resetSimulation;
+  const expandBtn=$('#sim-expand-btn');if(expandBtn)expandBtn.onclick=()=>{const wide=document.body.classList.toggle('simulation-wide');expandBtn.querySelector('.material-symbols-outlined').textContent=wide?'close_fullscreen':'open_in_full';expandBtn.title=wide?'Hiện bảng thu ngân và nhật ký':'Mở rộng bản đồ mô phỏng';setTimeout(resizeCanvas,80)};
+  const setupExpandBtn=$('#setup-expand-btn');if(setupExpandBtn)setupExpandBtn.onclick=()=>{const wide=document.body.classList.toggle('design-wide');setupExpandBtn.querySelector('.material-symbols-outlined').textContent=wide?'close_fullscreen':'open_in_full';setupExpandBtn.title=wide?'Hiện bảng thiết lập và thuộc tính':'Mở rộng vùng thiết kế';setTimeout(resizeCanvas,80)};
+  const zoomOut=$('#zoom-out-btn');if(zoomOut)zoomOut.onclick=()=>setCanvasZoom(canvasViewport.zoom/1.2);
+  const zoomReset=$('#zoom-reset-btn');if(zoomReset)zoomReset.onclick=()=>setCanvasZoom(3);
+  const zoomIn=$('#zoom-in-btn');if(zoomIn)zoomIn.onclick=()=>setCanvasZoom(canvasViewport.zoom*1.2);
+  const setupZoomOut=$('#setup-zoom-out-btn');if(setupZoomOut)setupZoomOut.onclick=()=>setCanvasZoom(canvasViewport.zoom/1.2);
+  const setupZoomReset=$('#setup-zoom-reset-btn');if(setupZoomReset)setupZoomReset.onclick=()=>setCanvasZoom(3);
+  const setupZoomIn=$('#setup-zoom-in-btn');if(setupZoomIn)setupZoomIn.onclick=()=>setCanvasZoom(canvasViewport.zoom*1.2);
   const btnStep=$('#step-btn');if(btnStep)btnStep.onclick=singleStep;
   const speedSel=$('#speed');if(speedSel)speedSel.onchange=async()=>{try{if(simulation)await simulation.setSpeed(Number($('#speed').value));showSystemEvent(`Playback speed ${$('#speed').value}×. Physics tick remains ${parameters.tickSeconds}s.`)}catch(error){showSystemEvent(error.message)}};
   const timelineEl=$('#timeline');if(timelineEl){timelineEl.oninput=timelineEl.onchange=e=>seekTo(Number(e.target.value)/1000*durationSeconds());}
@@ -317,8 +320,10 @@ function bind(){
     canvas.onpointerdown=pointerDown;
     canvas.onpointermove=pointerMove;
     canvas.onpointerup=pointerUp;
+    canvas.addEventListener('wheel',handleCanvasWheel,{passive:false});
     new ResizeObserver(resizeCanvas).observe(canvas);
   }
+  document.addEventListener('keydown',handleCanvasKeydown);
   ['shelf-category','shelf-valence'].forEach(id=>{const el=$('#'+id);if(el)el.oninput=el.onchange=()=>{pushUndoState();updateShelf();}});
   ['wall-x1','wall-y1','wall-x2','wall-y2'].forEach(id=>{const el=$('#'+id);if(el)el.oninput=()=>{pushUndoState();updateWall();};});
   const btnShelfRot=$('#btn-shelf-rotate');if(btnShelfRot)btnShelfRot.onclick=rotateSelectedShelf;
@@ -494,70 +499,20 @@ function applyParameters(){for(const input of $$('[data-param]')){const value=Nu
 async function population(){if($('#population-mode').value==='manual'){if(!manualRows.length)throw new Error('Enter at least one manual NPC.');return manualPopulation(manualRows).map(mapManualProfile)}const categories=[...new Set(catalog.map(product=>product.category).filter(Boolean))];const generated=await window.aisleBridge.request('population.generate',{config:{count:Number($('#npc-count').value),categoryIds:categories}});if(!generated.validation?.valid)throw new Error('Generated population did not pass validation.');return generated.profiles}
 function normalizeLayout(){
   if(!layout)return;
-  let minX=0,minY=0;
-  let maxX=12,maxY=8;
-
+  layout.width=Number.isFinite(Number(layout.width))&&Number(layout.width)>0?Number(layout.width):12;
+  layout.height=Number.isFinite(Number(layout.height))&&Number(layout.height)>0?Number(layout.height):8;
   if(Array.isArray(layout.walls)){
     for(const w of layout.walls){
-      minX=Math.min(minX,w.x1||0,w.x2||0);
-      maxX=Math.max(maxX,w.x1||0,w.x2||0);
-      minY=Math.min(minY,w.y1||0,w.y2||0);
-      maxY=Math.max(maxY,w.y1||0,w.y2||0);
+      w.x1=clamp(Number.isFinite(Number(w.x1))?Number(w.x1):0,0,layout.width);
+      w.x2=clamp(Number.isFinite(Number(w.x2))?Number(w.x2):0,0,layout.width);
+      w.y1=clamp(Number.isFinite(Number(w.y1))?Number(w.y1):0,0,layout.height);
+      w.y2=clamp(Number.isFinite(Number(w.y2))?Number(w.y2):0,0,layout.height);
     }
   }
   if(Array.isArray(layout.shelves)){
-    for(const s of layout.shelves){
-      minX=Math.min(minX,s.x||0);
-      maxX=Math.max(maxX,(s.x||0)+(s.w||0));
-      minY=Math.min(minY,s.y||0);
-      maxY=Math.max(maxY,(s.y||0)+(s.h||0));
-    }
+    for(let index=0;index<layout.shelves.length;index++)layout.shelves[index]=clampShelfToLayout(layout.shelves[index],layout);
   }
-  if(layout.entrance){
-    minX=Math.min(minX,layout.entrance.x);
-    maxX=Math.max(maxX,layout.entrance.x);
-    minY=Math.min(minY,layout.entrance.y);
-    maxY=Math.max(maxY,layout.entrance.y);
-  }
-  if(layout.checkout){
-    minX=Math.min(minX,layout.checkout.x);
-    maxX=Math.max(maxX,layout.checkout.x);
-    minY=Math.min(minY,layout.checkout.y);
-    maxY=Math.max(maxY,layout.checkout.y);
-  }
-
-  const shiftX=minX<0?-minX:0;
-  const shiftY=minY<0?-minY:0;
-
-  if(shiftX>0||shiftY>0){
-    if(Array.isArray(layout.walls)){
-      for(const w of layout.walls){
-        w.x1=Math.round((w.x1+shiftX)*4)/4;
-        w.x2=Math.round((w.x2+shiftX)*4)/4;
-        w.y1=Math.round((w.y1+shiftY)*4)/4;
-        w.y2=Math.round((w.y2+shiftY)*4)/4;
-      }
-    }
-    if(Array.isArray(layout.shelves)){
-      for(const s of layout.shelves){
-        s.x=Math.round((s.x+shiftX)*4)/4;
-        s.y=Math.round((s.y+shiftY)*4)/4;
-      }
-    }
-    if(layout.entrance){
-      layout.entrance.x=Math.round((layout.entrance.x+shiftX)*4)/4;
-      layout.entrance.y=Math.round((layout.entrance.y+shiftY)*4)/4;
-    }
-    if(layout.checkout){
-      layout.checkout.x=Math.round((layout.checkout.x+shiftX)*4)/4;
-      layout.checkout.y=Math.round((layout.checkout.y+shiftY)*4)/4;
-    }
-    maxX+=shiftX;
-    maxY+=shiftY;
-  }
-
-  layout.width=Math.max(12,Math.ceil(maxX));
-  layout.height=Math.max(8,Math.ceil(maxY));
+  for(const key of ['entrance','checkout'])if(layout[key])layout[key]={x:clamp(Number(layout[key].x)||0,0,layout.width),y:clamp(Number(layout[key].y)||0,0,layout.height)};
 }
 
 function simulationInput(profiles){
@@ -1293,11 +1248,7 @@ function rotateSelectedShelf(){
   const s=layout.shelves.find(x=>x.id===selected.id);
   if(!s)return;
   pushUndoState();
-  const temp=s.w;
-  s.w=s.h;
-  s.h=temp;
-  s.rotation=((s.rotation||0)+90)%360;
-  normalizeLayout();
+  Object.assign(s,rotateShelfInLayout(s,layout));
   renderObjects();
   renderInspector();
   markDirty(`Đã xoay kệ (${s.w.toFixed(1)}m × ${s.h.toFixed(1)}m, ${s.rotation}°).`);
@@ -1455,10 +1406,10 @@ function clearAllObjects(){
   layout.walls=[];
   layout.shelves=[];
   if(catalog)catalog=[];
-  layout.entrance={x:5,y:7.5};
-  layout.checkout={x:7,y:7.5};
-  layout.width=12;
-  layout.height=8;
+  layout.entrance={x:20,y:31.5};
+  layout.checkout={x:28,y:31.5};
+  layout.width=48;
+  layout.height=32;
   selected=null;
   renderObjects();
   renderInspector();
@@ -1473,60 +1424,33 @@ function getCanvasTransform(){
   if(!canvas)return{sx:1,sy:1,ox:0,oy:0,W:960,H:640,scale:1,worldMinX:0,worldMaxX:12,worldMinY:0,worldMaxY:8};
   const W=canvas.width,H=canvas.height;
   if(!layout)return{sx:1,sy:1,ox:0,oy:0,W,H,scale:1,worldMinX:0,worldMaxX:12,worldMinY:0,worldMaxY:8};
-
-  let minObjX=0,minObjY=0;
-  let maxObjX=12,maxObjY=8;
-  if(Array.isArray(layout.walls)){
-    for(const w of layout.walls){
-      minObjX=Math.min(minObjX,w.x1||0,w.x2||0);
-      maxObjX=Math.max(maxObjX,(w.x1||0)+0.5,(w.x2||0)+0.5);
-      minObjY=Math.min(minObjY,w.y1||0,w.y2||0);
-      maxObjY=Math.max(maxObjY,(w.y1||0)+0.5,(w.y2||0)+0.5);
-    }
-  }
-  if(Array.isArray(layout.shelves)){
-    for(const s of layout.shelves){
-      minObjX=Math.min(minObjX,s.x||0);
-      maxObjX=Math.max(maxObjX,(s.x||0)+(s.w||0)+0.5);
-      minObjY=Math.min(minObjY,s.y||0);
-      maxObjY=Math.max(maxObjY,(s.y||0)+(s.h||0)+0.5);
-    }
-  }
-  if(layout.entrance){
-    minObjX=Math.min(minObjX,layout.entrance.x);
-    maxObjX=Math.max(maxObjX,layout.entrance.x+0.5);
-    minObjY=Math.min(minObjY,layout.entrance.y);
-    maxObjY=Math.max(maxObjY,layout.entrance.y+0.5);
-  }
-  if(layout.checkout){
-    minObjX=Math.min(minObjX,layout.checkout.x);
-    maxObjX=Math.max(maxObjX,layout.checkout.x+0.5);
-    minObjY=Math.min(minObjY,layout.checkout.y);
-    maxObjY=Math.max(maxObjY,layout.checkout.y+0.5);
-  }
-
-  const objW=Math.max(12,maxObjX-minObjX);
-  const objH=Math.max(8,maxObjY-minObjY);
-  const centerX=(minObjX+maxObjX)/2;
-  const centerY=(minObjY+maxObjY)/2;
-
-  const padding=24;
-  const availW=Math.max(10,W-padding*2);
-  const availH=Math.max(10,H-padding*2);
-  const scale=Math.min(availW/objW,availH/objH);
-
-  const ox=W/2-centerX*scale;
-  const oy=H/2-centerY*scale;
-
-  const worldMinX=-ox/scale;
-  const worldMaxX=(W-ox)/scale;
-  const worldMinY=-oy/scale;
-  const worldMaxY=(H-oy)/scale;
-
-  layout.width=Math.max(12,Math.ceil(maxObjX));
-  layout.height=Math.max(8,Math.ceil(maxObjY));
-
-  return{sx:scale,sy:scale,ox,oy,W,H,scale,worldMinX,worldMaxX,worldMinY,worldMaxY};
+  return canvasViewportTransform(layout,W,H,canvasViewport);
+}
+function updateZoomLabel(){$$('[data-canvas-zoom-label]').forEach(label=>label.textContent=`${Math.round(canvasViewport.zoom*100)}%`)}
+function setCanvasZoom(nextZoom,point=null){
+  const canvas=$('#scene');if(!canvas||!layout)return;
+  const target=point||{x:canvas.width/2,y:canvas.height/2};
+  canvasViewport=zoomViewportAtPoint(layout,canvas.width,canvas.height,canvasViewport,target,nextZoom);
+  updateZoomLabel();draw();
+}
+function handleCanvasWheel(event){
+  if(currentTab!=='simulate'&&currentTab!=='setup')return;
+  event.preventDefault();
+  const canvas=$('#scene'),rect=canvas.getBoundingClientRect();
+  const point={x:(event.clientX-rect.left)*(canvas.width/rect.width),y:(event.clientY-rect.top)*(canvas.height/rect.height)};
+  setCanvasZoom(canvasViewport.zoom*Math.exp(-event.deltaY*.0015),point);
+}
+function handleCanvasKeydown(event){
+  if(currentTab!=='simulate'&&currentTab!=='setup')return;
+  const active=document.activeElement;
+  if(active&&(active.matches?.('input, textarea, select, [contenteditable="true"]')||active.closest?.('dialog[open]')))return;
+  const step=event.shiftKey?160:72;
+  const movement={ArrowLeft:[step,0],ArrowRight:[-step,0],ArrowUp:[0,step],ArrowDown:[0,-step]}[event.key];
+  if(!movement)return;
+  event.preventDefault();
+  const canvas=$('#scene');if(!canvas||!layout)return;
+  canvasViewport=panViewportByScreen(layout,canvas.width,canvas.height,canvasViewport,movement[0],movement[1]);
+  draw();
 }
 function canvasPoint(event){
   const canvas=$('#scene');
@@ -1535,13 +1459,9 @@ function canvasPoint(event){
   const px=event.clientX-r.left,py=event.clientY-r.top;
   const x=Math.round(((px-ox)/scale)*4)/4;
   const y=Math.round(((py-oy)/scale)*4)/4;
-  const minX=Math.floor(worldMinX*4)/4;
-  const maxX=Math.ceil(worldMaxX*4)/4;
-  const minY=Math.floor(worldMinY*4)/4;
-  const maxY=Math.ceil(worldMaxY*4)/4;
   return{
-    x:clamp(x,minX,maxX),
-    y:clamp(y,minY,maxY)
+    x:clamp(x,worldMinX,worldMaxX),
+    y:clamp(y,worldMinY,worldMaxY)
   };
 }
 function pointerDown(event){
@@ -1563,7 +1483,7 @@ function pointerDown(event){
 function pointerMove(event){
   const p=canvasPoint(event);if(draft){draft.end=p;draw();return}if(!drag)return;
   const {worldMinX,worldMaxX,worldMinY,worldMaxY}=getCanvasTransform();
-  if(drag.kind==='shelf'&&selected?.type==='shelf'){const s=layout.shelves.find(x=>x.id===selected.id);s.x=clamp(p.x-drag.dx,worldMinX+.25,worldMaxX-s.w-.25);s.y=clamp(p.y-drag.dy,worldMinY+.25,worldMaxY-s.h-.25)}
+  if(drag.kind==='shelf'&&selected?.type==='shelf'){const s=layout.shelves.find(x=>x.id===selected.id);Object.assign(s,clampShelfToLayout({...s,x:p.x-drag.dx,y:p.y-drag.dy},layout))}
   if(drag.kind==='wall-end'&&selected?.type==='wall'){const w=layout.walls.find(x=>x.id===selected.id);w[`x${drag.endpoint}`]=clamp(p.x,worldMinX,worldMaxX);w[`y${drag.endpoint}`]=clamp(p.y,worldMinY,worldMaxY)}
   if(drag.kind==='wall-move'&&selected?.type==='wall'){const w=layout.walls.find(x=>x.id===selected.id),dx=p.x-drag.start.x,dy=p.y-drag.start.y,minX=Math.min(drag.initial.x1,drag.initial.x2),maxX=Math.max(drag.initial.x1,drag.initial.x2),minY=Math.min(drag.initial.y1,drag.initial.y2),maxY=Math.max(drag.initial.y1,drag.initial.y2),safeDx=clamp(dx,worldMinX-minX,worldMaxX-maxX),safeDy=clamp(dy,worldMinY-minY,worldMaxY-maxY);w.x1=drag.initial.x1+safeDx;w.x2=drag.initial.x2+safeDx;w.y1=drag.initial.y1+safeDy;w.y2=drag.initial.y2+safeDy}
   markDirty('Layout geometry changed.');renderObjects();renderInspector();draw();
@@ -1673,17 +1593,23 @@ function draw(){
   ctx.save();
   ctx.translate(ox,oy);
 
-  // Floor texture: each tile unit fits exactly 1x1m cell
-  const startGX=Math.floor(worldMinX);
-  const endGX=Math.ceil(worldMaxX);
-  const startGY=Math.floor(worldMinY);
-  const endGY=Math.ceil(worldMaxY);
+  // Floor is derived only from layout bounds; objects never expand the world.
+  const floorPlan=floorTilePlan(layout);
 
   if(STORE_ASSETS.floor.ready && STORE_ASSETS.floor.img.naturalWidth > 0){
     ctx.imageSmoothingEnabled=false;
-    for(let gx=startGX;gx<endGX;gx++){
-      for(let gy=startGY;gy<endGY;gy++){
-        ctx.drawImage(STORE_ASSETS.floor.img, gx*sx, gy*sy, sx, sy);
+    if(floorPlan.usePattern&&typeof DOMMatrix!=='undefined'){
+      floorPattern=ctx.createPattern(STORE_ASSETS.floor.img,'repeat');
+      floorPattern?.setTransform?.(new DOMMatrix().scale(sx/STORE_ASSETS.floor.img.naturalWidth,sy/STORE_ASSETS.floor.img.naturalHeight));
+      ctx.fillStyle=floorPattern||'#1c1007';
+      ctx.fillRect(0,0,floorPlan.width*sx,floorPlan.height*sy);
+    }else{
+      for(let gx=0;gx<floorPlan.columns;gx++){
+        for(let gy=0;gy<floorPlan.rows;gy++){
+          const tileW=Math.min(floorPlan.tileSize,floorPlan.width-gx*floorPlan.tileSize);
+          const tileH=Math.min(floorPlan.tileSize,floorPlan.height-gy*floorPlan.tileSize);
+          ctx.drawImage(STORE_ASSETS.floor.img,gx*sx,gy*sy,tileW*sx,tileH*sy);
+        }
       }
     }
   } else {
@@ -1745,7 +1671,8 @@ function draw(){
     ctx.save();
     ctx.translate(rx+rw/2, ry+rh/2);
 
-    const rotation=(s.rotation||0)*Math.PI/180;
+    const normalizedRotation=((s.rotation||0)%360+360)%360;
+    const rotation=normalizedRotation*Math.PI/180;
     if(rotation) ctx.rotate(rotation);
 
     const scaleX=s.flipX?-1:1;
@@ -1754,18 +1681,22 @@ function draw(){
 
     if(asset?.ready && asset.img.naturalWidth > 0){
       const imgRatio=asset.img.naturalWidth/asset.img.naturalHeight;
-      const boxRatio=rw/rh;
-      let drawW=rw, drawH=rh;
+      const quarterTurn=normalizedRotation===90||normalizedRotation===270;
+      const localW=quarterTurn?rh:rw,localH=quarterTurn?rw:rh;
+      const boxRatio=localW/localH;
+      let drawW=localW, drawH=localH;
       if(boxRatio>imgRatio){
-        drawW=rh*imgRatio;
+        drawW=localH*imgRatio;
       }else{
-        drawH=rw/imgRatio;
+        drawH=localW/imgRatio;
       }
       ctx.imageSmoothingEnabled=false;
       ctx.drawImage(asset.img, -drawW/2, -drawH/2, drawW, drawH);
     } else {
       ctx.fillStyle='#2e1509';
-      ctx.fillRect(-rw/2, -rh/2, rw, rh);
+      const quarterTurn=normalizedRotation===90||normalizedRotation===270;
+      const localW=quarterTurn?rh:rw,localH=quarterTurn?rw:rh;
+      ctx.fillRect(-localW/2, -localH/2, localW, localH);
     }
     ctx.restore();
 
@@ -1808,7 +1739,8 @@ function draw(){
     for(const agent of agentsList){
       if(agent.status==='WAITING'||agent.finished)continue;
       const shelfId=agent.currentShelf||agent.targetId,shelf=agent.status==='DWELL'&&shelfId?layout.shelves.find(item=>item.id===shelfId):null;
-      visibleAgents.push(shelf?{...agent,facingDx:(shelf.x+shelf.w/2)-agent.x,facingDy:(shelf.y+shelf.h/2)-agent.y}:agent);
+      const serving=agent.status==='CHECKOUT_SERVICE'&&layout.checkout;
+      visibleAgents.push(shelf?{...agent,facingDx:(shelf.x+shelf.w/2)-agent.x,facingDy:(shelf.y+shelf.h/2)-agent.y}:serving?{...agent,facingDx:layout.checkout.x-agent.x,facingDy:layout.checkout.y-agent.y}:agent);
       if(agent.trail&&agent.trail.length>1){
         ctx.strokeStyle=(colors[agent.status]||'#5fa8d3')+'35';
         ctx.lineWidth=1;

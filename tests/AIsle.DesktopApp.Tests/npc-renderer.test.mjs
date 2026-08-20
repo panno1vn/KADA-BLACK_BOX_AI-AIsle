@@ -5,12 +5,23 @@ import {
   NPC_DIRECTIONS,
   NPC_SPRITE_ASSETS,
   NpcSpriteRenderer,
+  NPC_REFERENCE_SHELF_HEIGHT,
+  NPC_WORLD_HEIGHT,
   directionIndexFromDelta,
   resolveSpriteFrame,
   selectModelIndex,
   validateSpriteDimensions,
   walkingFrameAt,
+  spriteDestination,
 } from '../../src/AIsle.DesktopApp/UI/npc-renderer.mjs';
+
+test('NPC visual is half a standard shelf while the foot anchor stays fixed', () => {
+  const visual=spriteDestination(100,200,48,48,32,48);
+  assert.equal(NPC_WORLD_HEIGHT,NPC_REFERENCE_SHELF_HEIGHT/2);
+  assert.equal(visual.height,48*.9);
+  assert.equal(visual.footY,202);
+  assert.equal(visual.y+visual.height,visual.footY);
+});
 
 test('R1-R2 model selection is deterministic, bounded and spread across registry', () => {
   assert.equal(selectModelIndex(42, 'npc-7', 4), selectModelIndex(42, 'npc-7', 4));

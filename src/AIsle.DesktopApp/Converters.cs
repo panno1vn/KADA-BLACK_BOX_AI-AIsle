@@ -57,17 +57,17 @@ namespace AIsle.DesktopApp.Converters
 
             var text = $"{cat} {label} {id}".ToLowerInvariant();
             if (text.Contains("uong") || text.Contains("beverage") || text.Contains("s1"))
-                return "pack://application:,,,/Assets/do_uong.jpg";
+                return "pack://application:,,,/UI/assets/store/shelves/do_uong.jpg";
             if (text.Contains("tuoi") || text.Contains("song") || text.Contains("nhanh") || text.Contains("instant-food") || text.Contains("fresh") || text.Contains("s2"))
-                return "pack://application:,,,/Assets/hang_tuoi_song.png";
+                return "pack://application:,,,/UI/assets/store/shelves/hang_tuoi_song.png";
             if (text.Contains("snack") || text.Contains("candy") || text.Contains("keo") || text.Contains("s3") || text.Contains("s6"))
-                return "pack://application:,,,/Assets/snack.png";
+                return "pack://application:,,,/UI/assets/store/shelves/snack.png";
             if (text.Contains("kho") || text.Contains("nhan") || text.Contains("personal-care") || text.Contains("s4"))
-                return "pack://application:,,,/Assets/hang_kho_cham_soc_ca_nhan.png";
+                return "pack://application:,,,/UI/assets/store/shelves/hang_kho_cham_soc_ca_nhan.png";
             if (text.Contains("hoa") || text.Contains("dung") || text.Contains("household") || text.Contains("s5"))
-                return "pack://application:,,,/Assets/hoa_pham.png";
+                return "pack://application:,,,/UI/assets/store/shelves/hoa_pham.png";
 
-            return "pack://application:,,,/Assets/hang_kho_cham_soc_ca_nhan.png";
+            return "pack://application:,,,/UI/assets/store/shelves/hang_kho_cham_soc_ca_nhan.png";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();

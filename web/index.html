@@ -210,7 +210,7 @@
     <div class="flex flex-1 overflow-hidden relative">
       <!-- Left NavBar Container with Toggle Button -->
       <div id="setup-sidebar-container" class="relative flex shrink-0 z-30 transition-all duration-300">
-        <nav id="setup-sidebar" class="bg-surface-container-low flex flex-col p-4 gap-6 w-72 rounded-r-xl shadow-md overflow-y-auto border-r border-surface-container-highest transition-all duration-300">
+        <nav id="setup-sidebar" class="bg-surface-container-low flex flex-col p-3 gap-4 w-60 rounded-r-xl shadow-md overflow-y-auto border-r border-surface-container-highest transition-all duration-300">
           <!-- Simulation Input -->
           <div class="flex flex-col gap-4">
             <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2">ĐẦU VÀO MÔ PHỎNG</h2>
@@ -292,6 +292,10 @@
             <button id="redo-btn" type="button" title="Làm lại (Ctrl+Y)" disabled class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface disabled:opacity-35 disabled:cursor-not-allowed border border-transparent transition-colors cursor-pointer flex items-center justify-center">
               <span class="material-symbols-outlined text-sm">redo</span>
             </button>
+            <div class="w-[1px] h-4 bg-outline-variant/60 mx-0.5"></div>
+            <button id="setup-expand-btn" type="button" title="Mở rộng vùng thiết kế" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent transition-colors cursor-pointer flex items-center justify-center">
+              <span class="material-symbols-outlined text-sm">open_in_full</span>
+            </button>
           </div>
           <!-- Mobile/Compact Tool Palette (Preserved for compatibility) -->
           <div class="hidden">
@@ -303,9 +307,14 @@
           </div>
         </div>
         <!-- Canvas Container -->
-        <div class="flex-1 overflow-hidden p-4 flex items-center justify-center relative w-full h-full min-h-0">
+        <div class="flex-1 overflow-hidden p-2 flex items-center justify-center relative w-full h-full min-h-0">
           <div class="grid-pattern w-full h-full max-w-full max-h-full rounded-2xl shadow-inner relative border-4 border-surface-container-highest overflow-hidden cursor-crosshair flex items-center justify-center transition-all duration-300" id="canvas-wrapper">
              <canvas id="scene" width="960" height="640" style="position: absolute; top: 0; left: 0; z-index: 5; pointer-events: auto; touch-action: none; width: 100%; height: 100%;"></canvas>
+             <div class="absolute top-3 left-3 z-20 flex items-center rounded-full bg-surface/90 border border-outline-variant shadow-sm overflow-hidden" title="Lăn chuột để zoom 60–500%; dùng phím mũi tên để di chuyển bản đồ">
+               <button id="setup-zoom-out-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">−</button>
+               <button id="setup-zoom-reset-btn" data-canvas-zoom-label type="button" class="px-2 py-1 text-[11px] font-bold border-y-0 border-x border-outline-variant bg-transparent min-w-14">300%</button>
+               <button id="setup-zoom-in-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">+</button>
+             </div>
           </div>
         </div>
       </main>
@@ -314,7 +323,7 @@
         <button id="toggle-inspector-btn" type="button" title="Ẩn bảng thuộc tính" class="absolute top-1/2 -left-3.5 -translate-y-1/2 w-7 h-12 bg-surface border border-outline-variant rounded-l-xl flex items-center justify-center text-primary shadow-md hover:bg-primary-container z-40 cursor-pointer">
           <span id="toggle-inspector-icon" class="material-symbols-outlined text-base">chevron_right</span>
         </button>
-        <aside id="setup-inspector" class="w-80 bg-surface cozy-shadow border border-outline-variant p-6 flex flex-col gap-6 h-full border-l overflow-y-auto transition-all duration-300">
+        <aside id="setup-inspector" class="w-64 bg-surface cozy-shadow border border-outline-variant p-4 flex flex-col gap-4 h-full border-l overflow-y-auto transition-all duration-300">
           <!-- Nothing selected -->
           <div id="nothing-selected" class="flex flex-col items-center justify-center h-full text-on-surface-variant gap-2 opacity-70">
               <span class="material-symbols-outlined text-4xl">info</span>
@@ -504,6 +513,9 @@
         
         <!-- Options (Aligned to Right Sidebar) -->
         <div class="flex items-center gap-2.5">
+          <button id="sim-expand-btn" type="button" title="Mở rộng bản đồ mô phỏng" class="btn-tactile bg-surface border-2 border-outline-variant rounded-full p-2 flex items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined text-lg">open_in_full</span>
+          </button>
           <select id="speed">
             <option value="1">1×</option>
             <option value="2">2×</option>
@@ -517,10 +529,10 @@
     </div>
     
     <!-- Main Content Area -->
-    <main class="flex-1 w-full max-w-full p-4 flex flex-col lg:flex-row gap-4 items-stretch overflow-hidden min-h-0">
+    <main class="flex-1 w-full max-w-full p-2 flex flex-col lg:flex-row gap-2 items-stretch overflow-hidden min-h-0">
       
       <!-- LEFT / CENTER: Simulation View (Expanded to fill entire left area all the way to bottom) -->
-      <section class="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden">
+      <section id="simulation-stage" class="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden">
         <!-- Hidden elements to preserve app.js bindings -->
         <span id="active-count" class="hidden">0 active NPC</span>
         <span id="stage-status" class="hidden">READY TO RUN</span>
@@ -531,6 +543,11 @@
             <div id="sim-canvas-container" class="w-full h-full relative max-w-full max-h-full flex items-center justify-center">
                 <!-- JS moves #scene here -->
             </div>
+            <div class="absolute top-3 left-3 z-20 flex items-center rounded-full bg-surface/90 border border-outline-variant shadow-sm overflow-hidden" title="Lăn chuột để zoom 60–500%; dùng phím mũi tên để di chuyển bản đồ">
+              <button id="zoom-out-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">−</button>
+              <button id="zoom-reset-btn" data-canvas-zoom-label type="button" class="px-2 py-1 text-[11px] font-bold border-y-0 border-x border-outline-variant bg-transparent min-w-14">300%</button>
+              <button id="zoom-in-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">+</button>
+            </div>
             
             <div class="absolute bottom-3 left-4 right-4 flex items-center z-10 bg-surface/80 p-2 rounded-lg backdrop-blur shadow-sm">
                 <input id="timeline" type="range" min="0" max="1000" value="0" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary">
@@ -539,18 +556,18 @@
       </section>
       
       <!-- RIGHT: Cashier Panel + Decision Trace (Log moved to right side) -->
-      <aside class="w-full lg:w-80 flex flex-col h-full shrink-0 gap-3 min-h-0 overflow-hidden">
+      <aside id="simulation-side-panel" class="w-full lg:w-64 flex flex-col h-full shrink-0 gap-2 min-h-0 overflow-hidden">
         <!-- Cashier Station (Top - Original Large Format) -->
         <div class="bg-surface-container-low rounded-2xl border-2 border-outline-variant p-3.5 flex flex-col relative overflow-hidden tactile-card shrink-0 shadow-sm">
           <div class="absolute top-0 right-0 w-28 h-28 bg-secondary-container rounded-bl-full opacity-40"></div>
           <h3 class="font-button-text text-sm text-on-surface-variant text-center mb-2 relative z-10 font-bold">Quầy thu ngân</h3>
           
           <!-- Portrait Image Area (Original full height) -->
-          <div id="cashier-avatar" class="w-full h-44 bg-surface-bright rounded-xl border-2 border-outline-variant mb-2 overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
+          <div id="cashier-avatar" class="w-full h-32 bg-surface-bright rounded-xl border-2 border-outline-variant mb-2 overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
             <!-- 3 Cashier expression images (idle, smile, sad) -->
-            <img src="cashier_idle.jpg" alt="Cashier" class="cashier-img cashier-img-idle object-cover object-[center_25%] w-full h-full absolute inset-0 z-10" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
-            <img src="cashier_smile.jpg" alt="Cashier Smile" class="cashier-img cashier-img-smile object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
-            <img src="cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
+            <img src="assets/cashier/cashier_idle.jpg" alt="Cashier" class="cashier-img cashier-img-idle object-cover object-[center_25%] w-full h-full absolute inset-0 z-10">
+            <img src="assets/cashier/cashier_smile.jpg" alt="Cashier Smile" class="cashier-img cashier-img-smile object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden">
+            <img src="assets/cashier/cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden">
             <div id="cashier-mood-icon-container" class="absolute bottom-1.5 right-1.5 z-20 bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded-full font-label-md text-[11px] flex items-center gap-1 shadow-sm border border-tertiary-fixed">
               <span class="material-symbols-outlined text-xs">sentiment_satisfied</span>
               <span id="cashier-mood">Đang trực quầy...</span>

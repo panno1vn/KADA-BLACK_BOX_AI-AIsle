@@ -81,7 +81,7 @@
                 <Viewbox Grid.Row="1" Stretch="Uniform" Margin="16">
                     <Canvas Width="{Binding StoreWidth}" Height="{Binding StoreHeight}">
                         <Canvas.Background>
-                            <ImageBrush ImageSource="pack://application:,,,/Assets/san.jpg" Viewport="0,0,1,1" ViewportUnits="Absolute" TileMode="Tile" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <ImageBrush ImageSource="pack://application:,,,/UI/assets/store/floor/san.jpg" Viewport="0,0,1,1" ViewportUnits="Absolute" TileMode="Tile" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Canvas.Background>
                         <Canvas.LayoutTransform>
                             <ScaleTransform ScaleX="50" ScaleY="50" />
@@ -138,13 +138,13 @@
                         <!-- Entrance Marker -->
                         <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding EntranceX}" Canvas.Top="{Binding EntranceY}" 
                               Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
-                            <Image Source="pack://application:,,,/Assets/cua_vao.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/cua_vao.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Grid>
                                  
                         <!-- Checkout Marker -->
                         <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding CheckoutX}" Canvas.Top="{Binding CheckoutY}" 
                               Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
-                            <Image Source="pack://application:,,,/Assets/quay_thu_ngan.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/quay_thu_ngan.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Grid>
 
                         <!-- Agents -->
@@ -191,7 +191,7 @@
                         <!-- Avatar -->
                         <Border Width="180" Height="240" BorderThickness="3" BorderBrush="{StaticResource LineBrush}" CornerRadius="12" Background="#120a04" Margin="0,0,0,16">
                             <!-- TODO: Add Trigger to change image based on Mood -->
-                            <Image Source="pack://application:,,,/Assets/cashier_idle.jpg" Stretch="UniformToFill" />
+                            <Image Source="pack://application:,,,/UI/assets/cashier/cashier_idle.jpg" Stretch="UniformToFill" />
                         </Border>
 
                         <TextBlock Text="NHÂN VIÊN THU NGÂN" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8" />

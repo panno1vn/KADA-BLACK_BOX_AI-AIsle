@@ -7,7 +7,8 @@
         Width="1200"
         MinHeight="640"
         MinWidth="960"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/UI/assets/brand/app.ico">
     <Grid Background="#120A04">
         <wv2:WebView2 x:Name="StudioWebView" />
         <Border x:Name="StartupErrorPanel"

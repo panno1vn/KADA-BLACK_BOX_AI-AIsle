@@ -1429,6 +1429,96 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: Results, Simulation, Population, Desktop và 13/13 JavaScript test pass; build 0 error, còn 2 warning từ source RVO2 vendored đã tồn tại.
 - Phạm vi: Chỉ thao tác local giữa `simulator` và `test_ui`; không fetch/push hoặc thay đổi GitHub.
 
+## 2026-08-21 03:23 (UTC+07:00) — Codex — Hoàn tất Task 11
+
+- Lý do: Triển khai toàn bộ `docs/task_11.md` theo `docs/rule.md` và `docs/task.md`: sửa xoay/kéo/sàn, tinh chỉnh NPC, checkout một quầy FIFO, music/icon, chuẩn hóa asset và full regression/release.
+- Checkout SYSTEM:
+  - Thêm `CheckoutQueueRuntime`: đúng một service position, một FIFO bên trái quầy, hàng thẳng song song trục dài; chọn hướng lên/xuống theo capacity hợp lệ; cả hai hướng bị chặn thì trả kết quả bounded và phát event `checkout-unreachable`.
+  - NPC vào/tiến hàng bằng A* + RVO2 hiện có, không teleport/không bypass; reservation service chỉ có một owner; hoàn tất thanh toán tối đa một lần rồi giải phóng quầy, promote và reflow FIFO.
+  - Thêm CQ1–CQ10: single capacity, FIFO/no bypass, vị trí unique/collinear/LEFT, chọn hướng, blocked bounded, payment once, queue advance và không nằm trong fixture/wall.
+- Layout/render:
+  - Xoay 90° đổi `w/h`, giữ tâm khi còn hợp lệ, clamp trong layout nhưng không resize; bốn lần xoay trở về trạng thái gốc; flip chỉ tác động render.
+  - Canvas/floor chỉ lấy `layout.width/height`, tile cố định 1×1 world unit; layout cực lớn chuyển sang CanvasPattern bounded; kéo shelf/wall xa bị clamp, không còn tự nới world/floor.
+  - NPC tăng đúng 12% ở lớp render, giữ nguyên foot anchor và không đổi radius/path/RVO2; NPC đang phục vụ quay mặt về quầy.
+- Music/icon theo xác nhận cuối của người dùng:
+  - Một `Audio` duy nhất, loop, volume `0.20`, chỉ play khi đi vào tab Mô phỏng và pause khi rời tab; lỗi chỉ warn một lần.
+  - `logo.png` chỉ là source tạo icon, không hiển thị/không có caller runtime và không đóng gói release. `app.ico` gồm 256/48/32/16 px, được cấu hình cho EXE và Window/taskbar.
+- Asset/cleanup:
+  - Chuẩn hóa runtime vào `src/AIsle.DesktopApp/UI/assets/{audio,brand,cashier,npc,store}`; cập nhật WebView, WPF compatibility view, converters và startup verifier.
+  - Xóa ba cây/bản trùng cũ `src/AIsle.DesktopApp/Assets`, `UI/assets/asset`, `web/assets`, renderer Web cũ và NPC placeholder trùng hash. Chi tiết KEEP/MOVE/DELETE/GENERATED/PROTECTED tại `docs/task11-cleanup-audit.md`.
+  - Desktop tests dùng history store tạm trong thư mục test, loại bỏ phụ thuộc LocalAppData của máy/sandbox nhưng không đổi production persistence.
+- Kiểm tra tự động:
+  - `dotnet build AIsle.slnx -c Release --no-restore`: PASS, 0 warning, 0 error.
+  - Population, Simulation (gồm Task 10 + CQ1–CQ10), Results, Desktop/QA smoke: PASS.
+  - `node --test tests/*.test.mjs tests/AIsle.DesktopApp.Tests/*.test.mjs`: 26/26 PASS; renderer benchmark 200/500/1000 NPC đều bounded.
+  - `node --check web/app.js` và `git diff --check`: PASS.
+  - Self-contained publish PASS tại `.build/release/win-x64`; có EXE, `app.ico`, music, floor, checkout, NPC và modules Task 11; xác nhận `logo.png` không có trong release.
+  - Smoke executable: tiến trình sống, cửa sổ `AIsle Simulation Studio` tạo thành công; kiểm tra trực quan icon cửa sổ/app và màn hình welcome load đúng. M1–M9/M11 có automated invariant tương ứng; M12 release smoke 7 bước PASS.
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh vì worktree ban đầu đã có asset/task chưa commit của người dùng.
+
+## 2026-08-21 03:42 (UTC+07:00) — Codex — Mở rộng simulator, zoom, NPC và icon taskbar
+- Lý do: Theo yêu cầu trực tiếp của người dùng, bổ sung icon tại nút ứng dụng Windows, mở rộng vùng chạy simulator, hỗ trợ lăn chuột phóng to/thu nhỏ và tăng NPC bằng một nửa chiều cao kệ chuẩn.
+- Đã làm:
+  - Nhúng `app.ico` vào assembly/EXE, đặt icon WPF bằng pack URI, khai báo AppUserModelID trước khi tạo UI và đồng bộ icon lớn/nhỏ cho HWND/class; `logo.png` vẫn chỉ là source tạo icon, không tham gia runtime/release.
+  - Tăng diện tích canvas bằng cách giảm khoảng đệm/sidebar và thêm chế độ mở rộng ẩn panel phụ; thêm nút mở rộng và cụm zoom `− / 100% / +`.
+  - Thêm zoom canvas 60–300% bằng con lăn, giữ nguyên world point dưới con trỏ khi zoom và reset về 100%; không thay đổi tọa độ layout hay simulation state.
+  - Đặt chiều cao render NPC là `0.9 m`, đúng một nửa kệ chuẩn `1.8 m`, giữ nguyên foot anchor; không đổi collision radius, A*, RVO2 hoặc logic hành vi.
+- Kiểm tra:
+  - `dotnet build AIsle.slnx -c Release --no-restore`: PASS, 0 warning, 0 error.
+  - Population, Simulation, Results và Desktop tests: PASS.
+  - `node --test tests/*.test.mjs tests/AIsle.DesktopApp.Tests/*.test.mjs`: 27/27 PASS, gồm invariant zoom quanh con trỏ và NPC bằng nửa kệ.
+  - Self-contained `win-x64` publish PASS; smoke thực tế xác nhận title bar và nút taskbar đều hiển thị icon AIsle.
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
+
+## 2026-08-21 03:58 (UTC+07:00) — Codex — Tăng mặt bằng sàn lên gấp 4 lần
+- Lý do: Theo yêu cầu trực tiếp của người dùng, diện tích nền dùng texture `san.jpg` cần rộng hơn để bố trí nhiều kệ và lối đi thoải mái.
+- Đã làm:
+  - Tăng mặt bằng mặc định từ `12 × 8 m` (96 m²) lên `24 × 16 m` (384 m²), đúng gấp 4 lần diện tích; texture sàn tiếp tục lát theo ô 1 × 1 world unit, không kéo giãn ảnh nguồn.
+  - Cập nhật default project Desktop, default project Web/backend và thao tác Dọn trống sang kích thước 24 × 16 m.
+  - Thêm migration một lần cho dự án hiện tại 12 × 8 m: giãn tọa độ tường, kệ, cửa vào và quầy theo mặt bằng mới; giữ nguyên `w/h` của từng kệ để tạo thêm khoảng trống thực tế, sau đó lưu lại dự án 24 × 16 m.
+- Kiểm tra:
+  - `dotnet build AIsle.slnx -c Release --no-restore`: PASS, 0 warning, 0 error; Desktop và Simulation tests PASS.
+  - JavaScript 28/28 PASS, gồm invariant diện tích tăng đúng 4 lần, kệ không bị kéo giãn và migration chỉ chạy một lần.
+  - Publish self-contained `win-x64` PASS; xác nhận default project trong release là `24 × 16 m`, diện tích 384 m².
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
+
+## 2026-08-21 03:50 (UTC+07:00) — Codex — Mở rộng nền Thiết kế và tăng âm lượng nhạc
+- Lý do: Theo yêu cầu trực tiếp của người dùng, nền chỉnh sửa cần rộng hơn, zoom con lăn phải dùng được trong Thiết kế và nhạc khi chạy mô phỏng cần lớn hơn một chút.
+- Đã làm:
+  - Thu gọn sidebar/inspector và padding quanh canvas để tăng diện tích nền Thiết kế khi vẫn hiển thị công cụ.
+  - Thêm nút mở rộng vùng Thiết kế để ẩn/hiện đồng thời hai panel bên; giữ nguyên các nút thu gọn từng panel hiện có.
+  - Thêm cụm zoom `− / 100% / +` trên nền Thiết kế và cho phép con lăn zoom 60–300% quanh vị trí con trỏ ở cả tab Thiết kế lẫn Mô phỏng.
+  - Tăng âm lượng nhạc mô phỏng từ `0.20` lên `0.28`; giữ nguyên một audio instance, loop và lifecycle play/pause theo tab.
+- Kiểm tra:
+  - `dotnet build AIsle.slnx -c Release --no-restore`: PASS, 0 warning, 0 error.
+  - Desktop test PASS; JavaScript 27/27 PASS; `node --check web/app.js` và `git diff --check` PASS.
+  - Publish self-contained `win-x64` PASS; release đã chứa control mở rộng/zoom Thiết kế và volume `0.28`. Hai warning RVO2 vendored khi publish là field không dùng đã tồn tại, không liên quan thay đổi này.
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
+
+## 2026-08-21 03:59 (UTC+07:00) — Codex — Xác nhận tiến trình mới nhất
+- Tiến trình mới nhất là mục `03:58 — Tăng mặt bằng sàn lên gấp 4 lần` ở phía trên; mục đó được ghi trước mục 03:50 do vị trí kết thúc trùng nhau trong file có nhiều dòng trắng. Nội dung và kết quả kiểm tra không thay đổi.
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
+
+## 2026-08-21 04:05 (UTC+07:00) — Codex — Nhân đôi kích thước mặt bằng hiện tại và giữ âm lượng gốc
+- Lý do: Theo yêu cầu trực tiếp của người dùng, nhân đôi mỗi chiều của mặt bằng 24 × 16 m hiện tại và phát nhạc mô phỏng theo đúng độ to của file nguồn.
+- Đã làm:
+  - Tăng mặt bằng lên `48 × 32 m` (1.536 m²): chiều rộng và chiều cao đều gấp đôi bản 24 × 16 m; texture `san.jpg` vẫn lát theo world unit, không kéo giãn.
+  - Cập nhật default Desktop, default Web/backend và thao tác Dọn trống sang 48 × 32 m.
+  - Migration một lần nhận cả dự án 12 × 8 m và 24 × 16 m, giãn tọa độ tới 48 × 32 m nhưng giữ nguyên kích thước vật lý của kệ; dự án đã ở 48 × 32 m không bị migrate lại.
+  - Đặt `audio.volume = 1.0`: phát 100% mức âm lượng gốc, không thêm gain, compressor hoặc normalization.
+- Kiểm tra: Build PASS 0 warning/0 error; Desktop test PASS; JavaScript 28/28 PASS; syntax/diff check PASS; publish self-contained `win-x64` PASS và xác nhận release chứa mặt bằng 48 × 32 m cùng volume 1.0.
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
+
+## 2026-08-21 04:12 (UTC+07:00) — Codex — Zoom mặc định 300%, tối đa 500% và pan bằng phím mũi tên
+- Lý do: Theo yêu cầu trực tiếp của người dùng, mở mặt bằng ở mức 300%, cho phép zoom tới 500% và dùng bàn phím để di chuyển hướng nhìn.
+- Đã làm:
+  - Đặt viewport khởi tạo và nút reset ở `300%`; giữ mức thu nhỏ tối thiểu 60% và nâng trần từ 300% lên `500%`.
+  - Giữ zoom con lăn quanh vị trí con trỏ trong cả Thiết kế/Mô phỏng.
+  - Thêm pan bằng `← → ↑ ↓`, giới hạn trong phần mặt bằng có thể xem; `Shift + phím mũi tên` di chuyển nhanh hơn. Không chặn phím khi focus input, textarea, select, contenteditable hoặc dialog.
+  - Đồng bộ nhãn/tooltip zoom của hai màn hình.
+- Kiểm tra: Build PASS 0 warning/0 error; Desktop test PASS; JavaScript 29/29 PASS; syntax/diff check PASS; publish self-contained `win-x64` PASS và xác nhận release chứa zoom mặc định 300%, trần 500% cùng arrow-key pan.
+- Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
+
 
 
 

@@ -1,27 +1,27 @@
 {
   "schemaVersion": "aisle.project.v1",
   "layout": {
-    "width": 12,
-    "height": 8,
+    "width": 48,
+    "height": 32,
     "walls": [
-      { "id": "w1", "x1": 0.2, "y1": 0.2, "x2": 11.8, "y2": 0.2 },
-      { "id": "w2", "x1": 0.2, "y1": 0.2, "x2": 0.2, "y2": 7.8 },
-      { "id": "w3", "x1": 11.8, "y1": 0.2, "x2": 11.8, "y2": 7.8 },
-      { "id": "w4", "x1": 0.2, "y1": 7.8, "x2": 4.8, "y2": 7.8 },
-      { "id": "w5", "x1": 7.2, "y1": 7.8, "x2": 11.8, "y2": 7.8 }
+      { "id": "w1", "x1": 0.2, "y1": 0.2, "x2": 47.8, "y2": 0.2 },
+      { "id": "w2", "x1": 0.2, "y1": 0.2, "x2": 0.2, "y2": 31.8 },
+      { "id": "w3", "x1": 47.8, "y1": 0.2, "x2": 47.8, "y2": 31.8 },
+      { "id": "w4", "x1": 0.2, "y1": 31.8, "x2": 19.2, "y2": 31.8 },
+      { "id": "w5", "x1": 28.8, "y1": 31.8, "x2": 47.8, "y2": 31.8 }
     ],
     "shelves": [
-      { "id": "s1", "label": "Đồ uống", "category": "beverage", "x": 1.0, "y": 1.5, "w": 2.2, "h": 0.7, "valence": 0.42 },
-      { "id": "s2", "label": "Bánh kẹo", "category": "snack", "x": 4.5, "y": 1.5, "w": 2.2, "h": 0.7, "valence": 0.5 },
-      { "id": "s3", "label": "Chăm sóc cá nhân", "category": "personal-care", "x": 8.0, "y": 1.5, "w": 2.2, "h": 0.7, "valence": 0.3 },
-      { "id": "s4", "label": "Hàng khô", "category": "dry-food", "x": 1.0, "y": 3.2, "w": 2.2, "h": 0.7, "valence": 0.2 },
-      { "id": "s5", "label": "Đồ ăn nhanh", "category": "instant-food", "x": 4.5, "y": 3.2, "w": 2.2, "h": 0.7, "valence": 0.35 },
-      { "id": "s6", "label": "Kẹo & Gum", "category": "candy", "x": 8.0, "y": 3.2, "w": 2.2, "h": 0.7, "valence": 0.55 },
-      { "id": "s7", "label": "Đồ gia dụng", "category": "household", "x": 1.0, "y": 4.9, "w": 2.2, "h": 0.7, "valence": 0.15 },
-      { "id": "s8", "label": "Dung dịch vệ sinh", "category": "cleaning", "x": 4.5, "y": 4.9, "w": 2.2, "h": 0.7, "valence": 0.15 }
+      { "id": "s1", "label": "Đồ uống", "category": "beverage", "x": 4.0, "y": 6.0, "w": 2.2, "h": 0.7, "valence": 0.42 },
+      { "id": "s2", "label": "Bánh kẹo", "category": "snack", "x": 18.0, "y": 6.0, "w": 2.2, "h": 0.7, "valence": 0.5 },
+      { "id": "s3", "label": "Chăm sóc cá nhân", "category": "personal-care", "x": 32.0, "y": 6.0, "w": 2.2, "h": 0.7, "valence": 0.3 },
+      { "id": "s4", "label": "Hàng khô", "category": "dry-food", "x": 4.0, "y": 12.8, "w": 2.2, "h": 0.7, "valence": 0.2 },
+      { "id": "s5", "label": "Đồ ăn nhanh", "category": "instant-food", "x": 18.0, "y": 12.8, "w": 2.2, "h": 0.7, "valence": 0.35 },
+      { "id": "s6", "label": "Kẹo & Gum", "category": "candy", "x": 32.0, "y": 12.8, "w": 2.2, "h": 0.7, "valence": 0.55 },
+      { "id": "s7", "label": "Đồ gia dụng", "category": "household", "x": 4.0, "y": 19.6, "w": 2.2, "h": 0.7, "valence": 0.15 },
+      { "id": "s8", "label": "Dung dịch vệ sinh", "category": "cleaning", "x": 18.0, "y": 19.6, "w": 2.2, "h": 0.7, "valence": 0.15 }
     ],
-    "entrance": { "x": 6, "y": 7.55 },
-    "checkout": { "x": 9.5, "y": 6.85 },
+    "entrance": { "x": 24, "y": 31.1 },
+    "checkout": { "x": 38, "y": 27.4 },
     "spawnRateCurve": [
       { "minute": 0, "rate": 5 },
       { "minute": 10, "rate": 7 },

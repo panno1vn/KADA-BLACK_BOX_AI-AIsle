@@ -13,7 +13,7 @@ namespace AIsle.Simulation.Runtime
         private readonly LayoutDefinition _layout; private readonly ProductDefinition[] _catalog; private readonly SimulationConfig _config;
         private readonly Random _random; private readonly HashSet<string> _catalogCategories;
         private readonly string _resultId = "sim-" + Guid.NewGuid().ToString("N"); private readonly DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
-        private readonly IRvoAvoidance _avoidance; private readonly ShelfInteractionRuntime _interactions; private bool _avoidanceFailureReported;
+        private readonly IRvoAvoidance _avoidance; private readonly ShelfInteractionRuntime _interactions; private readonly CheckoutQueueRuntime _checkout; private bool _avoidanceFailureReported;
         public readonly PathGrid Grid; public readonly List<NPCRuntimeState> Agents = new List<NPCRuntimeState>(); public readonly List<SimulationEvent> Events = new List<SimulationEvent>(); public readonly List<PurchaseRecord> Purchases = new List<PurchaseRecord>();
         public double Time { get; private set; } public double Revenue { get; private set; } public bool Completed { get; private set; }
         public int Spawned { get; private set; } public int Converted { get; private set; } public int MainBuyers { get; private set; } public int ImpulseBuyers { get; private set; }
@@ -21,6 +21,7 @@ namespace AIsle.Simulation.Runtime
         public int MaxShelfQueueLength { get; private set; }
         public string RunId => _resultId;
         internal ShelfInteractionRuntime Interactions => _interactions;
+        internal CheckoutQueueRuntime Checkout => _checkout;
 
         public SimulationHost(LayoutDefinition layout, ProductDefinition[] catalog, PopulationDefinition population, SimulationConfig config, IRvoAvoidance avoidance = null)
         {
@@ -28,7 +29,7 @@ namespace AIsle.Simulation.Runtime
             SimulationConfigValidator.ThrowIfInvalid(_config);
             _random = new Random();
             _avoidance = avoidance ?? new Rvo2Adapter();
-            _catalogCategories = new HashSet<string>(_catalog.Select(product => product.Category), StringComparer.Ordinal); Grid = new PathGrid(_layout, _config); _interactions = new ShelfInteractionRuntime(_layout, Grid, _config);
+            _catalogCategories = new HashSet<string>(_catalog.Select(product => product.Category), StringComparer.Ordinal); Grid = new PathGrid(_layout, _config); _interactions = new ShelfInteractionRuntime(_layout, Grid, _config); _checkout = new CheckoutQueueRuntime(_layout, Grid, _config);
             var profiles = population.NPCProfiles ?? Array.Empty<NPCProfile>(); var spawns = MakeSpawnTimes(profiles.Length);
             for (var index = 0; index < profiles.Length; index++) { var agent = new NPCRuntimeState(profiles[index].Copy(), _layout.Entrance, spawns[index], _random); Agents.Add(agent); if (!string.IsNullOrWhiteSpace(agent.Profile.TargetCategory) && !_catalogCategories.Contains(agent.Profile.TargetCategory)) NotFound++; }
         }
@@ -107,7 +108,7 @@ namespace AIsle.Simulation.Runtime
                     X = agent.X,
                     Y = agent.Y,
                     Status = agent.Status,
-                    TargetId = agent.Status == "CHECKOUT" ? "checkout"
+                    TargetId = agent.Status == "CHECKOUT_QUEUE" || agent.Status == "CHECKOUT_SERVICE" ? "checkout"
                         : agent.Status == "LEAVING" ? "entrance"
                         : agent.CurrentShelf
                 };
@@ -137,6 +138,7 @@ namespace AIsle.Simulation.Runtime
         {
             if (agent.Status == "DECIDING") Decide(agent);
             else if (agent.Status == "DWELL") { agent.DwellLeft -= dt; if (agent.DwellLeft <= 0.0) FinishDwell(agent); }
+            else if (agent.CheckoutPhase == CheckoutPhase.Serving) { agent.DwellLeft -= dt; if (agent.DwellLeft <= 0.0) FinishCheckout(agent); }
         }
 
         private void MoveAgents(List<NPCRuntimeState> active, HashSet<NPCRuntimeState> eligibleMovers, double dt)
@@ -343,7 +345,16 @@ namespace AIsle.Simulation.Runtime
         private void CompleteRoute(NPCRuntimeState agent)
         {
             Stop(agent);
-            if (agent.ShelfAccessPhase == ShelfAccessPhase.ApproachSlot)
+            if (agent.CheckoutPhase == CheckoutPhase.ApproachService)
+            {
+                if (!_checkout.MarkServing(agent.Profile.Id)) { RecoverRoute(agent, "checkout service reservation was lost"); return; }
+                agent.CheckoutPhase = CheckoutPhase.Serving; agent.Status = "CHECKOUT_SERVICE"; agent.DwellLeft = Math.Max(0.5, _config.TickSeconds); Emit(agent, "checkout-service", "started checkout service");
+            }
+            else if (agent.CheckoutPhase == CheckoutPhase.ApproachQueue)
+            {
+                agent.CheckoutPhase = CheckoutPhase.WaitingQueue; agent.Status = "CHECKOUT_QUEUE"; Emit(agent, "checkout-queue-wait", "waiting at checkout queue position " + agent.QueueIndex);
+            }
+            else if (agent.ShelfAccessPhase == ShelfAccessPhase.ApproachSlot)
             {
                 if (!_interactions.MarkOccupied(agent.Profile.Id)) { RecoverRoute(agent, "interaction slot reservation was lost"); return; }
                 agent.ShelfAccessPhase = ShelfAccessPhase.Interacting; agent.Status = "DWELL"; agent.DwellLeft = agent.Profile.DwellSeconds * _config.DwellScale * (0.8 + (_random.NextDouble() * 0.4)); Emit(agent, "dwell", "started dwell at " + agent.InteractionSlotId);
@@ -353,7 +364,6 @@ namespace AIsle.Simulation.Runtime
                 agent.ShelfAccessPhase = ShelfAccessPhase.WaitingQueue; agent.Status = "QUEUE"; Emit(agent, "queue-wait", "waiting at shelf queue position " + agent.QueueIndex);
             }
             else if (agent.Status == "TRANSIT") { agent.Status = "DWELL"; agent.DwellLeft = agent.Profile.DwellSeconds * _config.DwellScale * (0.8 + (_random.NextDouble() * 0.4)); Emit(agent, "dwell", "started dwell"); }
-            else if (agent.Status == "CHECKOUT") { Emit(agent, "checkout", "completed checkout"); if (!SetPath(agent, _layout.Entrance, "LEAVING", false)) FailRoute(agent, "entrance is unreachable"); }
             else { agent.Finished = true; agent.Status = "LEFT"; Emit(agent, "left", "left the store"); }
         }
 
@@ -371,12 +381,18 @@ namespace AIsle.Simulation.Runtime
         {
             Purchases.Add(new PurchaseRecord{Time=Time,NpcId=agent.Profile.Id,ProductId=product.Id,Type=type,Price=product.Price});Revenue+=product.Price;if(type=="main"&&!agent.BoughtMain){agent.BoughtMain=true;MainBuyers++;}if(type!="main"&&!agent.BoughtImpulse){agent.BoughtImpulse=true;ImpulseBuyers++;}if(!agent.Converted){agent.Converted=true;Converted++;}Emit(agent,"purchase","bought "+product.Name,productId:product.Id,purchaseType:type);
         }
-        private void RouteExit(NPCRuntimeState agent){ReleaseShelfAccess(agent,true);if(agent.Converted&&SetPath(agent,_layout.Checkout,"CHECKOUT",false))return;if(SetPath(agent,_layout.Entrance,"LEAVING",false))return;FailRoute(agent,"no route to checkout or entrance");}
+        private void RouteExit(NPCRuntimeState agent){ReleaseShelfAccess(agent,true);if(agent.Converted){if(AssignCheckout(agent))return;Unreachable++;Emit(agent,"checkout-unreachable","checkout service or FIFO line has no reachable capacity");}if(SetPath(agent,_layout.Entrance,"LEAVING",false))return;FailRoute(agent,"no route to checkout or entrance");}
+        private bool AssignCheckout(NPCRuntimeState agent){var assignment=_checkout.TryEnter(agent.Profile.Id,agent.Position());if(assignment==null)return false;ApplyCheckoutRoute(agent,assignment);Emit(agent,assignment.IsService?"checkout-reserve":"checkout-queue-join",assignment.IsService?"reserved checkout service":"joined checkout FIFO at "+assignment.QueueIndex);return true;}
+        private void ApplyCheckoutRoute(NPCRuntimeState agent,CheckoutAssignment assignment){agent.QueueIndex=assignment.QueueIndex;agent.CheckoutPhase=assignment.IsService?CheckoutPhase.ApproachService:CheckoutPhase.ApproachQueue;SetKnownPath(agent,assignment.Path,assignment.Position,assignment.IsService?"CHECKOUT_SERVICE":"CHECKOUT_QUEUE");}
+        private void FinishCheckout(NPCRuntimeState agent){if(!agent.CheckoutPaid){agent.CheckoutPaid=true;Emit(agent,"checkout","completed checkout");}_checkout.ReleaseService(agent.Profile.Id);agent.CheckoutPhase=CheckoutPhase.None;agent.QueueIndex=-1;PromoteCheckout();if(!SetPath(agent,_layout.Entrance,"LEAVING",false))FailRoute(agent,"entrance is unreachable");}
+        private void PromoteCheckout(){var promotion=_checkout.TryPromote(NpcPosition);if(promotion!=null){var promoted=FindAgent(promotion.NpcId);if(promoted!=null&&!promoted.Finished){ApplyCheckoutRoute(promoted,promotion);Emit(promoted,"checkout-queue-promote","promoted to checkout service");}}ReflowCheckout();}
+        private void ReflowCheckout(){var assignments=_checkout.Reflow(NpcPosition);for(var index=0;index<assignments.Count;index++){var assignment=assignments[index];var queued=FindAgent(assignment.NpcId);if(queued==null||queued.Finished)continue;ApplyCheckoutRoute(queued,assignment);Emit(queued,"checkout-queue-advance","advanced to checkout queue position "+assignment.QueueIndex);}}
         private bool SetPath(NPCRuntimeState agent,Position2D target,string status,bool keepReplans){var path=Grid.FindPath(agent.Position(),target);if(path==null)return false;agent.Path=path;agent.PathIndex=path.Count>1?1:0;agent.Status=status;agent.RouteTarget=new Position2D(target.X,target.Y);agent.RouteStatus=status;agent.StuckFor=0;Stop(agent);if(!keepReplans)agent.Replans=0;return true;}
-        private void RecoverRoute(NPCRuntimeState agent,string reason){agent.Replans++;StuckRecoveries++;Emit(agent,"replan",reason);if(agent.RouteTarget!=null&&agent.Replans<=_config.MaxReplans&&SetPath(agent,agent.RouteTarget,agent.RouteStatus,true))return;if(agent.Status=="TRANSIT"||agent.Status=="QUEUE"){var shelfId=agent.CurrentShelf;ReleaseShelfAccess(agent,true);if(!string.IsNullOrEmpty(shelfId)&&!agent.Visited.Contains(shelfId))agent.Visited.Add(shelfId);Emit(agent,"abandon","abandoned unreachable shelf");agent.CurrentShelf=string.Empty;RouteExit(agent);return;}FailRoute(agent,"exit route remained blocked after replanning");}
-        private void FailRoute(NPCRuntimeState agent,string reason){ReleaseShelfAccess(agent,true);agent.Path.Clear();Stop(agent);agent.Finished=true;agent.Status="BLOCKED";Emit(agent,"blocked",reason);}
+        private void RecoverRoute(NPCRuntimeState agent,string reason){agent.Replans++;StuckRecoveries++;Emit(agent,"replan",reason);if(agent.RouteTarget!=null&&agent.Replans<=_config.MaxReplans&&SetPath(agent,agent.RouteTarget,agent.RouteStatus,true))return;if(agent.CheckoutPhase!=CheckoutPhase.None){ReleaseCheckout(agent);Emit(agent,"checkout-abandon","abandoned unreachable checkout position");if(SetPath(agent,_layout.Entrance,"LEAVING",false))return;}if(agent.Status=="TRANSIT"||agent.Status=="QUEUE"){var shelfId=agent.CurrentShelf;ReleaseShelfAccess(agent,true);if(!string.IsNullOrEmpty(shelfId)&&!agent.Visited.Contains(shelfId))agent.Visited.Add(shelfId);Emit(agent,"abandon","abandoned unreachable shelf");agent.CurrentShelf=string.Empty;RouteExit(agent);return;}FailRoute(agent,"exit route remained blocked after replanning");}
+        private void ReleaseCheckout(NPCRuntimeState agent){var released=_checkout.ReleaseService(agent.Profile.Id);var left=_checkout.LeaveQueue(agent.Profile.Id);agent.CheckoutPhase=CheckoutPhase.None;agent.QueueIndex=-1;if(released)PromoteCheckout();else if(left)ReflowCheckout();}
+        private void FailRoute(NPCRuntimeState agent,string reason){ReleaseShelfAccess(agent,true);ReleaseCheckout(agent);agent.Path.Clear();Stop(agent);agent.Finished=true;agent.Status="BLOCKED";Emit(agent,"blocked",reason);}
 
-        private static bool IsMoving(NPCRuntimeState agent)=>agent.Status=="TRANSIT"||agent.Status=="CHECKOUT"||agent.Status=="LEAVING";
+        private static bool IsMoving(NPCRuntimeState agent)=>agent.Status=="TRANSIT"||agent.Status=="LEAVING"||agent.CheckoutPhase==CheckoutPhase.ApproachQueue||agent.CheckoutPhase==CheckoutPhase.ApproachService;
 
         private void RecordTrajectory(NPCRuntimeState agent,bool force)
         {

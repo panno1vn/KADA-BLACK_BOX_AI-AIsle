@@ -10,6 +10,7 @@
     <Version>1.0.0</Version>
     <FileVersion>1.0.0.0</FileVersion>
     <InformationalVersion>1.0.0-mvp</InformationalVersion>
+    <ApplicationIcon>UI\assets\brand\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,8 +20,9 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
     <ProjectReference Include="..\AIsle.Contracts\AIsle.Contracts.csproj" />
     <ProjectReference Include="..\AIsle.Simulation\AIsle.Simulation.csproj" />
-    <Resource Include="Assets\*.jpg" />
-    <Resource Include="Assets\*.png" />
+    <Resource Include="UI\assets\store\**\*" />
+    <Resource Include="UI\assets\cashier\*.jpg" />
+    <Resource Include="UI\assets\brand\app.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,25 +35,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
-    <Content Include="UI\desktop-bridge.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="UI\default-project.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="UI\npc-renderer.mjs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="UI\assets\npc\npc_*.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="UI\history-seed\*.sim-result.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
+    <Content Remove="UI\assets\brand\logo.png" />
+    <Content Remove="UI\assets\brand\app.ico" />
   </ItemGroup>
 </Project>

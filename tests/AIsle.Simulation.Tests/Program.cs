@@ -17,6 +17,7 @@ internal static class Program
             TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility(); TestShoppingDecisionSeparation();
             TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestMovementAndArrival(); TestNoPurchaseJourney();
             TestFullJourneyAndResult(); TestStateProjection(); TestShelfInteractionSlots(); TestShelfReservationAndQueue(); TestShelfQueueJourney();
+            TestCheckoutQueueGeometryAndFifo(); TestCheckoutDirectionAndBlockedCapacity(); TestCheckoutJourneyPaymentAndAdvance();
             TestRvoHeadOn(); TestRvoCrossingAndCrowd(); TestRvoFallbackAndNoNeighbor(); TestOversubscribedPopulationExcludesUnspawnedAgentsFromReplay();
             Console.WriteLine("PASS: C# simulation baseline verification completed."); return 0;
         }
@@ -128,6 +129,77 @@ internal static class Program
         Assert(host.Completed && host.Agents.All(item => item.Finished), "C5 full shelf journey did not terminate: time=" + host.Time + ", queue=" + host.Interactions.TotalQueueLength + ", states=" + string.Join(",", host.Agents.GroupBy(item => item.Status).Select(group => group.Key + "=" + group.Count())));
         Assert(host.Interactions.Slots.All(item => item.State == ShelfSlotState.Free) && host.Interactions.TotalQueueLength == 0, "R4-R6 completed journey leaked slot or queue ownership.");
         Console.WriteLine("PASS T10 C1/C3-C5 20-agent shelf queue journey terminates without reservation leaks");
+    }
+
+    private static void TestCheckoutQueueGeometryAndFifo()
+    {
+        var config = new SimulationConfig { PathCellSize = .2, ObstacleMargin = .12, CollisionRadius = .32 };
+        var layout = new LayoutDefinition { Width = 10, Height = 8, Entrance = new Position2D(1, 4), Checkout = new Position2D(6, 4) };
+        var runtime = new CheckoutQueueRuntime(layout, new PathGrid(layout, config), config);
+        var a = runtime.TryEnter("A", new Position2D(1, 3));
+        var b = runtime.TryEnter("B", new Position2D(1, 4));
+        var c = runtime.TryEnter("C", new Position2D(1, 5));
+        var d = runtime.TryEnter("D", new Position2D(2, 5));
+        Assert(a != null && a.IsService && runtime.ServiceOwner == "A", "CQ1 checkout did not expose exactly one service owner.");
+        Assert(b != null && c != null && d != null && !b.IsService && b.QueueIndex == 0 && c.QueueIndex == 1 && d.QueueIndex == 2, "CQ2 FIFO queue order/index is invalid.");
+        Assert(new[] { b.Position.Y, c.Position.Y, d.Position.Y }.Distinct().Count() == 3, "CQ4 checkout queue positions are not unique.");
+        var fixtureLeft = layout.Checkout.X - (CheckoutQueueRuntime.FixtureWidth * .5);
+        Assert(new[] { a.Position, b.Position, c.Position, d.Position }.All(position => position.X < fixtureLeft), "CQ5/CQ10 checkout position is not on the LEFT outside the fixture.");
+        AssertClose(a.Position.X, b.Position.X, 1e-12, "CQ5 queue is not collinear with service.");
+        AssertClose(b.Position.X, c.Position.X, 1e-12, "CQ5 queue is not parallel to the fixture long axis.");
+        Assert(runtime.ReleaseService("A"), "CQ1 service owner could not release checkout.");
+        var positions = new Dictionary<string, Position2D> { ["B"] = b.Position, ["C"] = c.Position, ["D"] = d.Position };
+        var promoted = runtime.TryPromote(id => positions.TryGetValue(id, out var position) ? position : null);
+        Assert(promoted != null && promoted.NpcId == "B" && runtime.ServiceOwner == "B", "CQ2/CQ3 newer checkout customer bypassed FIFO head.");
+        Assert(runtime.Queue.SequenceEqual(new[] { "C", "D" }), "CQ2 promotion corrupted checkout FIFO order.");
+        Console.WriteLine("PASS T11 CQ1-CQ5/CQ10 single-service LEFT-side FIFO geometry");
+    }
+
+    private static void TestCheckoutDirectionAndBlockedCapacity()
+    {
+        var config = new SimulationConfig { PathCellSize = .2, ObstacleMargin = .12, CollisionRadius = .32 };
+        var probeLayout = new LayoutDefinition { Width = 10, Height = 8, Entrance = new Position2D(1, 4), Checkout = new Position2D(6, 4) };
+        var probe = new CheckoutQueueRuntime(probeLayout, new PathGrid(probeLayout, config), config);
+        var spacing = Math.Abs(probe.QueuePosition(0).Y - probe.ServicePosition.Y);
+        var serviceX = probe.ServicePosition.X;
+        var upwardBlocked = new LayoutDefinition
+        {
+            Width = 10, Height = 8, Entrance = new Position2D(1, 4), Checkout = new Position2D(6, 4),
+            Walls = new[] { new WallDefinition { Id = "up", X1 = serviceX - .5, Y1 = 4 - spacing, X2 = serviceX + .5, Y2 = 4 - spacing } }
+        };
+        var downward = new CheckoutQueueRuntime(upwardBlocked, new PathGrid(upwardBlocked, config), config);
+        Assert(downward.Direction == 1 && downward.Capacity > 0, "CQ6 blocked upward line did not select the valid downward direction.");
+
+        var bothBlocked = new LayoutDefinition
+        {
+            Width = 10, Height = 8, Entrance = new Position2D(1, 4), Checkout = new Position2D(6, 4),
+            Walls = new[]
+            {
+                new WallDefinition { Id = "up", X1 = serviceX - .5, Y1 = 4 - spacing, X2 = serviceX + .5, Y2 = 4 - spacing },
+                new WallDefinition { Id = "down", X1 = serviceX - .5, Y1 = 4 + spacing, X2 = serviceX + .5, Y2 = 4 + spacing }
+            }
+        };
+        var bounded = new CheckoutQueueRuntime(bothBlocked, new PathGrid(bothBlocked, config), config);
+        var service = bounded.TryEnter("service", new Position2D(1, 4));
+        var overflow = bounded.TryEnter("overflow", new Position2D(1, 5));
+        Assert(bounded.Capacity == 0 && service != null && overflow == null, "CQ7 both-blocked checkout did not fail with bounded capacity.");
+        Console.WriteLine("PASS T11 CQ6-CQ7 checkout direction selection and bounded blocked fallback");
+    }
+
+    private static void TestCheckoutJourneyPaymentAndAdvance()
+    {
+        var shelf = new ShelfDefinition { Id = "checkout-source", Label = "Checkout source", Category = "drink", X = 4, Y = 3, Width = 1, Height = 1, Valence = .5 };
+        var layout = new LayoutDefinition { Width = 12, Height = 8, Entrance = new Position2D(1, 4), Checkout = new Position2D(9, 4), Shelves = new[] { shelf }, SpawnRateCurve = new[] { new SpawnRatePoint { Minute = 0, Rate = 100000 } } };
+        var profiles = Enumerable.Range(0, 8).Select(index => { var profile = Profile("checkout-" + index, "drink"); profile.WalkingSpeed = 1.5; profile.DwellSeconds = .1; profile.InitialNeed = 1; return profile; }).ToArray();
+        var config = new SimulationConfig { DurationMinutes = 5, TickSeconds = .1, PathCellSize = .2, ObstacleMargin = .12, CollisionRadius = .32, MaxShelfVisits = 1, TopKChoices = 1, DecisionNoise = 0, PurchaseNeedA = 100, PurchaseBiasC = 100, PurchaseValenceB = 0 };
+        var host = new SimulationHost(layout, new[] { new ProductDefinition { Id = "drink", Name = "Drink", Category = "drink", ShelfId = shelf.Id, Price = 10 } }, Population(profiles), config);
+        for (var index = 0; index < host.Agents.Count; index++) { var agent = host.Agents[index]; agent.Spawn = 0; agent.X = .8 + ((index % 4) * .4); agent.Y = 3.2 + ((index / 4) * .8); }
+        host.RunToCompletion(10000);
+        var checkoutEvents = host.Events.Where(item => item.Type == "checkout").ToArray();
+        Assert(checkoutEvents.Length == profiles.Length && checkoutEvents.GroupBy(item => item.NpcId).All(group => group.Count() == 1), "CQ8 checkout completion/payment was not emitted exactly once per converted NPC.");
+        Assert(host.Events.Any(item => item.Type == "checkout-queue-promote") && host.Events.Any(item => item.Type == "checkout-queue-advance"), "CQ9 checkout queue did not advance after service completion.");
+        Assert(host.Agents.All(agent => agent.Finished) && string.IsNullOrEmpty(host.Checkout.ServiceOwner) && host.Checkout.QueueLength == 0, "CQ9 checkout journey did not terminate or leaked reservations.");
+        Console.WriteLine("PASS T11 CQ8-CQ9 payment exactly once and A*/RVO2 queue advancement");
     }
 
     private static void TestConfigValidation()

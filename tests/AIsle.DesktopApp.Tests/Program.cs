@@ -24,14 +24,14 @@ internal static class Program
             await SaveRoundTrip(testDirectory);
             LayoutValidationScenarios();
             await BridgeProjectRoundTrip(testDirectory);
-            BridgePopulationGeneration();
-            BridgeSimulationCommands();
+            BridgePopulationGeneration(testDirectory);
+            BridgeSimulationCommands(testDirectory);
             BridgeHistoryAndReplay(testDirectory);
             SqliteHistoryStoreScenarios(testDirectory);
             StartupErrorHandling(testDirectory);
-            PixelNpcAssetPackaging();
+            RuntimeAssetPackaging();
             ReleaseSmokeFlow(testDirectory);
-            BridgeEnvelopeScenarios();
+            BridgeEnvelopeScenarios(testDirectory);
             Console.WriteLine("PASS: Desktop S1-S7 bridge, persistence, QA and application verification completed.");
             return 0;
         }
@@ -140,7 +140,7 @@ internal static class Program
     {
         var path = Path.Combine(directory, "bridge.json");
         var service = new ProjectApplicationService(new JsonProjectRepository(), new LayoutValidator());
-        var bridge = new BridgeMessageProcessor(service, path);
+        using var bridge = new BridgeMessageProcessor(service, path, history: new JsonHistoryStore(Path.Combine(directory, "bridge-history")));
         var projectJson = ProjectJsonSerializer.Serialize(ValidProject());
         var saveRequest = "{\"requestId\":\"save-001\",\"type\":\"project.save\",\"payload\":{\"project\":" + projectJson + "}}";
         using var saveResponse = JsonDocument.Parse(await bridge.ProcessAsync(saveRequest));
@@ -151,9 +151,9 @@ internal static class Program
         Assert(loadResponse.RootElement.GetProperty("payload").GetProperty("project").GetProperty("schemaVersion").GetString() == ProjectSchema.Version, "Bridge load payload schema changed.");
     }
 
-    private static void BridgeEnvelopeScenarios()
+    private static void BridgeEnvelopeScenarios(string directory)
     {
-        var processor = new BridgeMessageProcessor();
+        using var processor = new BridgeMessageProcessor(history: new JsonHistoryStore(Path.Combine(directory, "envelope-history")));
         using var ping = JsonDocument.Parse(processor.Process("{\"requestId\":\"ping-001\",\"type\":\"app.ping\",\"payload\":{}}"));
         Assert(ping.RootElement.GetProperty("requestId").GetString() == "ping-001" && ping.RootElement.GetProperty("ok").GetBoolean(), "app.ping envelope changed.");
 
@@ -165,7 +165,7 @@ internal static class Program
         }
     }
 
-    private static void BridgePopulationGeneration()
+    private static void BridgePopulationGeneration(string directory)
     {
         var request = JsonSerializer.Serialize(new
         {
@@ -173,7 +173,8 @@ internal static class Program
             type = "population.generate",
             payload = new { config = new PopulationConfig { Count = 12, CategoryIds = new[] { "drinks", "snacks" } } }
         }, new JsonSerializerOptions { IncludeFields = true });
-        using var response = JsonDocument.Parse(new BridgeMessageProcessor().Process(request));
+        using var bridge = new BridgeMessageProcessor(history: new JsonHistoryStore(Path.Combine(directory, "population-history")));
+        using var response = JsonDocument.Parse(bridge.Process(request));
         var root = response.RootElement;
         Assert(root.GetProperty("ok").GetBoolean(), "population.generate bridge command failed.");
         var payload = root.GetProperty("payload");
@@ -182,10 +183,10 @@ internal static class Program
         Assert(payload.GetProperty("validation").GetProperty("valid").GetBoolean(), "population.generate returned invalid data.");
     }
 
-    private static void BridgeSimulationCommands()
+    private static void BridgeSimulationCommands(string directory)
     {
         using var simulations = new SimulationApplicationService(backgroundLoop: false);
-        var bridge = new BridgeMessageProcessor(simulations: simulations);
+        using var bridge = new BridgeMessageProcessor(simulations: simulations, history: new JsonHistoryStore(Path.Combine(directory, "simulation-history")));
         var input = new SimulationStartInput
         {
             Name = "bridge-test",
@@ -394,7 +395,7 @@ internal static class Program
         Assert(failed, "WebView2/local-asset startup failure did not produce an actionable message.");
     }
 
-    private static void PixelNpcAssetPackaging()
+    private static void RuntimeAssetPackaging()
     {
         var uiRoot = LocalUiAssets.ResolveRoot(AppContext.BaseDirectory);
         var renderer = Path.Combine(uiRoot, "npc-renderer.mjs");
@@ -417,6 +418,23 @@ internal static class Program
 
         var app = File.ReadAllText(Path.Combine(uiRoot, "app.js"));
         Assert(app.Contains("npcRenderer.draw", StringComparison.Ordinal) && !app.Contains("ctx.arc(agent.x", StringComparison.Ordinal), "Desktop app did not replace the legacy NPC dot renderer.");
+        Assert(!app.Contains("assets/asset/", StringComparison.Ordinal), "Active UI still references the deleted asset folder.");
+
+        var requiredAssets = new[]
+        {
+            Path.Combine(uiRoot, "assets", "audio", "music.mp3"),
+            Path.Combine(uiRoot, "assets", "store", "floor", "san.jpg"),
+            Path.Combine(uiRoot, "assets", "store", "fixtures", "quay_thu_ngan.png"),
+            Path.Combine(uiRoot, "store-geometry.mjs"),
+            Path.Combine(uiRoot, "simulation-music.mjs")
+        };
+        Assert(requiredAssets.All(File.Exists), "Task 11 canonical runtime asset packaging is incomplete.");
+        var musicController = File.ReadAllText(requiredAssets[4]);
+        Assert(musicController.Contains("audio.loop = true", StringComparison.Ordinal) && musicController.Contains("audio.volume = 1.0", StringComparison.Ordinal), "Simulation music lifecycle constants changed.");
+        Assert(app.Contains("currentTab!=='simulate'&&currentTab!=='setup'", StringComparison.Ordinal), "Canvas wheel zoom is not enabled in both setup and simulation.");
+        Assert(app.Contains("let canvasViewport={zoom:3", StringComparison.Ordinal) && app.Contains("handleCanvasKeydown", StringComparison.Ordinal) && app.Contains("panViewportByScreen", StringComparison.Ordinal), "Canvas default zoom or arrow-key navigation is missing.");
+        var index = File.ReadAllText(Path.Combine(uiRoot, "index.html"));
+        Assert(index.Contains("setup-zoom-reset-btn", StringComparison.Ordinal) && index.Contains("setup-expand-btn", StringComparison.Ordinal), "Setup canvas expansion or zoom controls are missing.");
     }
 
     private static int ReadBigEndianInt32(byte[] bytes, int offset) =>

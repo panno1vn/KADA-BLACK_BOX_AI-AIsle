@@ -10,6 +10,14 @@ const COLUMN_COUNT = 4;
 const ROW_COUNT = 8;
 const DEFAULT_FPS = 8;
 const DEFAULT_DIRECTION = 0;
+export const NPC_REFERENCE_SHELF_HEIGHT = 1.8;
+export const NPC_WORLD_HEIGHT = NPC_REFERENCE_SHELF_HEIGHT / 2;
+
+export function spriteDestination(screenX, screenY, scaleX, scaleY, cropWidth, cropHeight) {
+  const height = Math.max(1, Math.min(scaleX, scaleY) * NPC_WORLD_HEIGHT);
+  const width = height * cropWidth / cropHeight;
+  return {x: screenX - width / 2, y: screenY - height + 2, width, height, footY: screenY + 2};
+}
 
 export function stableIdentityHash(runSeed, npcId) {
   const text = `${String(runSeed ?? '')}\u001f${String(npcId ?? '')}`;
@@ -170,11 +178,8 @@ export class NpcSpriteRenderer {
     }
 
     const crop = resolveSpriteFrame(asset.image.width, asset.image.height, state.direction, state.frame);
-    const drawHeight = Math.max(32, Math.min(48, Math.round(Math.min(scaleX, scaleY) * 0.68)));
-    const drawWidth = Math.round(drawHeight * crop.width / crop.height);
-    const destinationX = Math.round(screenX - drawWidth / 2);
-    const destinationY = Math.round(screenY - drawHeight + 2);
-    ctx.drawImage(asset.image, crop.x, crop.y, crop.width, crop.height, destinationX, destinationY, drawWidth, drawHeight);
+    const destination = spriteDestination(screenX, screenY, scaleX, scaleY, crop.width, crop.height);
+    ctx.drawImage(asset.image, crop.x, crop.y, crop.width, crop.height, destination.x, destination.y, destination.width, destination.height);
     this.drawCalls++;
     if (selectedId != null && String(selectedId) === id) this.#drawSelection(ctx, screenX, screenY);
   }

@@ -56,6 +56,23 @@ body[data-tab="simulate"] .workspace {
   max-height: calc(100% - 63px);
 }
 
+body.simulation-wide #simulation-side-panel {
+  display: none;
+}
+
+body.design-wide #setup-sidebar-container,
+body.design-wide #setup-inspector-container {
+  display: none;
+}
+
+body[data-tab="simulate"] #scene {
+  cursor: zoom-in;
+}
+
+body[data-tab="setup"] #scene {
+  cursor: crosshair;
+}
+
 .outputs {
   height: 132px;
   min-height: 0;

@@ -28,6 +28,9 @@ namespace AIsle.DesktopApp.Infrastructure
                 Path.Combine(uiRoot, "assets", "npc", "npc_2.png"),
                 Path.Combine(uiRoot, "assets", "npc", "npc_3.png"),
                 Path.Combine(uiRoot, "assets", "npc", "npc_4.png"),
+                Path.Combine(uiRoot, "assets", "audio", "music.mp3"),
+                Path.Combine(uiRoot, "assets", "store", "floor", "san.jpg"),
+                Path.Combine(uiRoot, "assets", "store", "fixtures", "quay_thu_ngan.png"),
                 bridgeScriptPath
             };
 

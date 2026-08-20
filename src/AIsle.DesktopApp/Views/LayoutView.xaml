@@ -125,7 +125,7 @@
                 <Viewbox Grid.Row="1" Stretch="Uniform" Margin="16">
                     <Canvas Width="{Binding StoreWidth}" Height="{Binding StoreHeight}" MouseDown="Canvas_MouseDown" MouseMove="Canvas_MouseMove" MouseUp="Canvas_MouseUp" Cursor="Cross">
                         <Canvas.Background>
-                            <ImageBrush ImageSource="pack://application:,,,/Assets/san.jpg" Viewport="0,0,1,1" ViewportUnits="Absolute" TileMode="Tile" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <ImageBrush ImageSource="pack://application:,,,/UI/assets/store/floor/san.jpg" Viewport="0,0,1,1" ViewportUnits="Absolute" TileMode="Tile" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Canvas.Background>
                         <Canvas.LayoutTransform>
                             <ScaleTransform ScaleX="50" ScaleY="50" /> <!-- Scale to make 1 unit = 50px for visualization -->
@@ -182,13 +182,13 @@
                         <!-- Entrance Marker -->
                         <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding EntranceX}" Canvas.Top="{Binding EntranceY}" 
                               Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
-                            <Image Source="pack://application:,,,/Assets/cua_vao.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/cua_vao.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Grid>
                                  
                         <!-- Checkout Marker -->
                         <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding CheckoutX}" Canvas.Top="{Binding CheckoutY}" 
                               Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
-                            <Image Source="pack://application:,,,/Assets/quay_thu_ngan.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/quay_thu_ngan.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Grid>
                     </Canvas>
                 </Viewbox>

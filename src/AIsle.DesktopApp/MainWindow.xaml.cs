@@ -6,6 +6,7 @@ using AIsle.DesktopApp.Bridge;
 using AIsle.DesktopApp.Application;
 using AIsle.DesktopApp.Infrastructure;
 using Microsoft.Web.WebView2.Core;
+using System.Windows.Interop;
 
 namespace AIsle.DesktopApp
 {
@@ -13,12 +14,38 @@ namespace AIsle.DesktopApp
     {
         private const string VirtualHostName = "aisle.local";
         private BridgeMessageProcessor? _bridge;
+        private IntPtr _largeIcon;
+        private IntPtr _smallIcon;
 
         public MainWindow()
         {
             InitializeComponent();
+            SourceInitialized += OnSourceInitialized;
             Loaded += OnLoaded;
-            Closed += (_, _) => _bridge?.Dispose();
+            Closed += (_, _) =>
+            {
+                _bridge?.Dispose();
+                if (_largeIcon != IntPtr.Zero) NativeMethods.DestroyIcon(_largeIcon);
+                if (_smallIcon != IntPtr.Zero) NativeMethods.DestroyIcon(_smallIcon);
+            };
+        }
+
+        private void OnSourceInitialized(object? sender, EventArgs e)
+        {
+            SourceInitialized -= OnSourceInitialized;
+            var executable = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(executable) || NativeMethods.ExtractIconEx(executable, 0, out _largeIcon, out _smallIcon, 1) == 0) return;
+            var handle = new WindowInteropHelper(this).Handle;
+            if (_largeIcon != IntPtr.Zero)
+            {
+                NativeMethods.SendMessage(handle, NativeMethods.WmSetIcon, new IntPtr(NativeMethods.IconBig), _largeIcon);
+                NativeMethods.SetClassLongPtr(handle, NativeMethods.GclpHIcon, _largeIcon);
+            }
+            if (_smallIcon != IntPtr.Zero)
+            {
+                NativeMethods.SendMessage(handle, NativeMethods.WmSetIcon, new IntPtr(NativeMethods.IconSmall), _smallIcon);
+                NativeMethods.SetClassLongPtr(handle, NativeMethods.GclpHIconSmall, _smallIcon);
+            }
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
