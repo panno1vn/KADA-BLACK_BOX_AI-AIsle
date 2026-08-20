@@ -1243,6 +1243,44 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS.
 - Phạm vi Git: Chỉ local trên `develop`.
 
+## 2026-08-20 20:28 (UTC+07:00) — Antigravity
+
+- Lý do: Triển khai cơ chế Thùng rác ẩn (Soft Delete & Recycle Bin) để bảo vệ dữ liệu khách hàng chống phá hoại/xóa nhầm, cho phép khôi phục lại dữ liệu bất cứ lúc nào.
+- Đã thực hiện:
+  - `src/AIsle.DesktopApp`:
+    - `IHistoryStore.cs` & `JsonHistoryStore.cs`: Khi xóa phiên hoặc xóa tất cả, file `.sim-result.json` được chuyển an toàn vào thư mục ẩn `.trash/` thay vì xóa vĩnh viễn. Bổ sung `ListTrash()`, `Restore(id)`, `RestoreAll()`.
+    - `BridgeMessageProcessor.cs`: Xử lý thêm các routing `"history.trash.list"`, `"history.restore"`, `"history.restore.all"`.
+  - `web/index.html`: Thêm nút **"Thùng rác"** ở chân bảng kết quả và Modal khôi phục phiên mô phỏng (`#trash-dialog`).
+  - `web/app.js`: Tích hợp các hàm `openTrashDialog()`, `restoreHistoryRunByKey()`, `restoreAllTrashRuns()`.
+- Kết quả: Khi người dùng bấm xóa, dữ liệu biến mất khỏi màn hình nhưng được cất giữ an toàn trong thùng rác ẩn và có thể bấm "Khôi phục" lại nguyên vẹn 100%.
+- Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 20:31 (UTC+07:00) — Antigravity
+
+- Lý do: Sửa lỗi cỡ chữ tiêu đề bảng thuộc tính (Inspector) quá lớn khiến chữ "hàng" bị rớt xuống dòng riêng, đồng bộ cỡ chữ chuẩn đẹp với các mục cùng cấp bên trái.
+- Đã thực hiện:
+  - `web/index.html`: Đồng bộ kiểu tiêu đề cho `THUỘC TÍNH KỆ HÀNG` và `THUỘC TÍNH TƯỜNG` sang `font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2 border-b border-outline-variant pb-2` (giống 100% với `ĐẦU VÀO MÔ PHỎNG` và `ĐỐI TƯỢNG BỐ TRÍ` ở sidebar trái).
+  - `web/app.js`: Đồng bộ tiêu đề `THÔNG TIN KHÁCH HÀNG` của NPC inspector.
+- Kết quả: Tiêu đề nằm gọn gàng, ngay ngắn trên 1 hàng ngang duy nhất, không còn bị rớt dòng, giao diện hài hòa và đồng nhất 100%.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 20:39 (UTC+07:00) — Antigravity
+
+- Lý do: Làm rõ thông tin hiển thị thời gian (phân biệt giữa Giờ thực hiện `20:36` và Thời lượng mô phỏng `30 phút`) và đảm bảo các phiên đã xóa luôn lưu đầy đủ vào `aisle_trash_runs` để khôi phục 100%.
+- Đã thực hiện:
+  - `web/app.js`:
+    - `renderHistoryRow`: Hiển thị rõ cả thời điểm chạy (`🕒 20:36`) và thời lượng mô phỏng (`30 phút chạy`) để người dùng không bị nhầm lẫn.
+    - Quản lý `aisle_trash_runs` trong `localStorage` kết hợp với C# bridge `history.trash.list`: Khi bấm xóa, phiên đó được chuyển nguyên vẹn sang danh sách thùng rác.
+    - `openTrashDialog` & `restoreHistoryRunByKey`: Khôi phục 100% dữ liệu từ thùng rác về lại bảng kết quả và đồng bộ với cả backend C#.
+- Kết quả: Thông tin thời gian hiển thị rõ ràng, không gây hiểu lầm; chức năng Thùng rác và Khôi phục hoạt động trơn tru 100%.
+- Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+
+
 
 
 

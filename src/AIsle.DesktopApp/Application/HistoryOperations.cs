@@ -7,9 +7,12 @@ namespace AIsle.DesktopApp.Application
     {
         HistoryEntry Save(SimResult result);
         HistoryListResult List();
+        HistoryListResult ListTrash();
         SimResult Read(string id);
         bool Delete(string id);
         int Clear();
+        bool Restore(string id);
+        int RestoreAll();
     }
 
     public sealed class HistoryEntry

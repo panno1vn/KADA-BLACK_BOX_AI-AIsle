@@ -10,6 +10,7 @@ namespace AIsle.DesktopApp.Infrastructure
     {
         private const string Extension = ".sim-result.json";
         private readonly string _directory;
+        private readonly string _trashDirectory;
 
         public JsonHistoryStore(string? directory = null)
         {
@@ -17,6 +18,7 @@ namespace AIsle.DesktopApp.Infrastructure
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "AIsle",
                 "history-v1");
+            _trashDirectory = Path.Combine(_directory, ".trash");
         }
 
         public HistoryEntry Save(SimResult result)
@@ -47,12 +49,16 @@ namespace AIsle.DesktopApp.Infrastructure
             return ToEntry(result);
         }
 
-        public HistoryListResult List()
+        public HistoryListResult List() => ListFromDirectory(_directory);
+
+        public HistoryListResult ListTrash() => ListFromDirectory(_trashDirectory);
+
+        private HistoryListResult ListFromDirectory(string targetDir)
         {
-            if (!Directory.Exists(_directory)) return new HistoryListResult();
+            if (!Directory.Exists(targetDir)) return new HistoryListResult();
             var entries = new List<HistoryEntry>();
             var warnings = new List<HistoryWarning>();
-            var files = Directory.GetFiles(_directory, "*" + Extension, SearchOption.TopDirectoryOnly);
+            var files = Directory.GetFiles(targetDir, "*" + Extension, SearchOption.TopDirectoryOnly);
             for (var index = 0; index < files.Length; index++)
             {
                 try
@@ -79,7 +85,13 @@ namespace AIsle.DesktopApp.Infrastructure
         {
             if (!SimResultJsonSerializer.IsSafeId(id)) throw new ArgumentException("History ID is invalid.", nameof(id));
             var path = PathFor(id);
-            if (!File.Exists(path)) throw new HistoryResultNotFoundException(id);
+            if (!File.Exists(path))
+            {
+                // Fallback check in trash if not in active directory
+                var trashPath = TrashPathFor(id);
+                if (File.Exists(trashPath)) path = trashPath;
+                else throw new HistoryResultNotFoundException(id);
+            }
             try
             {
                 return ReadFile(path);
@@ -97,7 +109,10 @@ namespace AIsle.DesktopApp.Infrastructure
             if (!File.Exists(path)) return false;
             try
             {
-                File.Delete(path);
+                Directory.CreateDirectory(_trashDirectory);
+                var trashPath = TrashPathFor(id);
+                if (File.Exists(trashPath)) File.Delete(trashPath);
+                File.Move(path, trashPath);
                 return true;
             }
             catch
@@ -109,13 +124,55 @@ namespace AIsle.DesktopApp.Infrastructure
         public int Clear()
         {
             if (!Directory.Exists(_directory)) return 0;
+            Directory.CreateDirectory(_trashDirectory);
             var count = 0;
             var files = Directory.GetFiles(_directory, "*" + Extension, SearchOption.TopDirectoryOnly);
             foreach (var file in files)
             {
                 try
                 {
-                    File.Delete(file);
+                    var dest = Path.Combine(_trashDirectory, Path.GetFileName(file));
+                    if (File.Exists(dest)) File.Delete(dest);
+                    File.Move(file, dest);
+                    count++;
+                }
+                catch { }
+            }
+            return count;
+        }
+
+        public bool Restore(string id)
+        {
+            if (!SimResultJsonSerializer.IsSafeId(id)) return false;
+            var trashPath = TrashPathFor(id);
+            if (!File.Exists(trashPath)) return false;
+            try
+            {
+                Directory.CreateDirectory(_directory);
+                var activePath = PathFor(id);
+                if (File.Exists(activePath)) File.Delete(activePath);
+                File.Move(trashPath, activePath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public int RestoreAll()
+        {
+            if (!Directory.Exists(_trashDirectory)) return 0;
+            Directory.CreateDirectory(_directory);
+            var count = 0;
+            var files = Directory.GetFiles(_trashDirectory, "*" + Extension, SearchOption.TopDirectoryOnly);
+            foreach (var file in files)
+            {
+                try
+                {
+                    var dest = Path.Combine(_directory, Path.GetFileName(file));
+                    if (File.Exists(dest)) File.Delete(dest);
+                    File.Move(file, dest);
                     count++;
                 }
                 catch { }
@@ -125,6 +182,7 @@ namespace AIsle.DesktopApp.Infrastructure
 
         private SimResult ReadFile(string path) => SimResultJsonSerializer.Deserialize(File.ReadAllText(path));
         private string PathFor(string id) => Path.Combine(_directory, id + Extension);
+        private string TrashPathFor(string id) => Path.Combine(_trashDirectory, id + Extension);
 
         private static HistoryEntry ToEntry(SimResult result) => new HistoryEntry
         {

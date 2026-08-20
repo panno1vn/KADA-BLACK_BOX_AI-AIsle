@@ -307,9 +307,20 @@ function bind(){
   const btnAnaBackRes=$('#btn-analytics-back-results');if(btnAnaBackRes)btnAnaBackRes.onclick=()=>switchTab('results');
   
   const handleClearHistory=async()=>{
+    try{
+      let localRuns = JSON.parse(localStorage.getItem('aisle_history_runs') || '[]');
+      let trashRuns = JSON.parse(localStorage.getItem('aisle_trash_runs') || '[]');
+      for(const r of localRuns){
+        if(!trashRuns.some(t => (t.id || t.Id || '') === (r.id || r.Id || ''))){
+          trashRuns.unshift(r);
+        }
+      }
+      localStorage.setItem('aisle_trash_runs', JSON.stringify(trashRuns.slice(0, 100)));
+    }catch(e){}
+    
     localStorage.removeItem('aisle_history_runs');
     localStorage.removeItem('sim-history-list');
-    localStorage.removeItem('aisle_deleted_history_ids');
+    
     try{
       if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
         await window.aisleBridge.request('history.clear');
@@ -317,12 +328,16 @@ function bind(){
     }catch(e){}
     await loadHistoryList();
     await loadDashboard();
-    toast('Đã xóa toàn bộ lịch sử các phiên mô phỏng.');
-    showSystemEvent('Đã xóa toàn bộ lịch sử các phiên mô phỏng.');
+    toast('Đã chuyển toàn bộ lịch sử vào thùng rác.');
+    showSystemEvent('Đã chuyển toàn bộ lịch sử vào thùng rác.');
   };
   const btnClearHist=$('#btn-clear-history');if(btnClearHist)btnClearHist.onclick=handleClearHistory;
   const btnClearAllHist=$('#btn-clear-all-history');if(btnClearAllHist)btnClearAllHist.onclick=handleClearHistory;
   const btnAnaClearHist=$('#btn-analytics-clear-history');if(btnAnaClearHist)btnAnaClearHist.onclick=handleClearHistory;
+  const btnOpenTrash=$('#btn-open-trash');if(btnOpenTrash)btnOpenTrash.onclick=openTrashDialog;
+  const btnCloseTrash=$('#btn-close-trash');if(btnCloseTrash)btnCloseTrash.onclick=()=>$('#trash-dialog')?.close();
+  const btnCloseTrashFooter=$('#btn-close-trash-footer');if(btnCloseTrashFooter)btnCloseTrashFooter.onclick=()=>$('#trash-dialog')?.close();
+  const btnRestoreAllTrash=$('#btn-restore-all-trash');if(btnRestoreAllTrash)btnRestoreAllTrash.onclick=restoreAllTrashRuns;
   const btnWarnBack=$('#btn-warning-back-setup');if(btnWarnBack)btnWarnBack.onclick=()=>{$('#layout-warning-dialog')?.close();switchTab('setup');};
   const btnWarnCont=$('#btn-warning-continue');if(btnWarnCont)btnWarnCont.onclick=()=>{$('#layout-warning-dialog')?.close();};
   const toggleSidebarBtn=$('#toggle-sidebar-btn');
@@ -642,6 +657,8 @@ function renderHistoryRow(item){
   const spawned=summary.spawned??summary.Spawned??0;
   const converted=summary.converted??summary.Converted??0;
   const revenue=money(summary.revenue??summary.Revenue??0);
+  const durationSec = summary.duration ?? summary.Duration ?? 1800;
+  const durationMin = Math.round(durationSec / 60) || 30;
   const key=item.id||item.Id||(item.createdAt||item.CreatedAt||'')+(item.name||item.Name||'');
 
   return `
@@ -655,8 +672,11 @@ function renderHistoryRow(item){
           <div class="text-[11px] text-on-surface-variant opacity-70">${dateStr ? 'Ngày '+dateStr : 'Lưu gần đây'}</div>
         </div>
       </div>
-      <div class="font-body-md text-sm text-on-surface-variant flex items-center gap-1.5">
-        <span class="material-symbols-outlined text-sm opacity-70">schedule</span> ${timeStr}
+      <div class="font-body-md text-sm text-on-surface-variant flex flex-col justify-center">
+        <div class="flex items-center gap-1 font-bold text-on-surface text-xs">
+          <span class="material-symbols-outlined text-sm text-primary">schedule</span> ${timeStr}
+        </div>
+        <div class="text-[10px] text-on-surface-variant opacity-75">${durationMin} phút chạy</div>
       </div>
       <div class="font-label-md text-on-surface text-right">
         <span class="inline-flex items-center justify-center bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full text-xs font-bold shadow-xs">
@@ -665,7 +685,7 @@ function renderHistoryRow(item){
       </div>
       <div class="font-label-md text-secondary text-right font-bold text-base md:text-lg">${revenue}</div>
       <div class="text-center flex justify-center items-center">
-        <button type="button" class="btn-delete-row p-1.5 rounded-lg text-on-surface-variant/40 hover:text-error hover:bg-error-container/40 transition-colors cursor-pointer" data-delete-key="${escapeHTML(key)}" title="Xóa phiên này">
+        <button type="button" class="btn-delete-row p-1.5 rounded-lg text-on-surface-variant/40 hover:text-error hover:bg-error-container/40 transition-colors cursor-pointer" data-delete-key="${escapeHTML(key)}" data-item-id="${escapeHTML(item.id || item.Id || '')}" title="Xóa phiên này">
           <span class="material-symbols-outlined text-lg">delete</span>
         </button>
       </div>
@@ -687,17 +707,32 @@ function markHistoryIdDeleted(id){
   localStorage.setItem('aisle_deleted_history_ids',JSON.stringify([...set]));
 }
 
-async function deleteHistoryRunByKey(deleteKey){
+async function deleteHistoryRunByKey(deleteKey, rawItem){
   if(!deleteKey) return;
   markHistoryIdDeleted(deleteKey);
+  
   try{
-    let runs = JSON.parse(localStorage.getItem('aisle_history_runs') || '[]');
-    runs = runs.filter(item => {
+    let localRuns = JSON.parse(localStorage.getItem('aisle_history_runs') || '[]');
+    let trashRuns = JSON.parse(localStorage.getItem('aisle_trash_runs') || '[]');
+    
+    let target = rawItem || localRuns.find(item => {
+      const key = item.id || item.Id || (item.createdAt || item.CreatedAt || '') + (item.name || item.Name || '');
+      return key === deleteKey || item.id === deleteKey || item.Id === deleteKey;
+    });
+    
+    if(target){
+      trashRuns = trashRuns.filter(t => (t.id || t.Id || '') !== (target.id || target.Id || ''));
+      trashRuns.unshift(target);
+      localStorage.setItem('aisle_trash_runs', JSON.stringify(trashRuns.slice(0, 100)));
+    }
+    
+    localRuns = localRuns.filter(item => {
       const key = item.id || item.Id || (item.createdAt || item.CreatedAt || '') + (item.name || item.Name || '');
       return key !== deleteKey && item.id !== deleteKey && item.Id !== deleteKey;
     });
-    localStorage.setItem('aisle_history_runs', JSON.stringify(runs));
+    localStorage.setItem('aisle_history_runs', JSON.stringify(localRuns));
   }catch(e){}
+  
   try{
     let simList = JSON.parse(localStorage.getItem('sim-history-list') || '[]');
     simList = simList.filter(item => {
@@ -706,14 +741,17 @@ async function deleteHistoryRunByKey(deleteKey){
     });
     localStorage.setItem('sim-history-list', JSON.stringify(simList));
   }catch(e){}
+  
   try{
     if(window.aisleBridge && typeof window.aisleBridge.request === 'function'){
-      await window.aisleBridge.request('history.delete', { id: deleteKey });
+      const idToSend = (rawItem?.id || rawItem?.Id) || deleteKey;
+      await window.aisleBridge.request('history.delete', { id: idToSend });
     }
   }catch(e){}
+  
   await loadHistoryList();
   await loadDashboard();
-  toast('Đã xóa phiên mô phỏng.');
+  toast('Đã chuyển phiên mô phỏng vào thùng rác.');
 }
 
 async function loadHistoryList(){
@@ -755,11 +793,12 @@ async function loadHistoryList(){
   if(merged.length>0){
     if(emptyState)emptyState.remove();
     tableBody.innerHTML=merged.map(renderHistoryRow).join('');
-    tableBody.querySelectorAll('.btn-delete-row').forEach(btn => {
+    tableBody.querySelectorAll('.btn-delete-row').forEach((btn, index) => {
       btn.onclick = async (e) => {
         e.stopPropagation();
         const deleteKey = btn.dataset.deleteKey;
-        await deleteHistoryRunByKey(deleteKey);
+        const item = merged[index];
+        await deleteHistoryRunByKey(deleteKey, item);
       };
     });
   }else{
@@ -773,6 +812,146 @@ async function loadHistoryList(){
       `;
     }
   }
+}
+
+async function openTrashDialog(){
+  const dialog=$('#trash-dialog');
+  const body=$('#trash-list-body');
+  if(!dialog||!body)return;
+  
+  let trashBridgeItems=[];
+  try{
+    if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
+      const res=await window.aisleBridge.request('history.trash.list');
+      trashBridgeItems=res?.items||res?.Items||[];
+    }
+  }catch(e){
+    console.warn('history.trash.list error:',e);
+  }
+  
+  let trashLocalRuns=[];
+  try{
+    trashLocalRuns=JSON.parse(localStorage.getItem('aisle_trash_runs')||'[]');
+  }catch(e){}
+  
+  const trashMap=new Map();
+  
+  for(const item of [...trashBridgeItems, ...trashLocalRuns]){
+    const key=item.id||item.Id||(item.createdAt||item.CreatedAt||'')+(item.name||item.Name||'');
+    if(key&&!trashMap.has(key)){
+      trashMap.set(key,item);
+    }
+  }
+  
+  const trashList=[...trashMap.values()];
+  trashList.sort((a,b)=>{
+    const da=new Date(a.createdAt||a.CreatedAt||0).getTime();
+    const db=new Date(b.createdAt||b.CreatedAt||0).getTime();
+    return db-da;
+  });
+  
+  if(trashList.length===0){
+    body.innerHTML=`
+      <div class="py-8 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-3xl opacity-50">delete_outline</span>
+        <span>Thùng rác trống. Chưa có phiên nào bị xóa.</span>
+      </div>
+    `;
+  }else{
+    body.innerHTML=trashList.map(item=>{
+      const key=item.id||item.Id||(item.createdAt||item.CreatedAt||'')+(item.name||item.Name||'');
+      const name=item.name||item.Name||'Cửa hàng tiện lợi';
+      const timeStr=item.createdAt||item.CreatedAt?new Date(item.createdAt||item.CreatedAt).toLocaleString('vi-VN'):'Không rõ';
+      const summary=item.summary||item.Summary||{};
+      const revenue=money(summary.revenue||summary.Revenue||0);
+      const spawned=summary.spawned||summary.Spawned||0;
+      const converted=summary.converted||summary.Converted||0;
+      return `
+        <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container border border-outline-variant/60 hover:bg-surface-container-high transition-colors">
+          <div class="flex flex-col min-w-0 pr-2">
+            <span class="font-bold text-xs text-primary truncate">${escapeHTML(name)}</span>
+            <span class="text-[11px] text-on-surface-variant">${timeStr} · ${spawned} khách (${converted} đã mua) · <b class="text-secondary">${revenue}</b></span>
+          </div>
+          <button type="button" class="btn-restore-item px-3 py-1 rounded-lg bg-surface-bright hover:bg-primary hover:text-on-primary border border-outline-variant text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer shadow-xs" data-restore-key="${escapeHTML(key)}" title="Khôi phục lại phiên này">
+            <span class="material-symbols-outlined text-sm">settings_backup_restore</span> Khôi phục
+          </button>
+        </div>
+      `;
+    }).join('');
+    
+    body.querySelectorAll('.btn-restore-item').forEach(btn=>{
+      btn.onclick=async(e)=>{
+        e.stopPropagation();
+        const key=btn.dataset.restoreKey;
+        const itemToRestore = trashList.find(it => (it.id || it.Id || (it.createdAt || it.CreatedAt || '') + (it.name || it.Name || '')) === key);
+        await restoreHistoryRunByKey(key, itemToRestore);
+      };
+    });
+  }
+  
+  dialog.showModal();
+}
+
+async function restoreHistoryRunByKey(restoreKey, restoredItem){
+  if(!restoreKey)return;
+  const deletedSet=getDeletedHistoryIds();
+  deletedSet.delete(restoreKey);
+  if(restoredItem?.id) deletedSet.delete(restoredItem.id);
+  if(restoredItem?.Id) deletedSet.delete(restoredItem.Id);
+  localStorage.setItem('aisle_deleted_history_ids',JSON.stringify([...deletedSet]));
+  
+  try{
+    let trashRuns=JSON.parse(localStorage.getItem('aisle_trash_runs')||'[]');
+    let localRuns=JSON.parse(localStorage.getItem('aisle_history_runs')||'[]');
+    
+    const item = restoredItem || trashRuns.find(it => (it.id || it.Id || (it.createdAt || it.CreatedAt || '') + (it.name || it.Name || '')) === restoreKey);
+    if(item){
+      trashRuns = trashRuns.filter(it => (it.id || it.Id || (it.createdAt || it.CreatedAt || '') + (it.name || it.Name || '')) !== restoreKey && (it.id || it.Id) !== (item.id || item.Id));
+      localStorage.setItem('aisle_trash_runs', JSON.stringify(trashRuns));
+      
+      if(!localRuns.some(lr => (lr.id || lr.Id) === (item.id || item.Id))){
+        localRuns.unshift(item);
+        localStorage.setItem('aisle_history_runs', JSON.stringify(localRuns.slice(0, 100)));
+      }
+    }
+  }catch(e){}
+  
+  try{
+    if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
+      const idToSend = (restoredItem?.id || restoredItem?.Id) || restoreKey;
+      await window.aisleBridge.request('history.restore',{id:idToSend});
+    }
+  }catch(e){}
+  
+  await openTrashDialog();
+  await loadHistoryList();
+  await loadDashboard();
+  toast('Đã khôi phục phiên mô phỏng thành công.');
+}
+
+async function restoreAllTrashRuns(){
+  localStorage.removeItem('aisle_deleted_history_ids');
+  try{
+    let trashRuns=JSON.parse(localStorage.getItem('aisle_trash_runs')||'[]');
+    let localRuns=JSON.parse(localStorage.getItem('aisle_history_runs')||'[]');
+    for(const tr of trashRuns){
+      if(!localRuns.some(lr => (lr.id || lr.Id) === (tr.id || tr.Id))){
+        localRuns.unshift(tr);
+      }
+    }
+    localStorage.setItem('aisle_history_runs', JSON.stringify(localRuns.slice(0, 100)));
+    localStorage.removeItem('aisle_trash_runs');
+  }catch(e){}
+  
+  try{
+    if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
+      await window.aisleBridge.request('history.restore.all');
+    }
+  }catch(e){}
+  $('#trash-dialog')?.close();
+  await loadHistoryList();
+  await loadDashboard();
+  toast('Đã khôi phục toàn bộ lịch sử thành công.');
 }
 
 function updateResultsScreen(){
@@ -886,7 +1065,7 @@ function renderInspector(){
     const valOut=$('#shelf-valence-out');if(valOut)valOut.textContent=(shelf.valence>=0?'+':'')+Number(shelf.valence).toFixed(2);
     renderShelfProducts(shelf);
   }
-  if(agent){$('#npc-inspector').innerHTML=`<h3 class="font-bold text-base text-primary">${escapeHTML(agent.id)}</h3><p class="text-xs text-on-surface">Trạng thái: <b>${agent.status}</b></p><p class="text-xs text-on-surface">Mục tiêu: <b>${escapeHTML(agent.target||'Chỉ xem dạo')}</b></p><p class="text-[11px] text-on-surface-variant">Nguồn: <b>C# Simulation Core</b></p>`}
+  if(agent){$('#npc-inspector').innerHTML=`<div class="border-b border-outline-variant pb-2 mb-3"><h3 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2"><span class="material-symbols-outlined text-lg text-primary">person</span> THÔNG TIN KHÁCH HÀNG</h3></div><h4 class="font-bold text-xs text-primary mb-1">${escapeHTML(agent.id)}</h4><p class="text-xs text-on-surface">Trạng thái: <b>${agent.status}</b></p><p class="text-xs text-on-surface">Mục tiêu: <b>${escapeHTML(agent.target||'Chỉ xem dạo')}</b></p><p class="text-[11px] text-on-surface-variant mt-2">Nguồn: <b>C# Simulation Core</b></p>`}
 }
 function renderShelfProducts(shelf){
   const listEl=$('#shelf-product-list'),countEl=$('#shelf-product-count');

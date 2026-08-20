@@ -323,12 +323,10 @@
 
           <!-- Shelf Form -->
           <form id="shelf-form" hidden class="flex flex-col h-full gap-4 overflow-y-auto pr-1">
-            <div class="flex justify-between items-start border-b border-outline-variant pb-3">
-              <div>
-                <h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight flex items-center gap-2">
-                  <span class="material-symbols-outlined text-secondary">shelves</span> Thuộc tính Kệ hàng
-                </h3>
-              </div>
+            <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+              <h3 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-secondary">shelves</span> THUỘC TÍNH KỆ HÀNG
+              </h3>
             </div>
             <div>
               <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Thể loại kệ hàng (Category)</label>
@@ -389,12 +387,10 @@
 
           <!-- Wall Form -->
           <form id="wall-form" hidden class="flex flex-col h-full gap-5">
-             <div class="flex justify-between items-start border-b border-outline-variant pb-4">
-              <div>
-                <h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight flex items-center gap-2">
-                  <span class="material-symbols-outlined text-outline">straighten</span> Thuộc tính Tường
-                </h3>
-              </div>
+            <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+              <h3 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-outline">straighten</span> THUỘC TÍNH TƯỜNG
+              </h3>
             </div>
             <div>
               <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Mã tường (ID)</label>
@@ -676,9 +672,14 @@
 
           <div class="flex justify-between items-center px-6 py-2.5 bg-surface-container-low/60 border-t border-surface-container-high/40 text-xs text-on-surface-variant shrink-0">
             <span id="results-count-text">0 phiên đã lưu</span>
-            <button id="btn-clear-all-history" type="button" class="text-on-surface-variant/70 hover:text-error hover:underline flex items-center gap-1 transition-colors py-0.5 px-2 rounded cursor-pointer" title="Xóa toàn bộ lịch sử">
-              <span class="material-symbols-outlined text-sm">delete_sweep</span> Xóa tất cả
-            </button>
+            <div class="flex items-center gap-3">
+              <button id="btn-open-trash" type="button" class="text-on-surface-variant/80 hover:text-primary hover:underline flex items-center gap-1 transition-colors py-0.5 px-2 rounded cursor-pointer" title="Xem và khôi phục các phiên trong thùng rác">
+                <span class="material-symbols-outlined text-sm">restore_from_trash</span> Thùng rác
+              </button>
+              <button id="btn-clear-all-history" type="button" class="text-on-surface-variant/70 hover:text-error hover:underline flex items-center gap-1 transition-colors py-0.5 px-2 rounded cursor-pointer" title="Chuyển toàn bộ lịch sử vào thùng rác">
+                <span class="material-symbols-outlined text-sm">delete_sweep</span> Xóa tất cả
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -736,6 +737,30 @@
   <!-- Calendar Dialog for Analytics -->
   <dialog id="calendar-dialog" class="p-4 rounded-2xl bg-surface border border-outline-variant shadow-2xl max-w-sm w-full">
     <div id="calendar-body"></div>
+  </dialog>
+
+  <!-- Trash & Recovery Dialog -->
+  <dialog id="trash-dialog" class="p-0 rounded-2xl bg-surface border-2 border-outline-variant shadow-2xl max-w-2xl w-full backdrop:bg-black/40 overflow-hidden">
+    <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
+      <h3 class="font-bold text-sm text-primary flex items-center gap-2">
+        <span class="material-symbols-outlined text-base text-primary">restore_from_trash</span>
+        Thùng rác (Khôi phục phiên mô phỏng)
+      </h3>
+      <button id="btn-close-trash" type="button" class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface cursor-pointer">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+    <div id="trash-list-body" class="p-4 max-h-[60vh] overflow-y-auto flex flex-col gap-2 min-h-[160px]">
+      <!-- Rendered dynamically -->
+    </div>
+    <div class="p-3 bg-surface-container-low border-t border-outline-variant flex justify-between items-center">
+      <button id="btn-restore-all-trash" type="button" class="px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-bold text-xs hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-xs">
+        <span class="material-symbols-outlined text-sm">settings_backup_restore</span> Khôi phục tất cả
+      </button>
+      <button id="btn-close-trash-footer" type="button" class="px-3.5 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-xs hover:bg-surface-container cursor-pointer">
+        Đóng
+      </button>
+    </div>
   </dialog>
 
   <!-- Tooltip for Canvas Charts -->
