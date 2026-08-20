@@ -1348,6 +1348,15 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
   - Xoá `%LOCALAPPDATA%\AIsle\project-v1.json` (bản copy cũ của layout 1-kệ được tạo lúc mở app phiên trước) để app tự copy lại `default-project.json` mới ở lần chạy kế tiếp — đảm bảo layout đang hiển thị khớp với data demo (tính năng sơ đồ dùng layout hiện tại, không lưu riêng theo từng phiên).
 - Kết quả: `dotnet build` 0 warning/0 error; `AIsle.DesktopApp.Tests` và `AIsle.Simulation.Tests` PASS (không có test nào giả định cứng nội dung default-project.json cũ). Đã mở lại app thật để chủ dự án xem trực tiếp.
 - Phạm vi Git: Chỉ local trên `main`, chưa commit/push. `src/AIsle.DesktopApp/UI/history-seed/*.sim-result.json` là untracked (30 file mới thay 30 file cũ).
+## 2026-08-21 01:01 (UTC+07:00) — Codex — Sửa lỗi Desktop không khởi động sau khi thay sprite NPC
+
+- Lý do sửa: Chủ dự án báo `D:\Big\KADA\test_ui` chạy không được. Audit startup cho thấy bộ asset local đã được đổi từ `npc_0..3` sang `npc_1..4`, trong khi renderer, startup verification và Desktop packaging test vẫn bắt buộc `npc_0.png` đã bị xóa.
+- Đã sửa/đã làm: Giữ nguyên toàn bộ nội dung bốn sprite do người dùng thay; xác nhận `npc_1.png`–`npc_4.png` đều đúng PNG ARGB 128×384 theo contract 8 hướng × 4 frame; cập nhật `src/AIsle.DesktopApp/UI/npc-renderer.mjs`, `src/AIsle.DesktopApp/Infrastructure/LocalUiAssets.cs` và `tests/AIsle.DesktopApp.Tests/Program.cs` để dùng đúng dải `npc_1..4`. Không khôi phục/ghi đè `npc_0.png`, không sửa `docs/task_10.md` đang bị xóa trong working tree.
+- Đối chiếu Result_Plan.md/rule.md/task.md: Chỉ sửa Desktop local asset packaging/startup và test liên quan; không thay Simulation, Contracts, Population, history schema, Mobile/Unity/backend hoặc thêm dependency.
+- Trạng thái: Đạt. `run-desktop.bat` mở đúng executable trong `test_ui`; process PID 4104 responding, WebView2 được khởi tạo, đủ index/bridge/bốn sprite packaged và không có `crash_log.txt`. Đã dừng đúng PID smoke-test sau kiểm tra để không khóa `AIsleDesktop.exe`.
+- Kiểm tra: Desktop project build 0 warning/0 error; renderer 6/6 pass; JavaScript tổng 20/20 pass; Desktop S1–S7 verification pass; solution build 0 error (còn warning NU1900 do môi trường không truy cập NuGet vulnerability service và hai warning source RVO2 vendored đã có); `git diff --check` pass.
+- Nên làm tiếp theo: Chạy lại `run-desktop.bat` từ root `test_ui`. Nếu muốn giữ bộ sprite mới trên Git, review rồi commit riêng các thay đổi asset cùng ba file mapping/test; không đưa lại `npc_0.png` trừ khi registry cũng đổi lại.
+- Phạm vi đồng bộ: Chỉ local trên `develop`; chưa stage, chưa commit, chưa push. Các thay đổi sprite và việc xóa `docs/task_10.md` có trước lượt này được bảo toàn.
 
 
 

@@ -1,9 +1,9 @@
 export const NPC_DIRECTIONS = Object.freeze(['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']);
 export const NPC_SPRITE_ASSETS = Object.freeze([
-  Object.freeze({ id: 'npc_0', src: 'assets/npc/npc_0.png' }),
   Object.freeze({ id: 'npc_1', src: 'assets/npc/npc_1.png' }),
   Object.freeze({ id: 'npc_2', src: 'assets/npc/npc_2.png' }),
   Object.freeze({ id: 'npc_3', src: 'assets/npc/npc_3.png' }),
+  Object.freeze({ id: 'npc_4', src: 'assets/npc/npc_4.png' }),
 ]);
 
 const COLUMN_COUNT = 4;

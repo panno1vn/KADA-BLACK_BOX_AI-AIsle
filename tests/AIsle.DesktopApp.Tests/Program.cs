@@ -400,7 +400,7 @@ internal static class Program
         var renderer = Path.Combine(uiRoot, "npc-renderer.mjs");
         var spriteRoot = Path.Combine(uiRoot, "assets", "npc");
         Assert(File.Exists(renderer), "Pixel NPC renderer was not packaged.");
-        var expected = Enumerable.Range(0, 4)
+        var expected = Enumerable.Range(1, 4)
             .Select(index => Path.Combine(spriteRoot, $"npc_{index}.png"))
             .ToArray();
         Assert(expected.All(File.Exists), "One or more pixel NPC sheets were not packaged.");

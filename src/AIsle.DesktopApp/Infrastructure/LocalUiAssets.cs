@@ -24,10 +24,10 @@ namespace AIsle.DesktopApp.Infrastructure
                 Path.Combine(uiRoot, "app.js"),
                 Path.Combine(uiRoot, "default-project.json"),
                 Path.Combine(uiRoot, "npc-renderer.mjs"),
-                Path.Combine(uiRoot, "assets", "npc", "npc_0.png"),
                 Path.Combine(uiRoot, "assets", "npc", "npc_1.png"),
                 Path.Combine(uiRoot, "assets", "npc", "npc_2.png"),
                 Path.Combine(uiRoot, "assets", "npc", "npc_3.png"),
+                Path.Combine(uiRoot, "assets", "npc", "npc_4.png"),
                 bridgeScriptPath
             };
 
