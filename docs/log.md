@@ -1358,6 +1358,13 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Nên làm tiếp theo: Chạy lại `run-desktop.bat` từ root `test_ui`. Nếu muốn giữ bộ sprite mới trên Git, review rồi commit riêng các thay đổi asset cùng ba file mapping/test; không đưa lại `npc_0.png` trừ khi registry cũng đổi lại.
 - Phạm vi đồng bộ: Chỉ local trên `develop`; chưa stage, chưa commit, chưa push. Các thay đổi sprite và việc xóa `docs/task_10.md` có trước lượt này được bảo toàn.
 
+## 2026-08-21 01:17 (UTC+07:00) — Codex — Đã đồng bộ sprite NPC từ test_ui lên develop
+
+- Đã làm: Tích hợp fast-forward commit SQLite/history `23a442f`, giữ đầy đủ nhật ký của cả remote và local khi giải quyết conflict append-only; commit batch local bằng `f5f0a74` (`fix(ui): update NPC sprite registry and desktop assets`) và push lên `origin/develop`.
+- Thay đổi chính: Chuyển registry/packaging/test từ `npc_0..3` sang `npc_1..4`, giữ nguyên nội dung sprite mới, xóa `npc_0.png` và `docs/task_10.md` đúng theo working tree do chủ dự án chuẩn bị.
+- Kiểm tra: Restore `Microsoft.Data.Sqlite` thành công; Release build 0 warning/0 error; Desktop test pass trong môi trường Windows có quyền ghi LocalAppData; Results, Simulation và Population pass; 13/13 file JavaScript test pass; `git diff --check` pass.
+- Kiểm soát conflict: Fetch ngay trước push cho kết quả local/remote `1/0`; push fast-forward, không rebase và không force-push. Chỉ thao tác `D:\Big\KADA\test_ui`, không chạm `D:\Big\KADA\test`.
+
 
 
 
