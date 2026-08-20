@@ -703,7 +703,6 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet run` test Population và DesktopApp đều PASS. Behavior đáp ứng chính xác yêu cầu của Task phantom need + validation.
 - Phạm vi Git: Chỉ local trên `develop`.
 
-
 ## 2026-08-20 09:50 (UTC+07:00) — Antigravity — Triển khai tính năng Xem lại (Replay) & Tua thời gian (Seek Timeline) từ màn hình LOAD
 
 - Lý do sửa: Khách hàng yêu cầu hỗ trợ xem lại và tua thời gian các phiên mô phỏng đã lưu từ màn hình LOAD (Results).
@@ -1422,6 +1421,13 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kết quả: Kệ hàng giữ trọn vẹn nét vẽ gốc sắc nét, không bị méo; các bức tường hiển thị chân thực, ăn khớp hoàn hảo với phong cách đồ họa chung của siêu thị.
 - Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
 - Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-21 01:49 (UTC+07:00) — Codex — Merge local simulator vào test_ui
+
+- Đã làm: Tạo nhánh `simulator-local` trong `D:\Big\KADA\simulator`, commit batch UI/assets bằng `6140bae`; tạo nhánh `simulator-integration` trong `D:\Big\KADA\test_ui`, merge local và giải quyết conflict `docs/log.md` theo nguyên tắc append-only; đưa local `develop` tới merge commit `92156bf`.
+- Bảo vệ NPC: `src/AIsle.DesktopApp/UI/assets/npc` không có diff so với commit trước merge `8a1d6aa`; bốn file `npc_1.png`–`npc_4.png` giữ nguyên SHA-256. Bộ `npc_0..3` từ simulator chỉ tồn tại ở `web/assets/npc`, không ghi đè thư mục NPC Desktop được bảo vệ.
+- Kiểm tra: Results, Simulation, Population, Desktop và 13/13 JavaScript test pass; build 0 error, còn 2 warning từ source RVO2 vendored đã tồn tại.
+- Phạm vi: Chỉ thao tác local giữa `simulator` và `test_ui`; không fetch/push hoặc thay đổi GitHub.
 
 
 
