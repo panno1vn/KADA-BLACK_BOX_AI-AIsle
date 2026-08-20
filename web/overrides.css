@@ -168,3 +168,31 @@ body.outputs-collapsed .event-log {
 @media (max-width: 900px) {
   #parameter-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Tool palette active highlight */
+button[data-tool] {
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+button[data-tool].active {
+  background-color: #ffffff !important;
+  border-color: #685d4a !important;
+  color: #685d4a !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1.5px #685d4a !important;
+}
+
+button[data-tool]:not(.active) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #52443c !important;
+  font-weight: normal !important;
+  box-shadow: none !important;
+}
+
+button[data-tool]:not(.active):hover {
+  background-color: #ffffff !important;
+  color: #221b0b !important;
+}
+

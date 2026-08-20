@@ -6,10 +6,57 @@ body {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
-/* Screen visibility & hidden attribute enforcement */
+/* Screen visibility & hidden attribute enforcement with smooth mobile-like swipe (No Flash / Static Header) */
 /* !important keeps Tailwind display utilities (flex, grid) from overriding visibility */
-.screen { display: none !important; }
-.screen.active { display: flex !important; flex-direction: column; }
+@keyframes screenSlideFromRight {
+    0% {
+        transform: translate3d(36px, 0, 0);
+    }
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes screenSlideFromLeft {
+    0% {
+        transform: translate3d(-36px, 0, 0);
+    }
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.screen { 
+    display: none !important; 
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.screen.active { 
+    display: flex !important; 
+    flex-direction: column; 
+}
+
+/* Header and Pill Navigation remain completely static */
+.screen > header, 
+header, 
+.nav-pill-group {
+    transform: none !important;
+    animation: none !important;
+    will-change: auto !important;
+}
+
+/* Only body content below header animates during tab switch */
+.screen.active > *:not(header):not(.fixed):not(.absolute) { 
+    animation: screenSlideFromRight 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+}
+.screen.active.slide-from-left > *:not(header):not(.fixed):not(.absolute) {
+    animation: screenSlideFromLeft 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.screen.active.slide-from-right > *:not(header):not(.fixed):not(.absolute) {
+    animation: screenSlideFromRight 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
 [hidden], .hidden { display: none !important; }
 
 /* Material Symbols utility */
@@ -289,4 +336,141 @@ dialog::backdrop {
 }
 #speed:focus {
     border-color: #685d4a;
+}
+
+/* Tool buttons active highlight */
+button[data-tool] {
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+button[data-tool].active {
+    background-color: #ffffff !important;
+    border: 1.5px solid #685d4a !important;
+    color: #685d4a !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+}
+button[data-tool]:not(.active) {
+    background-color: transparent !important;
+    border: 1.5px solid transparent !important;
+    color: #52443c !important;
+    font-weight: normal !important;
+    box-shadow: none !important;
+}
+button[data-tool]:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    color: #221b0b !important;
+}
+
+/* ---------- Dashboard Analytics Styles ---------- */
+#chart-tooltip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #ffffff;
+    border: 1px solid #d7c2b4;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #2c1a0e;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(66, 36, 12, 0.15);
+}
+#chart-tooltip[hidden] {
+    display: none !important;
+}
+#chart-tooltip b {
+    color: #b87a26;
+}
+
+/* Calendar popup */
+.cal-cell {
+    position: relative;
+    aspect-ratio: 1;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 500;
+    color: #7b5548;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cal-cell.empty {
+    visibility: hidden;
+}
+.cal-cell.has-data {
+    color: #2c1a0e;
+    border-color: #d7c2b4;
+    background: #fdfaf6;
+    cursor: pointer;
+}
+.cal-cell.has-data:hover {
+    border-color: #b87a26;
+    background: #f5ece2;
+}
+.cal-cell.has-data i {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #b87a26;
+}
+.cal-cell.no-data {
+    opacity: 0.35;
+    cursor: default;
+}
+.cal-cell.selected {
+    background: #b87a26 !important;
+    color: #ffffff !important;
+    border-color: #b87a26 !important;
+    font-weight: 700;
+}
+.cal-cell.selected i {
+    background: #ffffff;
+}
+
+/* ═══════ Navigation Pill Switcher ═══════ */
+.nav-pill-group {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px;
+    background: var(--surface-container-low, #f4e8dc);
+    border: 2px solid var(--outline-variant, #d7c2b4);
+    border-radius: 9999px;
+    box-shadow: inset 0 1px 3px rgba(123, 85, 72, 0.08);
+    gap: 4px;
+}
+.nav-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--on-surface-variant, #68574c);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+}
+.nav-pill-btn:hover {
+    color: var(--primary, #855318);
+    background: rgba(255, 255, 255, 0.55);
+}
+.nav-pill-btn.active {
+    background: var(--primary, #855318) !important;
+    color: var(--on-primary, #ffffff) !important;
+    box-shadow: 0 2px 8px rgba(133, 83, 24, 0.3);
+}
+.nav-pill-btn.active .material-symbols-outlined {
+    font-variation-settings: 'FILL' 1;
 }

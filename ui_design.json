@@ -1,0 +1,65 @@
+{
+  "screens": [
+    {
+      "id": 1,
+      "name": "Màn hình 1",
+      "condition": "Mặc định (Khởi động)",
+      "elements": [
+        "Tên của ứng dụng",
+        "Nút 'New'",
+        "Nút 'Load'"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Màn hình 2",
+      "condition": "Sau khi nhấn 'New'",
+      "elements": [
+        "Tên ứng dụng (Header)",
+        "Tên cửa hàng (Header)",
+        "Nút 'Run' (Header)",
+        "Sidebar chứa các dụng cụ để setup (Shelf, wall...)",
+        "Khu vực setup (Vùng chính)"
+      ],
+      "interactions": [
+        {
+          "action": "Click vào Kệ hàng (Shelf)",
+          "result": "Hiển thị Bảng thuộc tính Kệ (ID, Tên kệ, Loại hàng, Độ thu hút, Kích thước X/Y/W/H, Nút Delete)"
+        },
+        {
+          "action": "Click vào Tường (Wall)",
+          "result": "Hiển thị Bảng thuộc tính Tường (ID, Tọa độ X1/Y1/X2/Y2, Nút Delete)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Màn hình 3",
+      "condition": "Sau khi ấn 'Run'",
+      "elements": [
+        "Khu vực chạy thử (Vùng chính giữa)",
+        "Bảng thống kê (Bên trái): Số khách vào, Số người mua, Số người quay lại, Loại đồ/nhân vật/phim đã mua",
+        "Mô phỏng nhân vật thu ngân (Bên phải): Sẽ có biểu cảm khi có khách mua hàng"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Màn hình 4",
+      "condition": "Sau khi chạy xong 1 phiên",
+      "elements": [
+        "Bảng dữ liệu danh sách các phiên gồm các cột: tháng/kỳ, time, lượt khách, doanh thu",
+        "Nút 'Đánh giá'"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Màn hình 5",
+      "condition": "Sau khi ấn nút 'Đánh giá'",
+      "elements": [
+        "Biểu đồ cột (Bên trái)",
+        "Biểu đồ tròn (Góc phải trên)",
+        "Biểu đồ đường (Góc phải dưới)"
+      ]
+    }
+  ]
+}

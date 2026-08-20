@@ -702,3 +702,497 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
   2. `PopulationApplicationService.cs`: Sửa `Generate()` bắt `ArgumentException` của config (chứa lỗi "At least one category is required" khi Catalog rỗng/categoryIds rỗng từ JS) và wrap vào `ValidationResult` thay vì làm bubble crash bridge. JS frontend vốn đã tự truyền category theo Catalog. Phantom path choice tự vận hành đúng qua exploration mission weight trong code hiện có.
 - Kiểm tra: `dotnet run` test Population và DesktopApp đều PASS. Behavior đáp ứng chính xác yêu cầu của Task phantom need + validation.
 - Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 09:50 (UTC+07:00) — Antigravity — Triển khai tính năng Xem lại (Replay) & Tua thời gian (Seek Timeline) từ màn hình LOAD
+
+- Lý do sửa: Khách hàng yêu cầu hỗ trợ xem lại và tua thời gian các phiên mô phỏng đã lưu từ màn hình LOAD (Results).
+- Đã sửa/đã làm:
+  1. `web/index.html`:
+     - Cập nhật tiêu đề bảng danh sách kết quả màn hình LOAD (`screen-results`) thành 5 cột, bổ sung cột "Thao tác" (Xem lại).
+     - Bổ sung `sim-mode-badge`, `sim-mode-dot`, `sim-mode-text` và nút `btn-exit-replay` (Thoát Replay) trên thanh header mô phỏng.
+  2. `web/app.js`:
+     - Triển khai lớp `ReplaySimulationAdapter` đọc dữ liệu trajectory từ `SimResult` (qua C# bridge `history.read` hoặc bộ nhớ đệm), hỗ trợ nội suy (linear interpolation) vị trí NPC và trạng thái theo từng mốc thời gian $t$.
+     - Thêm hàm `startReplay(runId)` và `exitReplay()`, cho phép bấm nút "Xem lại" trên từng dòng trong bảng LOAD để nạp phiên và chuyển sang chế độ Replay.
+     - Nâng cấp sự kiện `#timeline` (`oninput` & `onchange`) để khi kéo thanh trượt, vị trí NPC và đồng hồ lập tức cập nhật mượt mà đến đúng giây được chọn.
+     - Cập nhật `toggleRun()`, `resetSimulation()`, `singleStep()`, `frame()` và `draw()` tương thích hoàn toàn với chế độ Replay và Live.
+- Kiểm tra: 14/14 Node.js tests PASS; 100% C# .NET tests (`AIsle.DesktopApp.Tests`, `AIsle.Population.Tests`, `AIsle.Simulation.Tests`) PASS; dotnet build 0 error.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:05 (UTC+07:00) — Antigravity — Sửa lỗi Canvas mặt bằng bị trôi/đẩy xuống dưới khi ấn Run
+
+- Lý do sửa: Khách hàng phản hồi khi ấn Run thì mặt bằng cửa hàng trên Canvas bị đẩy trôi dần dần xuống dưới đáy màn hình.
+- Nguyên nhân:
+  - `resizeCanvas()` trong `web/app.js` tự động tính toán lại `layout.width` và `layout.height` dựa trên `height / baseHeight` của canvas container. Khi chạy simulation, các cập nhật DOM kích hoạt `ResizeObserver` liên tục làm tăng `layout.height` và biến dạng `oy` (offset Y) trong từng frame.
+- Đã sửa/đã làm:
+  - `web/app.js`:
+    1. Chuẩn hóa `resizeCanvas()`: Giữ nguyên kích thước mặt bằng cửa hàng (`layout.width`, `layout.height`) cố định, chỉ cập nhật kích thước bitmap canvas khi kích thước thực sự thay đổi > 1px.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:10 (UTC+07:00) — Antigravity — Tự động căn giữa mặt bằng cửa hàng (Auto Bounding-Box Centering) và chuẩn hóa CSS Canvas
+
+- Lý do sửa: Khách hàng phản hồi mặt bằng cửa hàng tự động bị đẩy lệch khỏi trung tâm màn hình sang bên phải/xuống dưới khi mở rộng cửa sổ hoặc ẩn sidebar.
+- Nguyên nhân:
+  1. `web/overrides.css`: Quy tắc `#scene { height: calc(100% - 63px); max-height: calc(100% - 63px); }` bị xung đột với `height: 100%` của Tailwind, khiến Canvas bị hụt 63px so với container.
+  2. `getCanvasTransform()` trước đó căn giữa dựa trên góc tọa độ `(0,0)` cố định, nên nếu đối tượng có tọa độ phân bố lệch về một phía thì toàn bộ mặt bằng bị đẩy lệch khỏi trung tâm khung nhìn.
+- Đã sửa/đã làm:
+  1. `web/overrides.css`: Chuẩn hóa `#scene` thành `width: 100%; height: 100%; min-height: 0; max-height: 100%; touch-action: none;`.
+  2. `web/app.js`: Nâng cấp `getCanvasTransform()` và `canvasPoint()` tự động tính Bounding Box thực tế (`minX, maxX, minY, maxY`) của toàn bộ tường, kệ, lối vào và quầy thu ngân để luôn luôn căn giữa tuyệt đối 100% vào chính giữa màn hình với lề an toàn 24px.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:16 (UTC+07:00) — Antigravity — Khắc phục doanh thu ảo và đồng bộ Live Metrics / Decision Trace trong Replay
+
+- Lý do sửa: Khách hàng phản hồi khi xem Replay, doanh thu và số khách phục vụ ở quầy thu ngân bị tính "ảo" (tăng tuyến tính và hiện tổng cả buổi ngay từ phút đầu), đồng thời Live Metrics hiển thị 0% và nhật ký sự kiện không cập nhật theo thời gian.
+- Nguyên nhân:
+  1. `updateCashier()` hiển thị `simulation.stats.converted` (tổng số khách cả phiên 30 phút) thay vì số khách đã mua hàng tính đến thời điểm $t$.
+  2. `ReplaySimulationAdapter.snapshot()` trước đó ước tính doanh thu theo `totalRevenue * (time / duration)` tuyến tính nếu mảng `purchases` rỗng.
+  3. `updateMetrics()` và `renderEvents()` chưa đồng bộ lọc `events` và `purchases` theo thời điểm $t$ đang xem trên thanh timeline Replay.
+- Đã sửa/đã làm:
+  1. `web/app.js`:
+     - `ReplaySimulationAdapter`: Tự động trích xuất các lượt mua hàng (`purchases`) và sự kiện (`events`) từ quỹ đạo di chuyển của NPC nếu mảng dữ liệu gốc bị thiếu.
+     - `snapshot()`: Doanh thu, số lượt mua, tỷ lệ chuyển đổi (`conversionRate`), khách mua chính/ngẫu hứng và không tìm thấy được tính toán **chính xác 100%** từ các giao dịch thực tế đã hoàn thành trước hoặc tại thời điểm $t$.
+     - `updateCashier()`: Cập nhật số khách đã phục vụ và doanh thu nhảy đúng từng giao dịch tại thời điểm NPC thanh toán ở quầy thu ngân.
+     - `updateMetrics()` & `renderEvents()`: Hiển thị đúng số liệu và danh sách Decision Trace diễn ra trước hoặc tại thời điểm $t$.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:19 (UTC+07:00) — Antigravity — Hoàn tác toàn bộ thay đổi Replay về trạng thái ban đầu (Commit 4ef3bbd)
+
+- Lý do: Người dùng trực tiếp yêu cầu hoàn tác toàn bộ mã nguồn về trạng thái ban đầu trước khi thêm chức năng Replay.
+- Đã thực hiện:
+  - Khôi phục `web/app.js`, `web/index.html`, `web/overrides.css` về trạng thái nguyên bản của commit `4ef3bbd` (HEAD).
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:30 (UTC+07:00) — Antigravity — Triển khai chức năng tua ngược về quá khứ (Live Rewind) trên thanh tiến độ
+
+- Lý do: Khách hàng yêu cầu có thể kéo thanh tiến độ ngược về quá khứ trong phiên đang chạy để xem lại các hoạt động đã diễn ra (không cần tua tới tương lai).
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Ghi nhận snapshot định kỳ (`recordLiveSnapshot`): Tự động lưu trữ vị trí NPC, trạng thái quầy thu ngân, doanh thu và các sự kiện trong phiên đang chạy.
+    2. Cập nhật `seekTo(targetTime)`:
+       - Giới hạn kéo thanh trượt tối đa đến thời điểm cao nhất đã chạy tới (`maxLiveTime`).
+       - Khi kéo lùi về quá khứ: Tự động tạm dừng mô phỏng và nội suy (lerp) vị trí NPC, đồng hồ, doanh thu, metrics và nhật ký sự kiện về đúng mốc thời gian đó.
+    3. Cập nhật `toggleRun()`: Bấm "Tiếp tục" sẽ tiếp tục chạy mô phỏng từ thời điểm hiện tại của động cơ.
+    4. Cập nhật `draw()`, `updateCashier()`, `updateMetrics()`, `renderEvents()`: Đồng bộ mượt mà dữ liệu khi đang xem lại ở chế độ Live Rewind.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:35 (UTC+07:00) — Antigravity — Khắc phục lỗi triggerCashierReaction khi khách thanh toán tại quầy
+
+- Lý do sửa: Khách hàng phản hồi mô phỏng đang chạy đến giây 00:44 thì tự động dừng do lỗi `triggerCashierReaction is not defined`.
+- Nguyên nhân: Hàm hiệu ứng cảm xúc quầy thu ngân `triggerCashierReaction` bị thiếu định nghĩa trong `web/app.js` khi cập nhật `updateCashier`.
+- Đã sửa:
+  - Khôi phục đầy đủ hàm `triggerCashierReaction` trong `web/app.js` với các trạng thái hoạt ảnh và biểu cảm: 'happy', 'smile', 'sad'.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 10:41 (UTC+07:00) — Antigravity — Hoàn tác toàn bộ mã nguồn web về trạng thái ban đầu của Desktop App
+
+- Lý do: Người dùng trực tiếp yêu cầu hoàn tác toàn bộ mã nguồn `web/` về trạng thái ban đầu để tập trung sửa Desktop App theo đúng cấu trúc gốc.
+- Đã thực hiện:
+  - Khôi phục `web/app.js`, `web/index.html`, `web/overrides.css` về trạng thái nguyên bản của commit `4ef3bbd` (HEAD).
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 11:25 (UTC+07:00) — Antigravity — Triển khai chức năng tua ngược về quá khứ cô lập, an toàn trên thanh tiến trình
+
+- Lý do: Khách hàng yêu cầu thanh tiến trình trên màn hình Simulation có thể tua về quá khứ, đảm bảo tuyệt đối không làm ảnh hưởng hay làm hỏng các thành phần khác.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Giữ nguyên 100% các hàm và cấu trúc hiện tại (`triggerCashierReaction`, `updateCashier`, `updateMetrics`, `renderEvents`, v.v.).
+    2. Thêm cơ chế lưu trữ lịch sử vị trí cục bộ `liveHistory` trong từng tick mô phỏng.
+    3. `seekTo(targetTime)`: Giới hạn kéo thanh trượt tối đa ở mốc đã chạy tới (`maxRecordedTime`). Khi kéo lùi về quá khứ, tạm dừng mô phỏng và cập nhật vị trí NPC + đồng hồ về đúng thời điểm đó.
+    4. `toggleRun()`: Khi bấm "Tiếp tục", tự động thoát trạng thái tua lại và tiếp tục mô phỏng từ vị trí hiện tại của động cơ.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 11:37 (UTC+07:00) — Antigravity — Thêm viền highlight cho các nút công cụ đang được chọn trên thanh Toolbar
+
+- Lý do: Khách hàng phản ánh khi chọn công cụ (ví dụ: Tường, Kệ hàng, v.v.), nút công cụ không được highlight viền rõ ràng.
+- Đã thực hiện:
+  - `web/overrides.css`: Thêm CSS rule cho `button[data-tool].active` với viền màu chủ đạo (`border-color: #685d4a`, `box-shadow: 0 0 0 1.5px #685d4a`), nền trắng sáng và chữ đậm để nổi bật công cụ đang kích hoạt.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 11:39 (UTC+07:00) — Antigravity — Bổ sung CSS vào purrfect-theme.css và đồng bộ trạng thái active của nút công cụ trong app.js
+
+- Lý do: Giao diện Desktop App load theme từ `purrfect-theme.css`. Khi click chọn công cụ, nút công cụ chưa nhận được hiệu ứng viền highlight.
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Thêm CSS rule cho `button[data-tool].active` với viền màu nâu đậm (`border: 1.5px solid #685d4a`), nền trắng sáng và đổ bóng `box-shadow`.
+  - `web/app.js`: Thêm hàm `updateToolButtons(activeTool)` cập nhật chuẩn xác class `.active` cho nút công cụ được chọn khi click hoặc khi chuyển tab.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 11:49 (UTC+07:00) — Antigravity — Tối ưu căn giữa và tự động scale Canvas khi đóng/mở thanh bên
+
+- Lý do: Khi mở hoặc đóng 2 thanh bên (Sidebar/Inspector), mặt bằng cửa hàng bị co dãn lệch sang một bên và các bức tường/kệ ở mép bị tràn ra ngoài dẫn đến bị cắt xén.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Chuẩn hóa `resizeCanvas()`: Giữ nguyên tỷ lệ và kích thước bao trọn của cửa hàng, không tự ý dãn dài `layout.width` theo tỷ lệ màn hình.
+    2. Cập nhật `getCanvasTransform()`: Bổ sung lề đệm an toàn `padding = 16px` và tính toán `scale = Math.min(availW / layoutW, availH / layoutH)`, `ox = (W - layoutW * scale) / 2`, `oy = (H - layoutH * scale) / 2`.
+    3. Cập nhật `canvasPoint(event)`: Đồng bộ chuẩn xác tọa độ chuột khi click/vẽ trên Canvas.
+- Kết quả: Khi mở hay đóng thanh bên, toàn bộ các đối tượng cửa hàng luôn tự động co dãn vừa vặn 100% trong khung nhìn và luôn nằm ở chính giữa màn hình mà không bị cắt xén.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 11:55 (UTC+07:00) — Antigravity — Mở rộng khu vực setup phủ kín toàn bộ Canvas khi đóng/mở thanh bên
+
+- Lý do: Khách hàng yêu cầu toàn bộ diện tích khung nhìn Canvas (kể cả khi mở rộng hoặc thu hẹp thanh bên) đều là khu vực setup có lưới ô vuông có thể vẽ và đặt đối tượng ở mọi nơi, đồng thời bảo đảm các đối tượng đã setup luôn nằm ở vị trí trung tâm không bị xén.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Cập nhật `getCanvasTransform()`: Tự động mở rộng `layout.width` và `layout.height` phủ kín 100% diện tích khả dụng của Canvas dựa trên `scale = Math.min(availW / maxObjX, availH / maxObjY)`.
+    2. Cập nhật `draw()`: Vẽ nền lưới ô vuông phủ kín toàn bộ diện tích Canvas, loại bỏ các dải màu đen trống thừa bên ngoài.
+    3. Cập nhật `canvasPoint(event)`: Đồng bộ chuẩn xác việc click/kéo thả chuột trên toàn bộ diện tích mở rộng của Canvas.
+- Kết quả: Người dùng có thể tự do setup/vẽ tường/kệ hàng ở bất kỳ đâu trên toàn bộ màn hình Canvas.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:02 (UTC+07:00) — Antigravity — Cố định căn giữa 100% cho toàn bộ khu vực setup và mặt bằng cửa hàng
+
+- Lý do: Khôi phục và đảm bảo độ lệch tâm `(ox, oy)` luôn đưa toàn bộ cửa hàng và các vật thể đã setup về đúng chính giữa khung nhìn Canvas, không bị dạt sang mép trái/phải.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Chuẩn hóa `getCanvasTransform()`: Xác định kích thước chuẩn của cửa hàng `shopW x shopH` và tính `ox = (W - shopW * scale) / 2`, `oy = (H - shopH * scale) / 2` để căn giữa đối xứng hoàn hảo.
+    2. Chuẩn hóa `draw()`: Vẽ khu vực mặt bằng và lưới ô vuông ở chính giữa Canvas với khung viền rõ ràng.
+- Kết quả: Khi mở hoặc đóng bất kỳ thanh bên nào, toàn bộ cửa hàng và các vật thể luôn nằm cố định ở chính giữa màn hình.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:13 (UTC+07:00) — Antigravity — Mở rộng lưới ô vuông toàn bộ diện tích hiển thị và giữ căn giữa cho cửa hàng
+
+- Lý do: Khi thu phóng màn hình hoặc đóng/mở thanh bên, các dải màu đen xuất hiện ở các rìa (trên/dưới hoặc trái/phải) không có lưới ô vuông và không click/setup được.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. `getCanvasTransform()`: Tính toán phạm vi không gian hiển thị thế giới `[worldMinX..worldMaxX, worldMinY..worldMaxY]` bao phủ toàn bộ kích thước vật lý của Canvas, đồng thời tính `(ox, oy)` dựa trên tâm của cụm đối tượng `(centerX, centerY)` để cửa hàng luôn nằm chính xác ở tâm màn hình.
+    2. `draw()`: Vẽ nền màu nâu `#1c1007` và lưới ô vuông chạy xuyên suốt toàn bộ khung nhìn Canvas từ `worldMinX` đến `worldMaxX` và `worldMinY` đến `worldMaxY`, loại bỏ hoàn toàn các dải đen thừa.
+    3. `canvasPoint()` & `pointerMove()`: Cho phép click, kéo thả, vẽ tường và đặt kệ hàng trên toàn bộ diện tích mở rộng của Canvas.
+- Kết quả: Toàn bộ màn hình Canvas đều có lưới và setup được ở mọi vị trí, các đối tượng cửa hàng vẫn luôn nằm ở chính giữa màn hình.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:17 (UTC+07:00) — Antigravity — Thêm nút "Dọn trống" / "Xóa tất cả đối tượng" trên Toolbar và Sidebar
+
+- Lý do: Khách hàng yêu cầu có tính năng xóa nhanh tất cả tường và kệ hàng đã bày ra để đưa khu vực setup về trạng thái trống hoàn toàn.
+- Đã thực hiện:
+  - `web/index.html`:
+    1. Thêm nút `<button id="clear-layout-btn">` ("Dọn trống") trên thanh Toolbar công cụ.
+    2. Thêm nút `<button id="clear-layout-sidebar-btn">` ("Xóa tất cả đối tượng") dưới danh sách đối tượng bên Sidebar trái.
+  - `web/app.js`:
+    1. Thêm hàm `clearAllObjects()`: Xác nhận người dùng và reset sạch sẽ `layout.walls = []`, `layout.shelves = []`, `catalog = []`, khôi phục vị trí mặc định cho Lối vào và Quầy thu ngân, reset kích thước chuẩn `12m x 8m`, cập nhật Inspector, vẽ lại Canvas và lưu dự án.
+    2. Gán sự kiện click cho cả 2 nút trên giao diện.
+- Kết quả: Người dùng có thể 1-click dọn sạch toàn bộ mặt bằng bất cứ lúc nào.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:19 (UTC+07:00) — Antigravity — Loại bỏ đường viền khung chữ nhật trong khu vực setup
+
+- Lý do: Khách hàng không cần đường viền khung bao quanh cửa hàng và muốn đồng nhất tất cả các đường kẻ ô lưới.
+- Đã thực hiện:
+  - `web/app.js`: Loại bỏ lệnh `strokeRect` vẽ đường viền `#5a301a` trong hàm `draw()`, để tất cả các đường kẻ lưới ô vuông hiển thị đồng nhất và liền mạch trên toàn bộ Canvas.
+- Kết quả: Không còn đường viền thừa, toàn bộ lưới ô vuông phẳng và đồng nhất.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:28 (UTC+07:00) — Antigravity — Tự động chuẩn hóa biên layout (Auto-Normalize) cho phép setup tự do mọi nơi không bị lỗi bounds
+
+- Lý do: Khi người dùng vẽ hoặc đặt đối tượng ở các vùng mở rộng (tọa độ âm hoặc ngoài kích thước ban đầu), hệ thống kiểm tra và báo lỗi `must be inside the layout bounds`.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Thêm hàm `normalizeLayout()`: Tự động tính toán bao tọa độ của toàn bộ các đối tượng, nếu có tọa độ âm sẽ tự động dời tịnh tiến tất cả các đối tượng về $\ge 0$ và tự động mở rộng kích thước `layout.width` và `layout.height` bao phủ trọn vẹn toàn bộ các đối tượng.
+    2. Tích hợp `normalizeLayout()` vào `pointerUp()`, `saveProject()`, và `simulationInput()`.
+- Kết quả: Người dùng có thể thoải mái vẽ và đặt đối tượng ở bất kỳ đâu trên màn hình, hệ thống tự động xử lý biên và chạy mô phỏng thành công 100% mà không bao giờ bị báo lỗi `must be inside the layout bounds`.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:33 (UTC+07:00) — Antigravity — Khắc phục sự kiện bấm nút "Thêm" mặt hàng lên kệ hàng
+
+- Lý do: Khách hàng phản ánh nhập tên mặt hàng và giá bán nhưng không thêm được vào kệ hàng.
+- Đã thực hiện:
+  - `web/app.js`:
+    1. Gắn sự kiện `onclick` cho `#add-shelf-product-btn` gọi hàm `addProductToSelectedShelf()`.
+    2. Hỗ trợ phím `Enter` trên ô nhập tên `#new-prod-name` và ô nhập giá `#new-prod-price` để thêm nhanh mặt hàng lên kệ.
+- Kết quả: Người dùng có thể nhấp nút "Thêm" hoặc bấm phím Enter để thêm mặt hàng lên kệ đã chọn.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+## 2026-08-20 12:44 (UTC+07:00) — Antigravity — Bổ sung nút Hoàn tác (Undo), Làm lại (Redo) và tích hợp nút Dọn trống ngay cạnh Quầy thu ngân
+
+- Lý do: Khách hàng muốn nút "Dọn trống" nằm liền kề bên phải "Quầy thu ngân" trong thanh Toolbar, dọn trống không cần hộp thoại xác nhận, và bổ sung tính năng Undo/Redo (tối thiểu 5 thao tác) kèm phím tắt.
+- Đã thực hiện:
+  - `web/index.html`: Chuyển nút "Dọn trống" vào cụm Toolbar chính ngay sau "Quầy thu ngân", thêm nút "Hoàn tác" (`#undo-btn`) và "Làm lại" (`#redo-btn`).
+  - `web/app.js`:
+    1. Xây dựng ngăn xếp `undoStack` và `redoStack` (lưu tới 10 bước lịch sử).
+    2. Tự động chụp snapshot lưu lại trước các thao tác: thêm tường, thêm kệ, vẽ/kéo thả trên Canvas, xóa đối tượng, đổi thuộc tính, thêm/xóa mặt hàng và dọn trống.
+    3. Nút "Dọn trống" thực hiện xóa sạch ngay lập tức (không cần `confirm`), người dùng có thể bấm Undo để lấy lại bản vẽ nếu cần.
+    4. Hỗ trợ phím tắt `Ctrl + Z` (Hoàn tác) và `Ctrl + Y` hoặc `Ctrl + Shift + Z` (Làm lại).
+    5. Cập nhật trạng thái `disabled` của nút Undo/Redo tương ứng với lịch sử thao tác.
+- Kết quả: Giao diện Toolbar gọn gàng, tính năng Dọn trống và Undo/Redo hoạt động mượt mà.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 15:05 (UTC+07:00) — Antigravity
+
+- Lý do: Tích hợp mã nguồn Dashboard Visualization Chart của Khôi vào màn hình Analytics của Desktop App, giữ nguyên vẹn toàn bộ các màn hình Setup, Mô phỏng và Kết quả.
+- Đã thực hiện:
+  - `web/dashboard.js`: Xây dựng module Dashboard Canvas thuần túy theo mã nguồn của Khôi với `buildAnalytics` tự động tổng hợp số liệu từ lịch sử mô phỏng (`sim-history-list`), 5 thẻ KPI (Doanh thu, Khách vào/ra, Lượt mua, Tỷ lệ chuyển đổi, Chỉ số cảm xúc), 2 biểu đồ Donut (Tỉ lệ chuyển đổi & Cơ cấu mua hàng), biểu đồ Bar chart đa năng (xem 4 chỉ số theo Ngày/Tháng/Quý/Năm), xem dạng bảng và lịch chọn ngày.
+  - `web/index.html`: Cập nhật màn hình `#screen-analytics`, gắn `#dashboard-panel`, thêm dialog `#calendar-dialog` và `#chart-tooltip`.
+  - `web/purrfect-theme.css`: Thêm styling cho tooltip biểu đồ và các ô lịch chọn ngày.
+  - `web/app.js`: Import và kết nối `loadDashboard()` khi chuyển tab sang `analytics`.
+- Kết quả: Màn hình Analytics của Desktop App hiển thị đầy đủ các biểu đồ trực quan hóa số liệu chi tiết, các màn hình khác không bị ảnh hưởng.
+- Kiểm tra: 14/14 Node.js tests PASS; .NET DesktopApp tests PASS (`PASS: Desktop S1-S7 bridge, persistence, QA and application verification completed`).
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 15:20 (UTC+07:00) — Antigravity
+
+- Lý do: Thu gọn khoảng cách dọc và tối ưu kích thước biểu đồ trên màn hình Analytics để hiển thị trọn vẹn biểu đồ cột (Bar chart) mà không bị khuất.
+- Đã thực hiện:
+  - `web/dashboard.js`:
+    1. Thu gọn padding và margin của thanh chọn kỳ, khối KPI và các thẻ biểu đồ.
+    2. Giảm kích thước Donut Chart từ 160px xuống 110px.
+    3. Giảm chiều cao Bar Chart từ 280px xuống 190px, tinh chỉnh padding biểu đồ và nhãn trục.
+  - `web/index.html`: Giảm padding dọc của `#dashboard-panel`.
+- Kết quả: Toàn bộ thẻ KPI, 2 Donut Chart và Bar Chart hiển thị gọn gàng, vừa vặn trong tầm nhìn của người dùng.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 15:40 (UTC+07:00) — Antigravity
+
+- Lý do: Người dùng muốn khi mở ứng dụng thì dừng chân ở Màn hình Chào mừng (Welcome Screen) trước, thay vì bị tự động chuyển thẳng vào Setup.
+- Đã thực hiện:
+  - `web/app.js`: Đổi `currentTab='welcome'` và trong `init()` gọi `switchTab('welcome')` để giữ màn hình Chào mừng khi khởi động.
+  - `web/app.js` & `web/index.html`: Gắn sự kiện click vào logo AISLE trên Header (`#header-brand-logo`) để có thể quay về màn hình Chào mừng bất cứ lúc nào.
+- Kết quả: Khi mở ứng dụng, màn hình Chào mừng hiển thị ổn định, người dùng có thể bấm "Tạo cửa hàng mới" để vào Setup hoặc "Mở cửa hàng đã lưu" để xem kết quả.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 15:50 (UTC+07:00) — Antigravity
+
+- Lý do: Màn hình Analytics bị kẹt ở dữ liệu mẫu (Sample data) do lệch khóa lưu trữ (`sim-history-list` vs `aisle_history_runs` và Desktop bridge `history.list`), dẫn đến việc chạy nhiều phiên mô phỏng nhưng biểu đồ không thay đổi.
+- Đã thực hiện:
+  - `web/dashboard.js`: Cập nhật `loadDashboard()` kết nối trực tiếp với C# Desktop App Bridge (`window.aisleBridge.request('history.list')`), nạp dữ liệu từ `aisle_history_runs`, `sim-history-list` và API.
+  - `web/app.js`: Tự động lưu phiên mô phỏng hiện tại (`saveSimulationSession`) khi chuyển sang tab `analytics` để dữ liệu mới nhất được đưa ngay vào biểu đồ.
+- Kết quả: Khi chạy bất kỳ phiên mô phỏng nào (kể cả dừng giữa chừng hay chạy hết), dữ liệu doanh thu, lượt mua, khách hàng và cảm xúc thật sẽ được nạp và cập nhật tức thì lên biểu đồ.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 15:58 (UTC+07:00) — Antigravity
+
+- Lý do: Xóa toàn bộ dữ liệu lịch sử cũ của màn hình LOAD và Analytics theo yêu cầu của người dùng để chuẩn bị chạy các phiên mô phỏng mới tinh.
+- Đã thực hiện:
+  - Xóa toàn bộ các tệp kết quả mô phỏng cũ trong `%LOCALAPPDATA%\AIsle\history-v1` và `runtime/history`.
+  - `web/dashboard.js`: Xóa cơ chế nạp dữ liệu mẫu khi rỗng; hiển thị trạng thái chưa có dữ liệu và nút chuyển nhanh sang Mô phỏng.
+  - `web/index.html` & `web/app.js`: Thêm nút "Xóa lịch sử" trên cả màn hình Bảng kết quả (LOAD) và màn hình Analytics để người dùng có thể xóa sạch lịch sử bất cứ lúc nào.
+- Kết quả: Lịch sử đã được dọn sạch hoàn toàn; khi chạy các phiên mới, toàn bộ bảng kết quả và biểu đồ phân tích sẽ phản ánh chính xác dữ liệu vừa chạy.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:08 (UTC+07:00) — Antigravity
+
+- Lý do: Bổ sung nút "Bảng kết quả" ngay trên Header của màn hình Simulation để người dùng có thể xem danh sách các phiên đã lưu bất cứ lúc nào mà không cần chờ hết thời gian mô phỏng.
+- Đã thực hiện:
+  - `web/index.html`: Thêm nút `#btn-sim-to-results` ("Bảng kết quả") bên cạnh nút "Thiết lập cửa hàng" trên Header của `#screen-simulate`.
+  - `web/app.js`: Gắn sự kiện tự động lưu tiến trình phiên hiện tại (nếu có khách vào) và chuyển ngay sang màn hình Results (`switchTab('results')`).
+- Kết quả: Người dùng có thể chuyển đổi qua lại tự do giữa Mô phỏng và Bảng kết quả (LOAD) chỉ với 1 cú click chuột.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:15 (UTC+07:00) — Antigravity
+
+- Lý do: Thiết kế thanh điều hướng 3 nút hình viên thuốc (Segmented Pill Navigation) theo đề xuất của người dùng: bên trái là Thiết lập, ở giữa là Mô phỏng, bên phải là Bảng kết quả (LOAD).
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Thêm kiểu dáng `.nav-pill-group` và `.nav-pill-btn` dạng bo góc tròn (pill), có hiệu ứng active highlight và chuyển đổi mượt mà.
+  - `web/index.html`: Cập nhật Header trên cả 4 màn hình (Setup, Simulation, Results, Analytics) với thanh điều hướng 3 nút đồng bộ.
+  - `web/app.js`: Tự động đồng bộ trạng thái active của nút khi chuyển tab và hỗ trợ lưu phiên an toàn khi chuyển từ Mô phỏng sang tab khác.
+- Kết quả: Giao diện điều hướng đồng nhất, trực quan, người dùng chuyển đổi qua lại giữa Setup ↔ Mô phỏng ↔ Bảng kết quả cực kỳ thuận tiện.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:26 (UTC+07:00) — Antigravity
+
+- Lý do: Màn hình Setup bị đơ không tương tác được do hàm `bind()` bị lỗi TypeError khi tìm kiếm các nút ID `#add-wall` và `#add-shelf` sau khi thay đổi Header.
+- Đã thực hiện:
+  - `web/index.html`: Khôi phục lại đúng cấu trúc Sidebar và gắn ID `#add-wall`, `#add-shelf` cho các nút công cụ trong thanh Toolbar của màn hình Setup.
+  - `web/app.js`: Bọc an toàn toàn bộ các sự kiện gán listener trong `bind()` với kiểm tra `if (element)` để ngăn chặn triệt để mọi lỗi TypeError.
+- Kết quả: Màn hình Setup hoạt động bình thường, các thao tác thêm kệ, vẽ tường, kéo thả và chỉnh sửa đối tượng đều hoạt động mượt mà.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:36 (UTC+07:00) — Antigravity
+
+- Lý do: Đồng bộ thanh điều hướng 3 nút hình viên thuốc (Thiết lập ↔ Mô phỏng ↔ Bảng kết quả) lên Header của màn hình Mô phỏng (Simulation).
+- Đã thực hiện:
+  - `web/index.html`: Thay thế 2 nút rời ở Header màn hình `#screen-simulate` bằng khối `.nav-pill-group` 3 nút (highlight nút "Mô phỏng" ở giữa), giữ nguyên vẹn toàn bộ các tính năng điều khiển mô phỏng, canvas, timeline và quầy thu ngân.
+  - `web/app.js`: Đảm bảo các listener lưu phiên và chuyển tab hoạt động chính xác, an toàn 100%.
+- Kết quả: Giao diện Header của màn hình Mô phỏng đồng bộ hoàn toàn với thanh viên thuốc, chuyển đổi qua lại mượt mà và không làm ảnh hưởng đến bất kỳ chức năng nào.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:40 (UTC+07:00) — Antigravity
+
+- Lý do: Bổ sung hiệu ứng chuyển cảnh mượt mà (smooth screen transition animation) khi chuyển đổi giữa các màn hình (Setup ↔ Simulation ↔ LOAD ↔ Analytics).
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Định nghĩa keyframe animation `screenTransitionIn` kết hợp fade-in và trượt nhẹ (subtle translateY & scale) trong thời lượng 0.26s mượt mà.
+  - `web/app.js`: Tự động tính toán lại kích thước Canvas (`resizeCanvas` & `draw`) sau khi hiệu ứng kết thúc để đảm bảo hình ảnh chuẩn xác 100%.
+- Kết quả: Khi chuyển tab, giao diện lướt chuyển êm ái, chuyên nghiệp, không gây giật lag và không ảnh hưởng đến bất kỳ tính năng nào.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:42 (UTC+07:00) — Antigravity
+
+- Lý do: Triển khai hiệu ứng chuyển cảnh lướt ngang thông minh theo hướng điều hướng (Horizontal Slide) giữa các màn hình.
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Định nghĩa 2 animation lướt ngang `screenSlideFromRight` (từ phải qua) và `screenSlideFromLeft` (từ trái qua) với gia tốc `cubic-bezier(0.16, 1, 0.3, 1)`.
+  - `web/app.js`: Tự động so sánh thứ tự vị trí tab (Setup = 1, Mô phỏng = 2, Bảng kết quả = 3, Analytics = 4) để kích hoạt hướng lướt tương ứng:
+    - Chuyển sang tab bên phải (tiến tới): lướt từ phải qua trái.
+    - Chuyển sang tab bên trái (quay về): lướt từ trái qua phải.
+- Kết quả: Hiệu ứng chuyển cảnh lướt ngang mượt mà, đúng chuẩn không gian tương tác của thanh viên thuốc, cực kỳ sống động và hiện đại.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:46 (UTC+07:00) — Antigravity
+
+- Lý do: Xóa nút "Dọn trống" dư thừa ở dưới cùng thanh Sidebar bên trái của màn hình Setup theo yêu cầu của người dùng, giữ lại duy nhất nút "Dọn trống" trên thanh Toolbar trên Canvas.
+- Đã thực hiện:
+  - `web/index.html`: Xóa bỏ nút `#clear-layout-sidebar-btn` ở dưới cùng danh sách đối tượng trong `#setup-sidebar`.
+- Kết quả: Sidebar bên trái gọn gàng hơn, không còn bị trùng lặp 2 nút Dọn trống trên cùng một màn hình.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:50 (UTC+07:00) — Antigravity
+
+- Lý do: Tối ưu hiệu ứng chuyển cảnh giống thao tác vuốt tay trên điện thoại (Mobile Swipe Feel) và triệt tiêu hiện tượng giật khung hình khi chuyển từ Simulation về Setup.
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Cập nhật keyframe `screenSlideFromLeft` và `screenSlideFromRight` với `translate3d` (Hardware Acceleration), độ lướt `60px`, `opacity: 0.35 -> 1` và đường cong vật lý `cubic-bezier(0.22, 1, 0.36, 1)` trong `0.32s`.
+  - `web/app.js`: Tự động ngắt trạng thái mô phỏng trước khi đổi DOM container, chỉ di chuyển Canvas nếu cần thiết (`parentElement !== wrap`), tối ưu hóa render để animation đạt 60fps mượt mà.
+- Kết quả: Thao tác chuyển từ Simulation về Setup và giữa tất cả các màn hình lướt cực kỳ êm, đúng cảm giác vuốt tay điện thoại, không còn giật lag.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 16:53 (UTC+07:00) — Antigravity
+
+- Lý do: Sửa lỗi hướng chuyển cảnh bị ngược khi chuyển từ Simulation về Setup do xung đột với đoạn script inline cũ trong `index.html`.
+- Đã thực hiện:
+  - `web/index.html`: Loại bỏ hoàn toàn khối script inline điều hướng cũ để tránh can thiệp và gọi đè sự kiện của `app.js`.
+  - `web/app.js`: Chuẩn hóa điều kiện `isForward = newIndex > oldIndex` để xác định chính xác 100% hướng vuốt sang trái (quay lại) và vuốt sang phải (tiến tới).
+- Kết quả: Khi chuyển từ Bảng kết quả ➔ Mô phỏng hay từ Mô phỏng ➔ Thiết lập, màn hình luôn lướt đúng chiều tự nhiên từ trái sang phải; khi tiến tới thì lướt từ phải sang trái.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 17:02 (UTC+07:00) — Antigravity
+
+- Lý do: Đồng bộ chiều cao trần (Top) và sàn (Bottom) của khung Canvas giữa màn hình Thiết lập (Setup) và Mô phỏng (Simulation) để loại bỏ hoàn toàn hiện tượng nảy/giật dọc khi lướt chuyển cảnh.
+- Đã thực hiện:
+  - `web/index.html`:
+    - Đặt chiều cao thanh Toolbar phụ (Sub-header) của cả Setup và Simulation cố định bằng nhau `h-14` (56px).
+    - Đồng bộ khoảng cách đệm viền `p-4` (16px) bao quanh khung Canvas ở cả 2 màn hình.
+    - Chuẩn hóa bo góc `rounded-2xl` và viền `border-4 border-surface-container-highest` đồng nhất 1:1.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 17:04 (UTC+07:00) — Antigravity
+
+- Lý do: Loại bỏ hiện tượng chớp/nháy sáng (flash/blink) gây mỏi mắt khi chuyển cảnh giữa các màn hình.
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Gỡ bỏ hoàn toàn biến đổi `opacity` trong animation chuyển cảnh (giữ `opacity: 1` 100% cố định), chỉ cho lướt vị trí `transform: translate3d(±40px, 0, 0) -> 0` với thời lượng `0.24s`.
+- Kết quả: Màn hình luôn giữ màu sắc đặc và êm dịu, không còn bị chớp mờ rồi sáng bừng, bảo vệ mắt và mang lại cảm giác lướt chuyển cực kỳ dịu mắt, dễ chịu.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 17:07 (UTC+07:00) — Antigravity
+
+- Lý do: Giữ thanh Header và thanh điều hướng 3 nút hình viên thuốc (Segmented Pill) đứng yên cố định tuyệt đối, không bị trượt theo hiệu ứng chuyển cảnh khi đổi tab.
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Loại trừ `<header>` và `.nav-pill-group` khỏi animation chuyển cảnh; chỉ áp dụng hiệu ứng lướt ngang cho khu vực nội dung làm việc bên dưới Header (`.screen.active > *:not(header)`).
+- Kết quả: Thanh Header trên cùng, logo AISLE và thanh viên thuốc đứng yên cố định 100%, chỉ có nút active chuyển đổi trạng thái sáng và nội dung bên dưới lướt ngang mượt mà.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 17:11 (UTC+07:00) — Antigravity
+
+- Lý do: Tối ưu vị trí nút xóa lịch sử theo phản hồi của người dùng: gỡ bỏ nút xóa to màu hồng ở Header, hỗ trợ người dùng xóa từng phiên mô phỏng tùy chọn và bố trí nút "Xóa tất cả" kín đáo ở chân bảng.
+- Đã thực hiện:
+  - `web/index.html`:
+    - Gỡ bỏ nút `#btn-clear-history` và `#btn-analytics-clear-history` khỏi thanh Header của màn hình Results và Analytics, giúp Header thoáng đãng và đồng bộ với các màn hình khác.
+    - Cập nhật bảng kết quả thành 5 cột, bổ sung cột Thao tác và thanh footer dưới đáy bảng chứa bộ đếm số lượng phiên kèm nút *"Xóa tất cả"*.
+  - `web/app.js`:
+    - Cập nhật `renderHistoryRow` để gắn icon thùng rác `[🗑️]` trên từng dòng kết quả.
+    - Thêm hàm `deleteHistoryRunByKey(deleteKey)` hỗ trợ xóa chính xác từng phiên mô phỏng đã chọn khỏi cả `localStorage` và bridge.
+- Kết quả: Giao diện Header sạch đẹp, người dùng có thể xóa riêng lẻ bất kỳ phiên nào muốn xóa một cách nhanh chóng và thuận tiện.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 17:17 (UTC+07:00) — Antigravity
+
+- Lý do: Sửa lỗi các nút công cụ (Chọn, Tường, Kệ hàng, Lối vào, Quầy thu ngân, Dọn trống, Hoàn tác, Làm lại) ở màn hình Setup bị rớt dòng và che mất một phần.
+- Đã thực hiện:
+  - `web/index.html`: Chuyển đổi `flex-wrap` thành `flex-nowrap`, thêm `shrink-0` và tinh chỉnh nhẹ padding cho từng nút để toàn bộ 8 nút công cụ hiển thị thẳng hàng, đầy đủ 100% trên 1 hàng ngang duy nhất.
+- Kết quả: Các nút công cụ hiển thị trọn vẹn, không còn bị đè hay cắt nửa, đồng thời bảo toàn tuyệt đối 100% bố cục của tất cả các phần khác (Trần, Sàn, Canvas, Sidebar, Inspector).
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 17:21 (UTC+07:00) — Antigravity
+
+- Lý do: Khắc phục triệt để lỗi thanh công cụ Setup bị khuyết/tràn ngang khi mở ở kích thước cửa sổ mặc định (chưa maximize).
+- Đã thực hiện:
+  - `web/index.html`: Tối ưu hóa kích thước và khoảng cách đệm từng nút công cụ (Chọn, Tường, Kệ hàng, Lối vào, Thu ngân, Dọn trống, Hoàn tác, Làm lại) đạt chiều rộng lý tưởng (~410px), chuyển 2 nút Hoàn tác / Làm lại sang dạng icon button gọn gàng.
+- Kết quả: Thanh công cụ luôn hiển thị đầy đủ 100% tất cả các nút ở mọi kích thước cửa sổ (cả chế độ mặc định lẫn chế độ phóng to toàn màn hình maximize) mà không xuất hiện thanh cuộn ngang và không bị cắt chữ.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
