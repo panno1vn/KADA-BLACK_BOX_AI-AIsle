@@ -79,6 +79,8 @@ namespace AIsle.DesktopApp.Bridge
                     "history.save" => SaveHistory(requestId, payload),
                     "history.list" => Success(requestId, _history.List()),
                     "history.read" => ReadHistory(requestId, payload),
+                    "history.delete" => DeleteHistory(requestId, payload),
+                    "history.clear" => ClearHistory(requestId),
                     "replay.project" => ProjectReplay(requestId, payload),
                     "kpi.project" => ProjectKpis(requestId, payload),
                     "compare.results" => CompareResults(requestId, payload),
@@ -194,6 +196,19 @@ namespace AIsle.DesktopApp.Bridge
         {
             var id = ReadPayloadId(payload, "history.read");
             return Success(requestId, _history.Read(id));
+        }
+
+        private string DeleteHistory(string requestId, JsonElement payload)
+        {
+            var id = ReadPayloadId(payload, "history.delete");
+            var deleted = _history.Delete(id);
+            return Success(requestId, new { id, deleted });
+        }
+
+        private string ClearHistory(string requestId)
+        {
+            var count = _history.Clear();
+            return Success(requestId, new { count, cleared = true });
         }
 
         private string ProjectReplay(string requestId, JsonElement payload)

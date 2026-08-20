@@ -172,7 +172,7 @@
   <!-- ═══════ SCREEN 2: Store Setup ═══════ -->
   <div id="screen-setup" class="screen w-full h-screen relative shadow-2xl overflow-hidden flex flex-col bg-background">
     <!-- TopAppBar -->
-    <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-gutter py-3 w-full mx-auto relative z-20 border-b border-surface-container-highest">
+    <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-20 border-b border-surface-container-highest">
       <div id="header-brand-logo" class="flex items-center gap-3 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" title="Quay về trang chủ">
         <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
         <div>
@@ -537,14 +537,13 @@
           
           <!-- Portrait Image Area (Original full height) -->
           <div id="cashier-avatar" class="w-full h-44 bg-surface-bright rounded-xl border-2 border-outline-variant mb-2 overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
-            <!-- Original images with classes preserved for app.js -->
-            <img src="cashier_idle.jpg" alt="Cashier" class="cashier-img cashier-img-idle object-cover w-full h-full absolute inset-0 z-10" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
-            <img src="cashier_smile.jpg" alt="Cashier Smile" class="cashier-img cashier-img-smile object-cover w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
-            <img src="cashier_happy.jpg" alt="Cashier Happy" class="cashier-img cashier-img-happy object-cover w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
-            <img src="cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad object-cover w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
+            <!-- 3 Cashier expression images (idle, smile, sad) -->
+            <img src="cashier_idle.jpg" alt="Cashier" class="cashier-img cashier-img-idle object-cover object-[center_25%] w-full h-full absolute inset-0 z-10" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
+            <img src="cashier_smile.jpg" alt="Cashier Smile" class="cashier-img cashier-img-smile object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
+            <img src="cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
             <div id="cashier-mood-icon-container" class="absolute bottom-1.5 right-1.5 z-20 bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded-full font-label-md text-[11px] flex items-center gap-1 shadow-sm border border-tertiary-fixed">
               <span class="material-symbols-outlined text-xs">sentiment_satisfied</span>
-              <span id="cashier-mood">Đang chờ...</span>
+              <span id="cashier-mood">Đang trực quầy...</span>
             </div>
           </div>
           
@@ -621,26 +620,34 @@
       <div class="absolute inset-0 bg-background/60 backdrop-blur-sm"></div>
     </div>
     
-    <header class="bg-surface docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] z-40 relative border-b border-surface-container-low">
-      <div class="flex justify-between items-center px-gutter py-4 w-full max-w-7xl mx-auto">
-        <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
-          <span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary drop-shadow-sm font-bold">
-            AISLE
-          </span>
+    <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-40 border-b border-surface-container-highest">
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+        <div>
+          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">Bảng kết quả</p>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="nav-pill-group">
-            <button id="btn-results-back-setup" data-nav-tab="setup" type="button" class="nav-pill-btn" title="Màn hình thiết lập sơ đồ">
-              <span class="material-symbols-outlined text-base">edit_square</span> Thiết lập
-            </button>
-            <button id="btn-results-back-simulate" data-nav-tab="simulate" type="button" class="nav-pill-btn" title="Màn hình chạy mô phỏng">
-              <span class="material-symbols-outlined text-base">play_circle</span> Mô phỏng
-            </button>
-            <button data-nav-tab="results" type="button" class="nav-pill-btn active" title="Màn hình xem lịch sử và kết quả">
-              <span class="material-symbols-outlined text-base">list_alt</span> Bảng kết quả
-            </button>
-          </div>
+      </div>
+      
+      <!-- History Badge in Center of Top Header -->
+      <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
+        <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
+          <span class="material-symbols-outlined text-base text-primary/80">history</span>
+          <span class="font-bold text-sm text-primary font-button-text">Lịch sử mô phỏng</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="nav-pill-group">
+          <button id="btn-results-back-setup" data-nav-tab="setup" type="button" class="nav-pill-btn" title="Màn hình thiết lập sơ đồ">
+            <span class="material-symbols-outlined text-base">edit_square</span> Thiết lập
+          </button>
+          <button id="btn-results-back-simulate" data-nav-tab="simulate" type="button" class="nav-pill-btn" title="Màn hình chạy mô phỏng">
+            <span class="material-symbols-outlined text-base">play_circle</span> Mô phỏng
+          </button>
+          <button data-nav-tab="results" type="button" class="nav-pill-btn active" title="Màn hình xem lịch sử và kết quả">
+            <span class="material-symbols-outlined text-base">list_alt</span> Bảng kết quả
+          </button>
         </div>
       </div>
     </header>
@@ -688,12 +695,24 @@
   <!-- ═══════ SCREEN 5: Analytics Dashboard ═══════ -->
   <div id="screen-analytics" class="screen flex min-h-screen bg-background text-on-background">
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
-      <header class="bg-surface flex justify-between items-center px-gutter py-4 w-full z-10 shadow-[0_20px_40px_rgba(123,85,72,0.05)] md:shadow-none bg-opacity-90 backdrop-blur-sm sticky top-0 border-b border-surface-variant">
-        <h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary-fixed-dim drop-shadow-sm flex items-center gap-2 pl-4">
-          <span class="material-symbols-outlined text-3xl">storefront</span>
-          AISLE Analytics
-        </h1>
-        <div class="flex items-center gap-3 pr-4">
+      <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-40 border-b border-surface-container-highest">
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+          <div>
+            <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+            <p class="font-label-md text-label-md text-on-surface-variant font-bold">Phân tích chuyên sâu</p>
+          </div>
+        </div>
+
+        <!-- Analytics Badge in Center of Top Header -->
+        <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
+          <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
+            <span class="material-symbols-outlined text-base text-primary/80">analytics</span>
+            <span class="font-bold text-sm text-primary font-button-text">Báo cáo & Phân tích</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
           <div class="nav-pill-group">
             <button id="btn-analytics-back-setup" data-nav-tab="setup" type="button" class="nav-pill-btn" title="Màn hình thiết lập sơ đồ">
               <span class="material-symbols-outlined text-base">edit_square</span> Thiết lập
@@ -704,9 +723,6 @@
             <button id="btn-analytics-back-results" data-nav-tab="results" type="button" class="nav-pill-btn" title="Màn hình xem lịch sử và kết quả">
               <span class="material-symbols-outlined text-base">list_alt</span> Bảng kết quả
             </button>
-          </div>
-          <div class="w-10 h-10 rounded-full border-2 border-secondary-container overflow-hidden ml-2 cursor-pointer hover:rotate-[-5deg] transition-transform">
-            <img alt="Cozy Cat Cashier Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiU4LPSO1pJtj3HxyYopctmmtbtbRqnSxO64pDFkU06lLCnZsBzLwp7DASuQjnJBQ-4LORVfWjqAe28QI_IU_3tdz3FplSO68q67MLYodl0Of1HqVeRZlJlRKLojxxf9KeRqd48RITAnxglCLIz-k7D4HFRl5wFlPrKRdqiZnjX_WxB-dRN9eR8BKVjVUovJwH0NUpsWApvAI8xGCHUmt3mzbJLEZlAJIf7oe6vT-E64V-xyEnkTJ3KA">
           </div>
         </div>
       </header>

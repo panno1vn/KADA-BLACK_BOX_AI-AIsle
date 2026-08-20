@@ -41,7 +41,8 @@ const npcRenderer=new NpcSpriteRenderer({assets:NPC_SPRITE_ASSETS});
 let currentTab='welcome';
 let lastPurchaseCount=0;
 let lastFinishedCount=0;
-const cashierMoods=['Yay! Có khách mua rồi! 🎉','Cảm ơn quý khách! ♡','Hàng bán chạy quá! ✨','Tuyệt vời! 💰','Vui ghê, thêm một đơn! 🌟','Khách ơi quay lại nha~ 💕'];
+const cashierMoodsSmile=['Dạ em chào quý khách ạ!','Dạ em cảm ơn quý khách ạ!','Dạ em nhận được tiền rồi ạ.','Em gửi lại hóa đơn cho mình ạ.','Quý khách có dùng thẻ tích điểm không ạ?','Dạ để em tính tiền cho mình nhé.','Dạ em thanh toán xong rồi ạ.','Cảm ơn quý khách, chúc quý khách ngày mới tốt lành!'];
+const cashierMoodsSad=['Dạ em cảm ơn quý khách đã ghé ạ.','Em chào quý khách, hẹn gặp lại ạ!'];
 const TAB_ORDER={welcome:0,setup:1,simulate:2,results:3,load:3,analytics:4};
 function switchTab(tab){
   if(tab!==currentTab && currentTab==='simulate' && playing){
@@ -111,8 +112,63 @@ function switchTab(tab){
   setTimeout(()=>{resizeCanvas();draw();}, 330);
 }
 window.switchTab = switchTab;
-function triggerCashierReaction(type='happy'){const avatar=$('#cashier-avatar'),mood=$('#cashier-mood');if(!avatar)return;avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.classList.remove('happy','sad');void avatar.offsetWidth;if(type==='happy'){avatar.classList.add('cashier-react');mood.textContent=cashierMoods[Math.floor(Math.random()*cashierMoods.length)];mood.classList.add('happy')}else if(type==='smile'){avatar.classList.add('cashier-smile');mood.textContent='Cảm ơn quý khách~';mood.classList.add('happy')}else if(type==='sad'){avatar.classList.add('cashier-sad');mood.textContent='Trời ơi, hổng mua gì sao...';mood.classList.add('sad')}clearTimeout(triggerCashierReaction.t);triggerCashierReaction.t=setTimeout(()=>{avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.textContent='Đang chờ khách...';mood.classList.remove('happy','sad')},2800)}
-function updateCashier(){if(!simulation)return;const s=simulation.snapshot();const served=simulation.stats.converted||0;const rev=s.revenue||0;$('#cashier-served').textContent=served;$('#cashier-revenue').textContent=money(rev);if(s.purchases>lastPurchaseCount&&lastPurchaseCount>=0){const latest=simulation.purchases[simulation.purchases.length-1];if(latest&&latest.price<10000){triggerCashierReaction('smile')}else{triggerCashierReaction('happy')}}else{const finishedCount=simulation.agents.filter(a=>a.finished).length;if(finishedCount>lastFinishedCount){const finished=simulation.agents.filter(a=>a.finished);const last=finished[finished.length-1];if(!last.converted){triggerCashierReaction('sad')}}lastFinishedCount=finishedCount}lastPurchaseCount=s.purchases}
+function triggerCashierReaction(type='smile'){
+  const avatar=$('#cashier-avatar'),mood=$('#cashier-mood');
+  if(!avatar)return;
+  const imgIdle=avatar.querySelector('.cashier-img-idle');
+  const imgSmile=avatar.querySelector('.cashier-img-smile');
+  const imgSad=avatar.querySelector('.cashier-img-sad');
+  [imgIdle,imgSmile,imgSad].forEach(img=>img?.classList.add('hidden'));
+  avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');
+  mood?.classList.remove('happy','sad');
+  void avatar.offsetWidth;
+  if(type==='smile'){
+    if(imgSmile)imgSmile.classList.remove('hidden');else if(imgIdle)imgIdle.classList.remove('hidden');
+    avatar.classList.add('cashier-smile');
+    if(mood){mood.textContent=cashierMoodsSmile[Math.floor(Math.random()*cashierMoodsSmile.length)];mood.classList.add('happy')}
+  }else if(type==='sad'){
+    if(imgSad)imgSad.classList.remove('hidden');else if(imgIdle)imgIdle.classList.remove('hidden');
+    avatar.classList.add('cashier-sad');
+    if(mood){mood.textContent=cashierMoodsSad[Math.floor(Math.random()*cashierMoodsSad.length)];mood.classList.add('sad')}
+  }else{
+    if(imgIdle)imgIdle.classList.remove('hidden');
+    if(mood)mood.textContent='Đang trực quầy...';
+  }
+  clearTimeout(triggerCashierReaction.t);
+  triggerCashierReaction.t=setTimeout(()=>{
+    [imgSmile,imgSad].forEach(img=>img?.classList.add('hidden'));
+    imgIdle?.classList.remove('hidden');
+    avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');
+    if(mood){mood.textContent='Đang trực quầy...';mood.classList.remove('happy','sad')}
+  },2800);
+}
+function updateCashier(){
+  if(!simulation)return;
+  const s=simulation.snapshot();
+  const served=simulation.stats.converted||0;
+  const rev=s.revenue||0;
+  const servedEl=$('#cashier-served');
+  const revEl=$('#cashier-revenue');
+  if(servedEl)servedEl.textContent=served;
+  if(revEl)revEl.textContent=money(rev);
+  
+  const checkoutPos=layout?.checkout||simulation.layout?.checkout;
+  if(!checkoutPos)return;
+  
+  // Chỉ kích hoạt khi khách hàng thực sự đã đi tới sát quầy thu ngân (khoảng cách <= 0.65m)
+  const customerAtCounter=simulation.agents?.find(a=>{
+    if(a.finished)return false;
+    const dist=Math.hypot(a.x-checkoutPos.x,a.y-checkoutPos.y);
+    return dist<=0.65;
+  });
+  
+  if(customerAtCounter){
+    if(!customerAtCounter._cashierTriggered){
+      customerAtCounter._cashierTriggered=true;
+      triggerCashierReaction('smile');
+    }
+  }
+}
 
 async function api(path,options={}){const response=await fetch(path,{headers:{'Content-Type':'application/json'},...options});const data=await response.json();if(!response.ok)throw new Error(data.error||response.statusText);return data}
 function toast(text){const e=$('#toast');e.textContent=text;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),1800)}
@@ -253,6 +309,7 @@ function bind(){
   const handleClearHistory=async()=>{
     localStorage.removeItem('aisle_history_runs');
     localStorage.removeItem('sim-history-list');
+    localStorage.removeItem('aisle_deleted_history_ids');
     try{
       if(window.aisleBridge&&typeof window.aisleBridge.request==='function'){
         await window.aisleBridge.request('history.clear');
@@ -306,7 +363,7 @@ function setSimPanelView(mode){
     btnLog?.classList.remove('bg-primary','text-on-primary','shadow-xs');
     btnLog?.classList.add('text-on-surface-variant');
     if(titleIcon)titleIcon.textContent='monitoring';
-    if(titleHeading)titleHeading.textContent='Live Metrics';
+    if(titleHeading)titleHeading.textContent='Chỉ số trực tiếp';
   }else{
     viewMetrics?.classList.add('hidden');
     viewLog?.classList.remove('hidden');
@@ -315,7 +372,7 @@ function setSimPanelView(mode){
     btnMetrics?.classList.remove('bg-primary','text-on-primary','shadow-xs');
     btnMetrics?.classList.add('text-on-surface-variant');
     if(titleIcon)titleIcon.textContent='receipt_long';
-    if(titleHeading)titleHeading.textContent='Decision Trace';
+    if(titleHeading)titleHeading.textContent='Nhật ký quyết định';
   }
 }
 
@@ -616,13 +673,28 @@ function renderHistoryRow(item){
   `;
 }
 
+function getDeletedHistoryIds(){
+  try{
+    return new Set(JSON.parse(localStorage.getItem('aisle_deleted_history_ids')||'[]'));
+  }catch{
+    return new Set();
+  }
+}
+function markHistoryIdDeleted(id){
+  if(!id)return;
+  const set=getDeletedHistoryIds();
+  set.add(id);
+  localStorage.setItem('aisle_deleted_history_ids',JSON.stringify([...set]));
+}
+
 async function deleteHistoryRunByKey(deleteKey){
   if(!deleteKey) return;
+  markHistoryIdDeleted(deleteKey);
   try{
     let runs = JSON.parse(localStorage.getItem('aisle_history_runs') || '[]');
     runs = runs.filter(item => {
       const key = item.id || item.Id || (item.createdAt || item.CreatedAt || '') + (item.name || item.Name || '');
-      return key !== deleteKey;
+      return key !== deleteKey && item.id !== deleteKey && item.Id !== deleteKey;
     });
     localStorage.setItem('aisle_history_runs', JSON.stringify(runs));
   }catch(e){}
@@ -630,7 +702,7 @@ async function deleteHistoryRunByKey(deleteKey){
     let simList = JSON.parse(localStorage.getItem('sim-history-list') || '[]');
     simList = simList.filter(item => {
       const key = item.id || item.Id || (item.createdAt || item.CreatedAt || '') + (item.name || item.Name || '');
-      return key !== deleteKey;
+      return key !== deleteKey && item.id !== deleteKey && item.Id !== deleteKey;
     });
     localStorage.setItem('sim-history-list', JSON.stringify(simList));
   }catch(e){}
@@ -661,10 +733,11 @@ async function loadHistoryList(){
     localItems=JSON.parse(localStorage.getItem('aisle_history_runs')||'[]');
   }catch(e){}
 
+  const deletedIds=getDeletedHistoryIds();
   const map=new Map();
   for(const item of [...bridgeItems, ...localItems]){
     const key=item.id||item.Id||(item.createdAt||item.CreatedAt||'')+(item.name||item.Name||'');
-    if(key && !map.has(key)){
+    if(key && !deletedIds.has(key) && !deletedIds.has(item.id) && !deletedIds.has(item.Id) && !map.has(key)){
       map.set(key, item);
     }
   }

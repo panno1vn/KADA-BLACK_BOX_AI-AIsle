@@ -689,6 +689,18 @@ export async function loadDashboard() {
     } catch {}
   }
 
+  // 4. Lọc bỏ các phiên đã bị người dùng xóa
+  let deletedIds = new Set();
+  try {
+    deletedIds = new Set(JSON.parse(localStorage.getItem('aisle_deleted_history_ids') || '[]'));
+  } catch {}
+  if (deletedIds.size > 0) {
+    rawRuns = rawRuns.filter(item => {
+      const key = item.id || item.Id || (item.createdAt || item.CreatedAt || '') + (item.name || item.Name || '');
+      return !deletedIds.has(key) && !deletedIds.has(item.id) && !deletedIds.has(item.Id);
+    });
+  }
+
   cache = buildAnalytics(rawRuns);
   render();
 }

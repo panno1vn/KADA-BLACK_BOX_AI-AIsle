@@ -1169,6 +1169,87 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kết quả: Code mới nhất đã được đồng bộ lên GitHub an toàn.
 - Phạm vi Git: Remote `origin/develop`.
 
+## 2026-08-20 19:28 (UTC+07:00) — Antigravity
+
+- Lý do: Tối ưu nút chọn tốc độ mô phỏng và cập nhật biểu cảm hình ảnh bé thu ngân kèm câu thoại thực tế.
+- Đã thực hiện:
+  - `web/purrfect-theme.css`: Tùy biến nút `#speed` với khoảng đệm `padding: 0.35rem 2rem 0.35rem 0.85rem` và mũi tên dropdown SVG màu nâu ấm, giúp chữ `5×` không bị dính vào mũi tên trỏ xuống.
+  - `web/app.js`:
+    - Kết nối 4 hình ảnh thật (`cashier_idle.jpg`, `cashier_smile.jpg`, `cashier_happy.jpg`, `cashier_sad.jpg`) trong thư mục `web/`.
+    - Chuyển đổi linh hoạt hình ảnh biểu cảm tương ứng theo sự kiện: Chào khách khi đến quầy (`smile`), Cảm ơn khi thanh toán thành công (`happy`), Chào tạm biệt khi khách rời đi (`sad`), và Trực quầy khi vắng khách (`idle`).
+    - Cập nhật toàn bộ câu thoại chuẩn tác phong thực tế, đời thường và lịch sự của nhân viên thu ngân.
+  - `web/index.html`: Cập nhật trạng thái mặc định của thu ngân thành *"Đang trực quầy..."*.
+- Kết quả: Nút tốc độ hiển thị đẹp mắt, thông thoáng; nhân viên thu ngân phản ứng sinh động và thực tế theo từng tình huống mô phỏng.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 19:32 (UTC+07:00) — Antigravity
+
+- Lý do: Căn chỉnh khuôn mặt bé thu ngân nằm chính giữa khung avatar và chỉ giữ lại 3 biểu cảm (`idle`, `smile`, `sad`), loại bỏ hoàn toàn `happy`.
+- Đã thực hiện:
+  - `web/purrfect-theme.css` & `web/index.html`: Thiết lập `object-position: center 25%` để đưa khuôn mặt bé thu ngân vào ngay tâm giữa khung hình chân dung.
+  - `web/index.html`: Loại bỏ thẻ `<img>` `cashier_happy.jpg`, giữ lại 3 ảnh chân thực `cashier_idle.jpg`, `cashier_smile.jpg`, `cashier_sad.jpg`.
+  - `web/app.js`: Tinh chỉnh logic chỉ xử lý 3 trạng thái (`idle`, `smile`, `sad`), gộp câu thoại thanh toán và chào hỏi vào `cashierMoodsSmile`.
+- Kết quả: Khuôn mặt bé thu ngân hiển thị ngay ngắn ở chính giữa khung hình, 3 trạng thái biểu cảm tự nhiên, không làm ảnh hưởng đến bất kỳ khu vực xung quanh nào.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 19:34 (UTC+07:00) — Antigravity
+
+- Lý do: Loại bỏ hoàn toàn dấu gạch chéo `/` trong câu thoại của nhân viên thu ngân, đảm bảo từng câu thoại tự nhiên, liền mạch và chuẩn mực.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 19:47 (UTC+07:00) — Antigravity
+
+- Lý do: Sửa lỗi bé thu ngân đổi biểu cảm trước khi khách bước tới quầy thu ngân (do trước đó chỉ kiểm tra `purchases` hoặc `intent === 'checkout'`).
+- Đã thực hiện:
+  - `web/app.js`: Cập nhật `updateCashier` để đo khoảng cách Euclid thực tế giữa tọa độ khách hàng và vị trí quầy thu ngân (`layout.checkout`). Chỉ kích hoạt biểu cảm `smile` khi khách hàng thực sự đã đi tới sát trước mặt quầy ($\le 0.65\text{m}$).
+- Kết quả: Bé thu ngân chỉ phản ứng và mỉm cười chào/thanh toán đúng thời điểm khách hàng bước tới trước mặt quầy, loại bỏ hoàn toàn hiện tượng phản ứng sớm từ xa.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 19:53 (UTC+07:00) — Antigravity
+
+- Lý do: Sửa lỗi tiêu đề bảng điều khiển bị đổi thành tiếng Anh (`Decision Trace` / `Live Metrics`) khi chuyển đổi giữa 2 tab Nhật ký và Chỉ số.
+- Đã thực hiện:
+  - `web/app.js`: Cập nhật hàm `setSimPanelView` để luôn gán tiêu đề tiếng Việt chuẩn mực: *"Nhật ký quyết định"* (khi xem log) và *"Chỉ số trực tiếp"* (khi xem metrics).
+- Kết quả: Tiêu đề luôn giữ nguyên vẹn tiếng Việt 100% khi người dùng bấm chuyển đổi qua lại giữa tab Nhật ký và Chỉ số, không làm ảnh hưởng đến bất kỳ khu vực nào khác.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 20:04 (UTC+07:00) — Antigravity
+
+- Lý do: Khắc phục triệt để hiện tượng thanh viên thuốc (Segmented Pill Switcher) bị xê dịch nhẹ khi chuyển tab (do trước đó padding `px-gutter` ở Setup và `max-w-7xl` ở Results làm lệch tọa độ X của Header).
+- Đã thực hiện:
+  - `web/index.html`:
+    - Đồng bộ 100% cấu trúc 3 khối của thanh Header trên tất cả các màn hình (Setup, Simulation, Results, Analytics): Cùng `px-6 py-3 w-full border-b border-surface-container-highest`, cùng khối logo trái, cùng khối badge giữa (`flex-1 max-w-sm mx-4`) và cùng khối viên thuốc bên phải.
+- Kết quả: Vị trí tọa độ X và Y của thanh viên thuốc và toàn bộ Header trên tất cả các màn hình hoàn toàn trùng khớp 1:1 từng pixel. Khi chuyển tab, thanh viên thuốc đứng yên cố định tuyệt đối 100%.
+- Kiểm tra: 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-20 20:16 (UTC+07:00) — Antigravity
+
+- Lý do: Sửa lỗi bấm nút thùng rác xóa phiên mô phỏng nhưng dòng vẫn còn trên màn hình (do trước đó C# Bridge chưa hỗ trợ `history.delete` và `history.clear`, khiến bridge trả về danh sách cũ từ đĩa).
+- Đã thực hiện:
+  - `src/AIsle.DesktopApp`:
+    - `IHistoryStore.cs` & `JsonHistoryStore.cs`: Bổ sung phương thức `Delete(string id)` và `Clear()` để xóa file `.sim-result.json` thật trên ổ đĩa.
+    - `BridgeMessageProcessor.cs`: Xử lý thêm lệnh `"history.delete"` và `"history.clear"`.
+  - `web/app.js`:
+    - Thêm cơ chế `aisle_deleted_history_ids` trong `localStorage` để đánh dấu các ID đã bị người dùng xóa.
+    - Tự động lọc bỏ các ID đã xóa trước khi render bảng kết quả trong `loadHistoryList`.
+    - Gửi yêu cầu `history.delete` và `history.clear` tới C# bridge.
+  - `web/dashboard.js`: Đồng bộ cơ chế lọc `aisle_deleted_history_ids` để báo cáo Analytics không tính các phiên đã xóa.
+- Kết quả: Khi bấm nút thùng rác [🗑️], phiên mô phỏng biến mất ngay lập tức khỏi bảng kết quả và đĩa cứng được dọn dẹp sạch sẽ.
+- Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+
+
+
+
+
+
+
 
 
 

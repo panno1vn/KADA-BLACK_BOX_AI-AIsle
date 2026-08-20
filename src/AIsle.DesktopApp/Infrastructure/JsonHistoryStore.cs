@@ -90,6 +90,39 @@ namespace AIsle.DesktopApp.Infrastructure
             }
         }
 
+        public bool Delete(string id)
+        {
+            if (!SimResultJsonSerializer.IsSafeId(id)) return false;
+            var path = PathFor(id);
+            if (!File.Exists(path)) return false;
+            try
+            {
+                File.Delete(path);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public int Clear()
+        {
+            if (!Directory.Exists(_directory)) return 0;
+            var count = 0;
+            var files = Directory.GetFiles(_directory, "*" + Extension, SearchOption.TopDirectoryOnly);
+            foreach (var file in files)
+            {
+                try
+                {
+                    File.Delete(file);
+                    count++;
+                }
+                catch { }
+            }
+            return count;
+        }
+
         private SimResult ReadFile(string path) => SimResultJsonSerializer.Deserialize(File.ReadAllText(path));
         private string PathFor(string id) => Path.Combine(_directory, id + Extension);
 

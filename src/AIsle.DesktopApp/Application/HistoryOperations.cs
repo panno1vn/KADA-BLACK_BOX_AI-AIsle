@@ -8,6 +8,8 @@ namespace AIsle.DesktopApp.Application
         HistoryEntry Save(SimResult result);
         HistoryListResult List();
         SimResult Read(string id);
+        bool Delete(string id);
+        int Clear();
     }
 
     public sealed class HistoryEntry
