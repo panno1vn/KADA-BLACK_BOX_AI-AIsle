@@ -5,7 +5,8 @@ import {DEFAULT_PARAMETERS, LiveSimulation, createRng, generatePopulation, manua
 const population = generatePopulation(DEFAULT_CATALOG, 180, createRng(42));
 const busyLayout = {...structuredClone(DEFAULT_LAYOUT), spawnRateCurve: [{minute: 0, rate: 180}, {minute: 5, rate: 180}]};
 const sim = new LiveSimulation({layout: busyLayout, catalog: DEFAULT_CATALOG, population, seed: 42, durationMinutes: 5});
-assert.ok(sim.agents[0].spawn > 0 && sim.agents[0].spawn < sim.duration, 'the first Poisson arrival must fall inside the run');
+assert.equal(sim.agents[0].spawn, 0, 'RUN LIVE must admit the first NPC immediately');
+assert.ok(sim.agents[1].spawn > 0 && sim.agents[1].spawn < sim.duration, 'later NPCs must retain the Poisson arrival schedule');
 for (let i=0; i<250; i++) sim.step(DEFAULT_PARAMETERS.tickSeconds);
 const snapshot = sim.snapshot();
 assert.ok(snapshot.spawned > 0);

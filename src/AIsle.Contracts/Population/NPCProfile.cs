@@ -7,6 +7,8 @@ namespace AIsle.Contracts.Population
     {
         public string Id = string.Empty;
         public double WalkingSpeed;
+        // Compatibility traits remain serializable. S8 activates only
+        // Impulsiveness and PriceSensitivity in shopping decisions.
         public double Patience;
         public double Exploration;
         public double Sociability;

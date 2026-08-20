@@ -30,10 +30,10 @@
         <materialDesign:Card Grid.Column="1" Padding="16">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="📋 Chi tiết" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
-                <Button DockPanel.Dock="Bottom" Content="📥 Xuất file JSON" Command="{Binding ExportRunCommand}" Style="{StaticResource MaterialDesignFlatMidBgButton}" Margin="0,12,0,0" HorizontalAlignment="Left" />
+                <Button DockPanel.Dock="Bottom" Content="📥 Xuất file JSON" Command="{Binding ExportRunCommand}" Margin="0,12,0,0" HorizontalAlignment="Left" />
                 <TextBox Text="{Binding DetailText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"
-                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                         />
             </DockPanel>
         </materialDesign:Card>
     </Grid>

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using AIsle.Contracts.Simulation;
+using AIsle.DesktopApp.Infrastructure;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -18,6 +20,10 @@ namespace AIsle.DesktopApp.ViewModels
         // Layout Properties
         [ObservableProperty] private double _storeWidth;
         [ObservableProperty] private double _storeHeight;
+        [ObservableProperty] private double _entranceX;
+        [ObservableProperty] private double _entranceY;
+        [ObservableProperty] private double _checkoutX;
+        [ObservableProperty] private double _checkoutY;
         public ObservableCollection<Services.Wall> Walls { get; } = new();
         public ObservableCollection<Services.Shelf> Shelves { get; } = new();
         public ObservableCollection<Services.Npc> ActiveNpcs { get; } = new();
@@ -41,6 +47,10 @@ namespace AIsle.DesktopApp.ViewModels
             var layout = _layoutService.GetLayout();
             StoreWidth = layout.Width;
             StoreHeight = layout.Height;
+            EntranceX = layout.Entrance?.X ?? 0;
+            EntranceY = layout.Entrance?.Y ?? 0;
+            CheckoutX = layout.Checkout?.X ?? 0;
+            CheckoutY = layout.Checkout?.Y ?? 0;
 
             Walls.Clear();
             foreach (var w in layout.Walls) Walls.Add(w);
@@ -94,33 +104,24 @@ namespace AIsle.DesktopApp.ViewModels
 
         private void SaveLog()
         {
-            var summary = new Services.SimRunSummary
+            var result = new SimResult
             {
                 Id = "run-" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                SchemaVersion = "1.0",
-                CreatedAt = DateTime.UtcNow.ToString("O"),
+                CreatedAt = DateTimeOffset.UtcNow,
                 Name = "Layout A - live test",
-                Seed = 42,
-                DurationMinutes = 30,
-                Summary = new Services.SimSummaryData
+                Summary = new SimulationSummary
                 {
-                    Time = 30,
+                    DurationSeconds = CurrentTime.TotalSeconds,
                     Revenue = TotalRevenue,
                     Purchases = TotalPurchases,
-                    ConversionRate = ConversionRate,
-                    NotFoundRate = 0,
                     Spawned = TotalShoppers,
-                    Active = 0
-                }
+                    Converted = ConvertedShoppers,
+                    Completed = !IsRunning
+                },
+                Replay = new ReplayData()
             };
-            
-            var json = System.Text.Json.JsonSerializer.Serialize(summary, new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            });
-            
-            _historyService.SaveRun(summary.Id, json);
+
+            _historyService.SaveRun(result.Id, SimResultJsonSerializer.Serialize(result));
         }
 
         private void ResetSimulation()

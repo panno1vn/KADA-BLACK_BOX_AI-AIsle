@@ -113,6 +113,20 @@ export function createRng(seed = 42) {
   return random;
 }
 
+export function createRunSeed(previousSeed = null, cryptoApi = globalThis.crypto) {
+  const values = new Uint32Array(1);
+  let seed;
+  if (cryptoApi?.getRandomValues) {
+    cryptoApi.getRandomValues(values);
+    seed = values[0] >>> 0;
+  } else {
+    seed = ((Date.now() >>> 0) ^ Math.floor(Math.random() * 0x100000000)) >>> 0;
+  }
+  if (seed === 0) seed = 0x6d2b79f5;
+  if (previousSeed !== null && seed === (Number(previousSeed) >>> 0)) seed = (seed + 0x9e3779b9) >>> 0 || 1;
+  return seed;
+}
+
 const SEEDS = [
   [.72, .018, .24, .008, .32, .66, .36, .14, 1.42, 8.2, .82, 'beverage'],
   [.35, .012, .68, .014, .12, .44, .57, .09, .92, 13.5, .54, 'snack'],
@@ -259,7 +273,7 @@ export function shelfAccessPaths(shelf, from, layout, grid) {
 export class LiveSimulation {
   constructor({ layout, catalog, population, parameters = {}, seed = 42, durationMinutes = 30 }) {
     this.layout = structuredClone(layout); this.catalog = structuredClone(catalog); this.parameters = { ...DEFAULT_PARAMETERS, ...parameters }; this.seed = seed; this.rng = createRng(seed); this.spawnRng = createRng((Number(seed) ^ 0x9e3779b9) >>> 0); this.decisionRng = createRng((Number(seed) ^ 0x85ebca6b) >>> 0); this.duration = durationMinutes * 60; this.time = 0; this.grid = new PathGrid(this.layout, this.parameters); this.events = []; this.purchases = []; this.revenue = 0; this.completed = false; this.dwellByShelf = Object.fromEntries(this.layout.shelves.map(s => [s.id, 0])); this.catalogCategories = new Set(catalog.map(p => p.category)); this.trajectories = {};
-    const spawns = this.makeSpawnTimes(population.length); this.agents = population.map((genome, index) => ({ ...structuredClone(genome), x: layout.entrance.x, y: layout.entrance.y, status: 'WAITING', spawn: spawns[index], valence: genome.attractor, peakValence: genome.attractor, need: genome.needProduct, explore: genome.needExplore, path: [], pathIndex: 0, dwellLeft: 0, visited: [], boughtMain: false, boughtImpulse: false, currentShelf: null, utility: null, trail: [], finished: false, stuckFor: 0, replans: 0, routeTarget: null, routeStatus: null, stridePhase: this.rng() * Math.PI * 2, lastTrajectoryTime: -Infinity, lastTrajectoryStatus: null }));
+    const spawns = this.makeSpawnTimes(population.length); this.agents = population.map((genome, index) => ({ ...structuredClone(genome), x: layout.entrance.x, y: layout.entrance.y, status: 'WAITING', spawn: spawns[index], valence: genome.attractor, need: genome.needProduct, explore: genome.needExplore, path: [], pathIndex: 0, dwellLeft: 0, visited: [], boughtMain: false, boughtImpulse: false, currentShelf: null, utility: null, trail: [], finished: false, stuckFor: 0, replans: 0, routeTarget: null, routeStatus: null, stridePhase: this.rng() * Math.PI * 2, lastTrajectoryTime: -Infinity, lastTrajectoryStatus: null }));
     for (const agent of this.agents) this.trajectories[agent.id] = [];
     this.stats = { spawned: 0, converted: 0, mainBuyers: 0, impulseBuyers: 0, notFound: population.filter(n => n.target && !this.catalogCategories.has(n.target)).length, unreachable: 0, stuckRecoveries: 0 };
   }
@@ -273,6 +287,10 @@ export class LiveSimulation {
       curve = Array.from({ length: 25 }, (_, index) => { const phase = index / 24; return { minute: phase * this.duration / 60, rate: meanRate * (1 + strength * Math.sin(phase * Math.PI)) / normalizer } });
     }
     const result = samplePoissonSpawnTimes({ curve, durationSeconds: this.duration, rng: this.spawnRng, maxCount: count });
+    // RUN LIVE must have visible progress immediately. Keep the sampled
+    // absolute arrival times for every later NPC, but admit the first NPC at T=0.
+    if (result.length) result[0] = 0;
+    else result.push(0);
     while (result.length < count) result.push(Infinity);
     return result;
   }
@@ -319,7 +337,7 @@ export class LiveSimulation {
     const moved = distance(a, next); a.x = next.x; a.y = next.y; a.stuckFor = moved < .001 ? a.stuckFor + dt : 0; if (d <= step) a.pathIndex++;
     if (a.stuckFor >= this.parameters.stuckTimeout) this.recoverRoute(a, 'no movement progress');
   }
-  finishDwell(a) { const shelf = this.layout.shelves.find(s => s.id === a.currentShelf), products = this.catalog.filter(p => p.shelf === a.currentShelf), matched = products.filter(p => p.category === a.target); a.valence = clamp(a.valence + (shelf.valence - a.valence) * a.dispersion * (1 - a.stability), -1, 1); a.peakValence = Math.max(a.peakValence, a.valence); if (!a.boughtMain && matched.length) { const probability = sigmoid(this.parameters.purchaseNeedA * a.need + this.parameters.purchaseValenceB * a.valence + this.parameters.purchaseBiasC), roll = this.rng(), bought = roll < probability; this.emit(a, 'purchase-roll', `main P=${probability.toFixed(3)}, roll=${roll.toFixed(3)} → ${bought ? 'BUY' : 'SKIP'}`, { probability, roll, bought }); if (bought) this.buy(a, matched[Math.floor(this.rng() * matched.length)], 'main') } if (products.length) { const probability = this.parameters.impulseBase * ((a.valence + 1) / 2), roll = this.rng(), bought = roll < probability; this.emit(a, 'impulse-roll', `impulse P=${probability.toFixed(3)}, roll=${roll.toFixed(3)} → ${bought ? 'BUY' : 'SKIP'}`, { probability, roll, bought }); if (bought) this.buy(a, products[Math.floor(this.rng() * products.length)], 'impulse_cross_sell') } a.visited.push(a.currentShelf); a.currentShelf = null; if (a.boughtMain || a.boughtImpulse) this.routeExit(a); else { a.status = 'DECIDING'; a.valence += (a.attractor - a.valence) * a.recovery } }
+  finishDwell(a) { const shelf = this.layout.shelves.find(s => s.id === a.currentShelf), products = this.catalog.filter(p => p.shelf === a.currentShelf), matched = products.filter(p => p.category === a.target); a.valence = clamp(a.valence + (shelf.valence - a.valence) * a.dispersion * (1 - a.stability), -1, 1); if (!a.boughtMain && matched.length) { const probability = sigmoid(this.parameters.purchaseNeedA * a.need + this.parameters.purchaseValenceB * a.valence + this.parameters.purchaseBiasC), roll = this.rng(), bought = roll < probability; this.emit(a, 'purchase-roll', `main P=${probability.toFixed(3)}, roll=${roll.toFixed(3)} → ${bought ? 'BUY' : 'SKIP'}`, { probability, roll, bought }); if (bought) this.buy(a, matched[Math.floor(this.rng() * matched.length)], 'main') } if (products.length) { const probability = this.parameters.impulseBase * ((a.valence + 1) / 2), roll = this.rng(), bought = roll < probability; this.emit(a, 'impulse-roll', `impulse P=${probability.toFixed(3)}, roll=${roll.toFixed(3)} → ${bought ? 'BUY' : 'SKIP'}`, { probability, roll, bought }); if (bought) this.buy(a, products[Math.floor(this.rng() * products.length)], 'impulse_cross_sell') } a.visited.push(a.currentShelf); a.currentShelf = null; if (a.boughtMain || a.boughtImpulse) this.routeExit(a); else { a.status = 'DECIDING'; a.valence += (a.attractor - a.valence) * a.recovery } }
   buy(a, product, type) { this.purchases.push({ time: this.time, npc: a.id, product: product.id, type, price: Number(product.price) }); this.revenue += Number(product.price); if (type === 'main' && !a.boughtMain) { a.boughtMain = true; this.stats.mainBuyers++ } if (type !== 'main' && !a.boughtImpulse) { a.boughtImpulse = true; this.stats.impulseBuyers++ } if (!a.converted) { a.converted = true; this.stats.converted++ } this.emit(a, 'purchase', `bought ${product.name} for ${product.price}`, { product, type }) }
   routeExit(a) {
     if (a.converted && this.setPath(a, this.layout.checkout, 'CHECKOUT')) return;
@@ -379,11 +397,5 @@ export class LiveSimulation {
       })),
     };
   }
-  snapshot() {
-    // Overall emotion per NPC follows the Peak-End Rule the project is built on: the average
-    // of each customer's most positive moment (peakValence) and their state when they finish.
-    const spawnedAgents = this.agents.filter(a => this.time >= a.spawn);
-    const emotionTotal = spawnedAgents.reduce((sum, a) => sum + (a.peakValence + a.valence) / 2, 0);
-    return { time: this.time, revenue: this.revenue, purchases: this.purchases.length, spawned: this.stats.spawned, active: this.agents.filter(a => !a.finished && this.time >= a.spawn).length, conversionRate: this.stats.spawned ? this.stats.converted / this.stats.spawned : 0, mainRate: this.stats.spawned ? this.stats.mainBuyers / this.stats.spawned : 0, impulseRate: this.stats.spawned ? this.stats.impulseBuyers / this.stats.spawned : 0, notFoundRate: this.agents.length ? this.stats.notFound / this.agents.length : 0, avgEmotion: spawnedAgents.length ? emotionTotal / spawnedAgents.length : 0, completed: this.completed };
-  }
+  snapshot() { return { time: this.time, revenue: this.revenue, purchases: this.purchases.length, spawned: this.stats.spawned, active: this.agents.filter(a => !a.finished && this.time >= a.spawn).length, conversionRate: this.stats.spawned ? this.stats.converted / this.stats.spawned : 0, mainRate: this.stats.spawned ? this.stats.mainBuyers / this.stats.spawned : 0, impulseRate: this.stats.spawned ? this.stats.impulseBuyers / this.stats.spawned : 0, notFoundRate: this.agents.length ? this.stats.notFound / this.agents.length : 0, completed: this.completed } }
 }

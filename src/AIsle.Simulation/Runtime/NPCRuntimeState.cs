@@ -9,10 +9,13 @@ namespace AIsle.Simulation.Runtime
     {
         public NPCProfile Profile;
         public double X; public double Y; public string Status = "WAITING"; public double Spawn;
+        public double VelocityX; public double VelocityY;
         public double Valence; public double Need; public double Explore; public List<Position2D> Path = new List<Position2D>(); public int PathIndex;
         public double DwellLeft; public List<string> Visited = new List<string>(); public bool BoughtMain; public bool BoughtImpulse; public bool Converted;
         public string CurrentShelf = string.Empty; public bool Finished; public double StuckFor; public int Replans;
         public Position2D RouteTarget; public string RouteStatus = string.Empty; public double StridePhase;
+        internal ShelfAccessPhase ShelfAccessPhase; internal string InteractionSlotId = string.Empty; internal ShelfSide QueueSide; internal int QueueIndex = -1;
+        internal CheckoutPhase CheckoutPhase; internal bool CheckoutPaid;
         public double LastTrajectoryTime = double.NegativeInfinity; public string LastTrajectoryStatus = string.Empty;
         public readonly List<TrajectorySample> Trajectory = new List<TrajectorySample>();
 
@@ -23,5 +26,6 @@ namespace AIsle.Simulation.Runtime
         }
 
         public Position2D Position() => new Position2D(X, Y);
+        public double Speed() => Math.Sqrt((VelocityX * VelocityX) + (VelocityY * VelocityY));
     }
 }

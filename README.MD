@@ -1,8 +1,8 @@
 # AIsle Desktop Store Simulator
 
-AIsle là hệ thống mô phỏng hành vi khách hàng trong cửa hàng tiện lợi. Dự án kết hợp dữ liệu quan sát từ video thực tế, ngữ cảnh cửa hàng, quần thể NPC sinh bằng Genetic Algorithm và Utility AI lấy cảm hứng từ *The Sims*.
+AIsle là hệ thống mô phỏng hành vi khách hàng trong cửa hàng tiện lợi. Dự án kết hợp dữ liệu quan sát từ video thực tế, ngữ cảnh cửa hàng, quần thể NPC sinh bằng Genetic Algorithm và Utility AI.
 
-> **Trạng thái chuyển đổi:** hướng sản phẩm chính thức là Unity desktop application theo [`docs/Result_Plan.md`](docs/Result_Plan.md). Population foundation dùng GeneticSharp/Math.NET và C# Simulation Baseline đã hoàn thành local với invariant/statistical, .NET, Unity EditMode và web regression tests. UI/UX cùng các stage Interaction Zone/ORCA/Social/DOTS/Spine vẫn để giai đoạn sau. Web hiện tại được giữ làm baseline/reference.
+
 
 Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chính sách bán hàng trong môi trường mô phỏng trước khi áp dụng vào cửa hàng thật. Hệ thống tập trung vào khả năng quan sát, replay và giải thích nguyên nhân dẫn đến kết quả; không tự động tuyên bố một layout là “tối ưu”.
 
@@ -16,14 +16,14 @@ Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chín
 
 ## Các module
 
-- [module-1](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/module-1)
-- [module-3](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/module-3)
+- [thu-2](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/thu-2)
+- [thu-4](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/thu-4)
 
 ## Lý thuyết nền tảng sản phẩm
 
 Nhóm sử dụng **Peak–End Rule** làm một trong những lý thuyết nền tảng để thiết kế AIsle. Ký ức của khách hàng về một trải nghiệm chịu ảnh hưởng lớn bởi thời điểm cảm xúc mạnh nhất và trạng thái ở cuối hành trình.
 
-![Peak–End Rule — lý thuyết nền tảng cho mô hình trải nghiệm khách hàng của AIsle](docs/pic.jpg)
+![Peak–End Rule — lý thuyết nền tảng cho mô hình trải nghiệm khách hàng của AIsle](pic.jpg)
 
 Trong simulator:
 
@@ -50,7 +50,7 @@ Các nhu cầu chính gồm:
 - Nhập thủ công hằng số, chỉ số và NPC cho các ca kiểm thử có kiểm soát.
 - Đánh giá doanh thu cùng trải nghiệm khách hàng và khả năng quay lại.
 
-Xem tài liệu [chân dung người dùng và kịch bản sử dụng](docs/personal.md) để biết đầy đủ mục tiêu, pain points, job-to-be-done và tiêu chí thành công của sản phẩm.
+Xem tài liệu [chân dung người dùng và kịch bản sử dụng](personal.md) để biết đầy đủ mục tiêu, pain points, job-to-be-done và tiêu chí thành công của sản phẩm.
 
 ## Bài toán
 
@@ -106,133 +106,14 @@ Shelf là smart object quảng bá category, sản phẩm và valence. NPC chấ
 Yêu cầu:
 
 - Windows.
-- Unity Hub và Unity Editor phù hợp.
-
-Thêm hoặc mở thư mục `UnityApp/` bằng Unity Hub. Hiện project mới ở mức skeleton kiến trúc nên chưa có UI/UX hoặc simulation core để chạy sản phẩm hoàn chỉnh. Nếu máy mới chỉ có Unity Hub, cần cài Unity Editor trước khi xác minh project trong Editor.
-
-### Web prototype — baseline/reference
-
-Yêu cầu:
-
-- Windows.
 - Node.js 22 trở lên.
 - Không cần cài npm package.
-
-Khởi động baseline bằng cách nhấp đúp:
 
 Nhấp đúp:
 
 ```text
-run.bat
+run-desktop.bat
 ```
-
-Launcher sẽ khởi động backend tại `http://127.0.0.1:8765` và mở web bằng trình duyệt mặc định. Luồng này chỉ dùng để tham chiếu hành vi, regression test và chuẩn bị golden tests trong quá trình port sang app.
-
-## Cấu trúc chính
-
-```text
-.
-├── UnityApp/                 # Unity desktop app skeleton và presentation boundary
-├── src/                      # ranh giới module C#/.NET-compatible; core chưa triển khai
-├── services/VideoAnalytics/ # khung dịch vụ Reality Analytics
-├── models/                   # khung model assets/configuration
-├── data/                     # cấu trúc dữ liệu mục tiêu
-├── run.bat
-├── backend/
-│   ├── server.mjs
-│   ├── routes/api-router.mjs
-│   └── storage/project-store.mjs
-├── web/
-│   ├── index.html
-│   ├── app.js
-│   ├── live-engine.js
-│   ├── layout-validation.js
-│   └── sim-result.js
-├── runtime/
-├── tests/
-└── docs/
-```
-
-- `UnityApp`: ứng dụng đích; hiện mới có cấu trúc và metadata tối thiểu.
-- `src`: các module Domain, Application, Simulation, Analytics, Contracts và Infrastructure dành cho giai đoạn core sau.
-- `web/live-engine.js`: simulation core độc lập với DOM.
-- `web/app.js`: editor, Canvas renderer và live controls.
-- `web/sim-result.js`: schema dùng chung cho export/history.
-- `backend/routes`: quy tắc HTTP API.
-- `backend/storage`: lưu project và history.
-- `runtime`: layout, catalog và dữ liệu sinh ra khi chạy.
-- `docs/Result_Plan.md`: kế hoạch chính thức.
-- `docs/log.md`: nhật ký tiến trình bắt buộc, chỉ ghi nối tiếp.
-
-## Input và output
-
-### Input
-
-- Video khách hàng đã được xử lý offline.
-- Layout gồm wall, shelf, entrance và checkout.
-- Catalog và ánh xạ sản phẩm vào shelf.
-- Random seed và các hằng số simulation.
-- Quần thể NPC từ GA hoặc dữ liệu nhập tay.
-
-### Output
-
-- Doanh thu, conversion và số giao dịch.
-- Main purchase và impulse purchase.
-- Dwell time theo shelf.
-- Decision trace và utility breakdown.
-- Trajectory cảm xúc/chuyển động để replay.
-- Lịch sử các lần chạy để so sánh kịch bản.
-
-## API chính
-
-- `GET /health`
-- `GET /api/project`
-- `POST /api/project`
-- `GET /api/history`
-- `POST /api/history`
-- `GET /api/history/:id`
-
-## Kiểm thử
-
-Từ thư mục gốc:
-
-### Population foundation C#
-
-```powershell
-dotnet build AIsle.slnx -c Release
-dotnet run --project tests/AIsle.Population.Tests/AIsle.Population.Tests.csproj -c Release --no-build
-```
-
-Unity EditMode tests nằm tại `UnityApp/Assets/AIsle/Tests/EditMode`. Có thể chạy bằng Test Runner trong Editor hoặc batch mode với Unity 6000.5.7f1.
-
-### Web baseline
-
-```powershell
-node tests/live_engine.test.mjs
-node tests/pathfinding_rules.test.mjs
-node tests/emotion_need_dynamics.test.mjs
-node tests/utility_attenuation.test.mjs
-node tests/weighted_random_choice.test.mjs
-node tests/phantom_need.test.mjs
-node tests/spawn_curve.test.mjs
-node tests/layout_validation.test.mjs
-node tests/population_generation.test.mjs
-node tests/sim_result_history.test.mjs
-node tests/analytics_aggregation.test.mjs
-node tests/history_date_sequencing.test.mjs
-node tests/api_router_endpoints.test.mjs
-node tests/emotion_summary.test.mjs
-node tests/benchmark.mjs
-```
-
-Benchmark hiện tại với 200 NPC × 3.600 ticks, bao gồm trajectory capture, thấp hơn một giây trên máy phát triển.
-
-## Phạm vi và giới hạn
-
-- Video được xử lý offline, không phân tích camera theo thời gian thực.
-- Các kết quả phụ thuộc vào chất lượng input và giả định hành vi.
-- Một số hằng số hiện là design constants, chưa phải số đo được hiệu chỉnh từ cửa hàng thật.
-- Simulator không tự thay đổi cửa hàng thật và không thay manager ra quyết định cuối cùng.
 
 ## Kế hoạch tương lai
 
@@ -247,21 +128,4 @@ AIsle hiện dừng ở mức mô phỏng offline: input là video đã xử lý
 - **Bài học quan trọng cho AIsle**: Amazon đã **gỡ Just Walk Out khỏi chính chuỗi Amazon Fresh** (định dạng siêu thị lớn) trong năm 2024, chuyển sang Dash Cart — không phải vì công nghệ sai, mà vì khách mua giỏ hàng lớn muốn thấy tổng tiền, ưu đãi và số tiền tiết kiệm ngay trong lúc mua sắm, chứ không chỉ "đi ra là xong". Ngược lại, Amazon vẫn tiếp tục mở rộng Just Walk Out theo hướng B2B cho bên thứ ba, tăng hơn gấp đôi số cửa hàng **định dạng nhỏ** dùng công nghệ này chỉ trong 2024, đạt hơn 360 điểm triển khai tới 2025–2026.
 - Kết quả này **khớp trực tiếp với đối tượng người dùng AIsle đã chọn** (Circle K, GS25, 7-Eleven — cửa hàng tiện lợi, giỏ hàng nhỏ, mua nhanh) chứ không phải mô hình siêu thị lớn: nếu tích hợp phần cứng thật, hướng checkout-free kiểu Just Walk Out phù hợp với đúng phân khúc AIsle đang nhắm tới hơn là với giỏ hàng lớn.
 
-### Tính khả thi
 
-| Hướng | Chi phí/độ phức tạp | Giai đoạn phù hợp |
-|---|---|---|
-| Video offline (đã có trong kế hoạch) | Thấp — không cần lắp thêm cảm biến, chỉ xử lý video CCTV sẵn có | Ngắn hạn — đủ để calibrate và so sánh Sim vs Reality |
-| Camera thời gian thực + computer vision, không dùng weight sensor | Trung bình — cần camera phủ toàn bộ khu vực kệ, xử lý gần thời gian thực | Trung hạn — khi cần observation cập nhật liên tục |
-| Camera + weight sensor từng ngăn kệ (đầy đủ kiểu Just Walk Out) | Cao — lắp cảm biến trên từng ngăn kệ, bảo trì phần cứng liên tục, chi phí đáng kể so với quy mô cửa hàng tiện lợi | Dài hạn/tuỳ chọn — chỉ cân nhắc nếu đối tác thật sự cần checkout-free, không phải mục tiêu bắt buộc của MVP |
-
-Ưu tiên hiện tại là giữ nguyên hướng video offline đã có trong `docs/Result_Plan.md`: đây là bước rẻ nhất để kiểm chứng mô hình simulator so với hành vi thật, trước khi cân nhắc đầu tư phần cứng thời gian thực.
-
-## Tài liệu
-
-- [Project overview](Project.md)
-- [Product brief](docs/plan.md)
-- [Chân dung người dùng](docs/personal.md)
-- [Kiến trúc simulator](docs/ARCHITECTURE.md)
-- [Kế hoạch triển khai](docs/PLAN_CODEX.md)
-- [Hướng dẫn riêng cho build](README_BUILD.md)

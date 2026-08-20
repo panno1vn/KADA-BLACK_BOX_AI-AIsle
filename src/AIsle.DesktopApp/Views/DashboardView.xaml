@@ -9,13 +9,13 @@
                 <materialDesign:Card Margin="8" Padding="20">
                     <StackPanel>
                         <TextBlock Text="Tổng số Phiên chạy" FontSize="13" Opacity="0.7" />
-                        <TextBlock Text="{Binding TotalRuns}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" />
+                        <TextBlock Text="{Binding TotalRuns}" FontSize="36" FontWeight="Bold" Foreground="{StaticResource BlueBrush}" />
                     </StackPanel>
                 </materialDesign:Card>
                 <materialDesign:Card Margin="8" Padding="20">
                     <StackPanel>
                         <TextBlock Text="Doanh thu Trung bình" FontSize="13" Opacity="0.7" />
-                        <TextBlock Text="{Binding AvgRevenue}" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}" />
+                        <TextBlock Text="{Binding AvgRevenue}" FontSize="36" FontWeight="Bold" Foreground="{StaticResource AmberBrush}" />
                     </StackPanel>
                 </materialDesign:Card>
                 <materialDesign:Card Margin="8" Padding="20">

@@ -7,12 +7,17 @@ namespace AIsle.Simulation.Population
     {
         public int Count;
         public NumericStatistics WalkingSpeed = new NumericStatistics();
-        public NumericStatistics Patience = new NumericStatistics();
-        public NumericStatistics Exploration = new NumericStatistics();
-        public NumericStatistics Sociability = new NumericStatistics();
+        public NumericStatistics InitialNeed = new NumericStatistics();
+        public NumericStatistics NeedGrowthPerMinute = new NumericStatistics();
+        public NumericStatistics InitialExplorationNeed = new NumericStatistics();
+        public NumericStatistics ExplorationGrowthPerMinute = new NumericStatistics();
+        public NumericStatistics AffectAttractor = new NumericStatistics();
+        public NumericStatistics AffectStability = new NumericStatistics();
+        public NumericStatistics AffectDispersion = new NumericStatistics();
+        public NumericStatistics AffectRecovery = new NumericStatistics();
+        public NumericStatistics DwellSeconds = new NumericStatistics();
         public NumericStatistics Impulsiveness = new NumericStatistics();
-        public NumericStatistics CrowdTolerance = new NumericStatistics();
         public NumericStatistics PriceSensitivity = new NumericStatistics();
-        public CategoryFrequency[] CategoryPreferenceFrequency = Array.Empty<CategoryFrequency>();
+        public CategoryFrequency[] TargetCategoryFrequency = Array.Empty<CategoryFrequency>();
     }
 }

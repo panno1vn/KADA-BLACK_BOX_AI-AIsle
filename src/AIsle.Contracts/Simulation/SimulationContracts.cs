@@ -1,5 +1,4 @@
 using System;
-using AIsle.Contracts.Population;
 
 namespace AIsle.Contracts.Simulation
 {
@@ -25,6 +24,8 @@ namespace AIsle.Contracts.Simulation
         public double PurchaseNeedA = 3.0; public double PurchaseValenceB = 1.5; public double PurchaseBiasC = -2.0;
         public double ImpulseBase = 0.08; public int MaxShelfVisits = 3; public double DwellScale = 1.0; public double NeedTimeScale = 1.0;
         public double CollisionRadius = 0.32; public double SeparationStrength = 0.22;
+        public double RvoNeighborDistance = 2.0; public int RvoMaxNeighbors = 10;
+        public double RvoTimeHorizon = 2.0; public double RvoTimeHorizonObstacles = 2.0;
         public double PathCellSize = 0.25; public double ObstacleMargin = 0.28; public double StuckTimeout = 1.5; public int MaxReplans = 2;
         public double TrajectorySampleSeconds = 0.5;
     }
@@ -45,10 +46,13 @@ namespace AIsle.Contracts.Simulation
     }
     [Serializable] public sealed class SimResult
     {
-        public string SchemaVersion = "aisle.sim-result.v1"; public string Id = string.Empty; public string Name = string.Empty;
-        public LayoutDefinition Layout = new LayoutDefinition(); public ProductDefinition[] Catalog = Array.Empty<ProductDefinition>();
-        public PopulationDefinition Population = new PopulationDefinition(); public SimulationConfig Config = new SimulationConfig();
+        public string SchemaVersion = SimulationSchemas.SimResultV1; public string Id = string.Empty; public DateTimeOffset CreatedAt = DateTimeOffset.UtcNow; public string Name = string.Empty;
         public SimulationSummary Summary = new SimulationSummary(); public SimulationEvent[] Events = Array.Empty<SimulationEvent>();
         public PurchaseRecord[] Purchases = Array.Empty<PurchaseRecord>(); public ReplayData Replay = new ReplayData();
+    }
+
+    public static class SimulationSchemas
+    {
+        public const string SimResultV1 = "aisle.sim-result.v1";
     }
 }

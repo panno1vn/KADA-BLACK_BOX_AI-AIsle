@@ -83,11 +83,13 @@
                 <TextBlock Text="Tên sản phẩm" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
                 <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
                 
-                <TextBlock Text="Danh mục" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
-                <TextBox Text="{Binding EditCategory, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
+                <TextBlock Text="Kệ trưng bày (*)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                <ComboBox ItemsSource="{Binding AvailableShelves}" SelectedItem="{Binding SelectedShelf}" DisplayMemberPath="Label" Margin="0,0,0,12" Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
                 
-                <TextBlock Text="Mã kệ (vd: s1, s2...)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
-                <TextBox Text="{Binding EditShelf, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
+                <TextBlock Text="Danh mục (tự động theo kệ)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="8,6" Margin="0,0,0,12">
+                    <TextBlock Text="{Binding EditCategory}" Foreground="{StaticResource AmberBrush}" FontWeight="SemiBold" />
+                </Border>
                 
                 <TextBlock Text="Giá (₫)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
                 <TextBox Text="{Binding EditPrice, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,20" />

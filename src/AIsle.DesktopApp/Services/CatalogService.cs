@@ -11,6 +11,11 @@ namespace AIsle.DesktopApp.Services
         public string Name { get; set; } = "";
         public string Category { get; set; } = "";
         public string Shelf { get; set; } = "";
+        public string ShelfId
+        {
+            get => Shelf;
+            set => Shelf = value;
+        }
         public double Price { get; set; }
     }
 

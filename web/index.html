@@ -1,46 +1,893 @@
-<!doctype html>
-<html lang="vi">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AIsle Simulation Studio</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="overrides.css"><link rel="stylesheet" href="stardew-theme.css"></head>
-<body data-tab="setup">
-<header class="menubar"><div class="brand"><i><b></b><b></b><b></b></i><span>AISLE<small>SIMULATION STUDIO</small></span></div><div class="project"><input id="run-name" value="Layout A — live test"><span id="save-state">● JavaScript live engine</span></div><button id="export-btn">Export</button></header>
-<nav class="tab-bar"><button class="tab-btn active" data-tab="setup">🏪 Setup Cửa Hàng</button><button class="tab-btn" data-tab="simulate">🚀 Mô Phỏng & Run Thử</button><button class="tab-btn" data-tab="dashboard">📊 Thống Kê</button><button class="tab-btn" data-tab="emotion">😊 Cảm Xúc</button></nav>
-<div class="toolbar">
-  <div class="tools tab-setup-only"><button data-tool="select" class="active">↖ <span>Select</span></button><button data-tool="wall">╱ <span>Wall</span></button><button data-tool="shelf">▰ <span>Shelf</span></button><button data-tool="entrance">▽ <span>Entrance</span></button><button data-tool="checkout">◇ <span>Checkout</span></button></div>
-  <div class="transport tab-simulate-only"><button id="output-toggle" aria-pressed="false">▤ Output</button><button id="parameter-btn">⚙ Parameters</button><button id="reset-btn" aria-label="Reset">↺ Reset</button><button id="step-btn" aria-label="Single step">▷│ Step</button><button id="play-btn" class="run" aria-label="Run or pause">▶ Run live</button><select id="speed"><option value="1">1×</option><option value="5" selected>5×</option><option value="15">15×</option><option value="30">30×</option></select><strong id="clock">00:00</strong></div>
-</div>
-<main class="workspace">
-  <aside class="palette">
-    <section class="tab-setup-only"><h3>SIMULATION INPUT</h3><label>Population source<select id="population-mode"><option value="ga">Generate with GA</option><option value="manual">Manual NPC input</option></select></label><label>NPC count <output id="npc-output">180</output><input id="npc-count" type="range" min="150" max="200" step="5" value="180"></label><label>Duration <output id="duration-output">30 min</output><input id="duration" type="range" min="5" max="60" step="5" value="30"></label><label style="display: none !important;">Random seed<input id="seed" type="number" value="42"></label><button id="manual-btn" class="wide">Edit manual NPCs… <b id="manual-count">0</b></button></section>
-    <section class="tab-setup-only"><h3>LAYOUT OBJECTS</h3><div id="object-list"></div><button id="add-wall" class="wide">＋ Add wall</button><button id="add-shelf" class="wide">＋ Add shelf</button></section>
-    <section class="legend tab-simulate-only"><h3>STATE</h3><span><i class="transit"></i>Transit</span><span><i class="dwell"></i>Dwelling</span><span><i class="purchased"></i>Purchased</span><span><i class="leaving"></i>Checkout / exit</span></section>
-  </aside>
-  <section class="stage"><div class="stage-head"><span>TOP VIEW · 0.5 M GRID</span><strong id="stage-status">EDIT MODE</strong></div><canvas id="scene" width="960" height="640"></canvas><div class="timeline"><input id="timeline" type="range" min="0" max="1000" value="0"><span id="active-count">0 active NPC</span></div></section>
-  <aside class="inspector">
-    <div class="tab-setup-only"><h3>INSPECTOR</h3><div id="nothing-selected"><span>◎</span><p>Select a wall, shelf or NPC to inspect it.</p></div><form id="wall-form" hidden><label>ID<input id="wall-id" disabled></label><div class="grid2"><label>X1 (m)<input id="wall-x1" type="number" step=".25"></label><label>Y1 (m)<input id="wall-y1" type="number" step=".25"></label><label>X2 (m)<input id="wall-x2" type="number" step=".25"></label><label>Y2 (m)<input id="wall-y2" type="number" step=".25"></label></div><p class="object-hint">Drag the line to move it. Drag either endpoint handle to resize or rotate.</p><button id="delete-wall" type="button" class="danger">Delete wall</button></form><form id="shelf-form" hidden><label>ID<input id="shelf-id" disabled></label><label>Label<input id="shelf-label"></label><label>Category<input id="shelf-category"></label><label>Base valence <output id="shelf-valence-out">+0.20</output><input id="shelf-valence" type="range" min="-1" max="1" step=".05"></label><div class="grid2"><label>X (m)<input id="shelf-x" type="number" step=".25"></label><label>Y (m)<input id="shelf-y" type="number" step=".25"></label><label>W (m)<input id="shelf-w" type="number" step=".25"></label><label>H (m)<input id="shelf-h" type="number" step=".25"></label></div><button id="delete-shelf" type="button" class="danger">Delete shelf</button></form><div id="npc-inspector" hidden></div></div>
-    <div class="cashier-panel tab-simulate-only">
-      <div class="cashier-avatar" id="cashier-avatar">
-        <img src="cashier_idle.jpg" alt="Cashier" class="cashier-img cashier-img-idle">
-        <img src="cashier_smile.jpg" alt="Cashier Smile" class="cashier-img cashier-img-smile">
-        <img src="cashier_happy.jpg" alt="Cashier Happy" class="cashier-img cashier-img-happy">
-        <img src="cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad">
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AISLE - Shop Simulation Studio</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+  
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#f0e0c8",
+            "tertiary-container": "#d4efdf",
+            "inverse-surface": "#30312c",
+            "secondary-container": "#ffccbb",
+            "on-secondary-fixed-variant": "#613e32",
+            "error-container": "#ffdad6",
+            "on-secondary-fixed": "#2f140a",
+            "surface": "#fbf9f1",
+            "on-tertiary": "#ffffff",
+            "surface-container-low": "#f5f4ec",
+            "surface-bright": "#fbf9f1",
+            "tertiary-fixed-dim": "#b2cdbd",
+            "surface-container-high": "#eae8e0",
+            "on-primary-fixed-variant": "#4f4533",
+            "secondary-fixed-dim": "#edbbab",
+            "on-tertiary-fixed": "#082016",
+            "inverse-primary": "#d3c5ad",
+            "on-tertiary-container": "#556e61",
+            "primary": "#685d4a",
+            "on-surface-variant": "#4b463d",
+            "surface-dim": "#dcdad2",
+            "on-secondary-container": "#7a5447",
+            "on-primary-container": "#726753",
+            "surface-container": "#f0eee6",
+            "outline-variant": "#cec5ba",
+            "on-error": "#ffffff",
+            "tertiary-fixed": "#cee9d9",
+            "primary-fixed-dim": "#d3c5ad",
+            "secondary-fixed": "#ffdbcf",
+            "secondary": "#7b5548",
+            "outline": "#7d766c",
+            "surface-container-lowest": "#ffffff",
+            "on-primary": "#ffffff",
+            "background": "#fbf9f1",
+            "surface-container-highest": "#e4e3db",
+            "on-error-container": "#93000a",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#221b0b",
+            "tertiary": "#4c6457",
+            "surface-variant": "#e4e3db",
+            "on-surface": "#1b1c17",
+            "primary-container": "#f7e7ce",
+            "on-background": "#1b1c17",
+            "inverse-on-surface": "#f3f1e9",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed-variant": "#344c40",
+            "surface-tint": "#685d4a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "unit": "8px",
+            "gutter": "16px",
+            "container-padding-desktop": "40px",
+            "container-padding-mobile": "20px",
+            "section-gap": "48px"
+          },
+          "fontFamily": {
+            "body-md": ["Nunito Sans", "sans-serif"],
+            "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "button-text": ["Quicksand", "sans-serif"],
+            "label-md": ["Quicksand", "sans-serif"],
+            "display-lg": ["Plus Jakarta Sans", "sans-serif"]
+          },
+          "fontSize": {
+            "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+            "headline-lg-mobile": ["28px", { "lineHeight": "1.3", "fontWeight": "700" }],
+            "headline-lg": ["32px", { "lineHeight": "1.3", "fontWeight": "700" }],
+            "button-text": ["16px", { "lineHeight": "1", "fontWeight": "700" }],
+            "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "display-lg": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+          }
+        }
+      }
+    }
+  </script>
+  
+  <link rel="stylesheet" href="purrfect-theme.css">
+  <style>
+    /* Add basic screen visibility management class */
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block; /* or flex, handled inline or by tailwind classes */
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+
+  <!-- ═══════ SCREEN 1: Welcome ═══════ -->
+  <div id="screen-welcome" class="screen active min-h-screen flex flex-col relative overflow-hidden">
+    <!-- Decorative Floating Elements (Organic Asymmetry) -->
+    <div class="absolute top-10 left-10 text-tertiary-container animate-float-slow opacity-60">
+      <span class="material-symbols-outlined" style="font-size: 48px; font-variation-settings: 'FILL' 1;">eco</span>
+    </div>
+    <div class="absolute top-40 right-16 text-secondary-container animate-float-fast opacity-50">
+      <span class="material-symbols-outlined" style="font-size: 32px; font-variation-settings: 'FILL' 1;">star</span>
+    </div>
+    <div class="absolute bottom-20 left-1/4 text-primary-container animate-float-slow opacity-40" style="animation-delay: 1s;">
+      <span class="material-symbols-outlined" style="font-size: 40px; font-variation-settings: 'FILL' 1;">local_florist</span>
+    </div>
+    
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col items-center justify-center p-container-padding-mobile md:p-container-padding-desktop z-10 w-full max-w-6xl mx-auto">
+      <!-- Branding / App Name -->
+      <div class="text-center mb-6">
+        <h1 class="font-display-lg text-display-lg text-primary drop-shadow-md">
+          AISLE
+        </h1>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-xs mx-auto">
+          Shop Simulation Studio
+        </p>
       </div>
-      <div class="cashier-status" id="cashier-status">
-        <h3>NHÂN VIÊN THU NGÂN</h3>
-        <input type="text" id="cashier-name" class="cashier-name-input" value="Linh ✿" spellcheck="false">
-        <p class="cashier-mood" id="cashier-mood">Đang chờ khách...</p>
-        <div class="cashier-stats">
-          <div><span>Đã phục vụ</span><b id="cashier-served">0</b></div>
-          <div><span>Doanh thu</span><b id="cashier-revenue">0 ₫</b></div>
+      <!-- Large Cozy Illustrative Hero with Embedded Actions -->
+      <div class="w-full max-w-5xl aspect-video md:aspect-[21/9] mb-8 relative animate-float-slow" style="animation-duration: 8s;">
+        <!-- Soft backing blob for depth -->
+        <div class="absolute inset-4 bg-tertiary-container rounded-[40px] blur-3xl opacity-50"></div>
+        <div class="w-full h-full bg-cover bg-center rounded-[40px] shadow-[0_30px_60px_rgba(123,85,72,0.1)] border-8 border-surface-container border-opacity-50 z-10 relative overflow-hidden" data-alt="A charming, hand-drawn style illustration of a cozy, sunlit pantry scene. The focal point is a wooden shelf stacked with whimsical, slightly irregular jars, woven baskets, and tiny potted plants. A soft, plump calico cat is curled up sleeping peacefully next to a burlap sack of flour. The lighting is warm, inviting, and ambient, casting soft organic shadows. The overall aesthetic mimics a tactile, tactile skeuomorphic simulation game, utilizing a gentle pastel palette of warm beiges, soft terracottas, and sage greens to perfectly complement the light-mode UI." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1fdKfEfOdOI7XBsFW-mfhKILH13fV-cjEVlv1o7PEkF_uxc8Xhi75i6zt0tk5tlKS6a0MUjywZYi0C87fEVnoNiNHI9sYLS1wBZQtQ4JNtN5VP8cU66zzYBD_iH2_tIzncgRPw81elKYfjAHwrVWSIHO4A778OXBDzJli5dVDjqJuje-H7Xqv9eaYNwH8h4xsuxvctRJkKRVux-4xMs9s1joTVKdGRRpDYwJmUwDIW-zpTeuh6UMu7Q')">
+          <!-- Optional subtle overlay to ensure it blends with UI -->
+          <div class="absolute inset-0 bg-gradient-to-t from-surface-bright/20 to-transparent"></div>
+          <!-- Embedded 'New' Button on a Jar -->
+          <button id="btn-new" class="absolute top-[35%] left-[25%] md:left-[30%] group py-2 px-4 bg-[#f4e4c1]/90 text-[#5e4b3c] font-button-text text-sm rounded-lg border-2 border-[#d3b88c] hover:bg-primary-fixed active:scale-95 transition-all duration-300 ease-out shadow-md rotate-[-5deg] flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+            Tạo cửa hàng mới
+          </button>
+          <!-- Embedded 'Load' Button on a Basket/Tag -->
+          <button id="btn-load" class="absolute bottom-[20%] right-[30%] md:right-[25%] group py-2 px-4 bg-[#ffccbb]/90 text-[#613e32] font-button-text text-sm rounded-sm border-l-4 border-[#c88d7b] hover:bg-secondary-fixed active:scale-95 transition-all duration-300 ease-out shadow-md rotate-[3deg] flex items-center gap-1 before:content-[''] before:absolute before:-left-[12px] before:top-1/2 before:-translate-y-1/2 before:w-0 before:h-0 before:border-t-[8px] before:border-t-transparent before:border-r-[8px] before:border-r-[#ffccbb]/90 before:border-b-[8px] before:border-b-transparent">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+            Mở cửa hàng đã lưu
+          </button>
+        </div>
+      </div>
+    </main>
+    <!-- Bottom ambient gradient for depth -->
+    <div class="fixed bottom-0 left-0 w-full h-32 bg-gradient-to-t from-surface-container-low to-transparent pointer-events-none -z-10"></div>
+  </div>
+
+  <!-- ═══════ SCREEN 2: Store Setup ═══════ -->
+  <div id="screen-setup" class="screen w-full h-screen relative shadow-2xl overflow-hidden flex flex-col bg-background">
+    <!-- TopAppBar -->
+    <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-20 border-b border-surface-container-highest">
+      <div id="header-brand-logo" class="flex items-center gap-3 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" title="Quay về trang chủ">
+        <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+        <div>
+          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">Thiết lập cửa hàng</p>
+        </div>
+      </div>
+      
+      <!-- Store Name in Center of Top Header -->
+      <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
+        <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-xs bg-surface">
+          <span class="material-symbols-outlined text-lg text-primary/80" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+          <div class="flex flex-col flex-1 min-w-0">
+            <label class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none">Tên cửa hàng</label>
+            <input id="run-name" type="text" value="Cửa hàng tiện lợi Cozy" class="bg-transparent border-none outline-none font-bold text-sm text-primary w-full p-0 leading-tight focus:ring-0">
+          </div>
+          <span id="save-state" class="text-[10px] text-on-surface-variant font-mono px-2 py-0.5 bg-surface-container rounded-full border border-outline-variant">● Đã lưu</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <button id="export-btn" style="display:none;">Xuất dữ liệu</button>
+        <div class="nav-pill-group">
+          <button data-nav-tab="setup" type="button" class="nav-pill-btn active" title="Màn hình thiết lập sơ đồ">
+            <span class="material-symbols-outlined text-base">edit_square</span> Thiết lập
+          </button>
+          <button id="btn-run-sim" data-nav-tab="simulate" type="button" class="nav-pill-btn" title="Màn hình chạy mô phỏng">
+            <span class="material-symbols-outlined text-base">play_circle</span> Mô phỏng
+          </button>
+          <button data-nav-tab="results" type="button" class="nav-pill-btn" title="Màn hình xem lịch sử và kết quả">
+            <span class="material-symbols-outlined text-base">list_alt</span> Bảng kết quả
+          </button>
+        </div>
+      </div>
+    </header>
+    <div class="flex flex-1 overflow-hidden relative">
+      <!-- Left NavBar Container with Toggle Button -->
+      <div id="setup-sidebar-container" class="relative flex shrink-0 z-30 transition-all duration-300">
+        <nav id="setup-sidebar" class="bg-surface-container-low flex flex-col p-3 gap-4 w-60 rounded-r-xl shadow-md overflow-y-auto border-r border-surface-container-highest transition-all duration-300">
+          <!-- Simulation Input -->
+          <div class="flex flex-col gap-4">
+            <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2">ĐẦU VÀO MÔ PHỎNG</h2>
+            <div style="display:none;">
+              <label class="font-label-md text-label-md text-on-surface block mb-2">Nguồn khách hàng</label>
+              <select id="population-mode" class="w-full bg-surface border-2 border-outline-variant rounded-xl p-3 text-on-surface focus:border-primary focus:ring-0 font-body-md appearance-none cursor-pointer">
+                <option value="ga" selected>Tự động (GA)</option>
+                <option value="manual">Thủ công</option>
+              </select>
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <label class="font-label-md text-label-md text-on-surface block">Số lượng khách</label>
+                <output id="npc-output" class="text-primary font-bold">180</output>
+              </div>
+              <input id="npc-count" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="200" min="150" type="range" value="180" step="5">
+              <div class="flex justify-between text-xs text-on-surface-variant mt-1">
+                <span>150</span>
+                <span>200</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <label class="font-label-md text-label-md text-on-surface block">Thời lượng</label>
+                <output id="duration-output" class="text-primary font-bold">30 phút</output>
+              </div>
+              <input id="duration" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="60" min="5" type="range" value="30" step="5">
+              <div class="flex justify-between text-xs text-on-surface-variant mt-1">
+                <span>5 phút</span>
+                <span>60 phút</span>
+              </div>
+            </div>
+            <input id="seed" type="number" value="42" style="display:none;">
+            <button id="manual-btn" style="display:none;" class="w-full bg-surface border border-outline text-on-surface font-label-md py-2 rounded-xl flex justify-between px-3 items-center mt-2">
+              Chỉnh sửa khách thủ công… <b id="manual-count" class="bg-primary text-on-primary px-2 rounded-md">0</b>
+            </button>
+          </div>
+          <!-- Layout Objects -->
+          <div class="flex flex-col gap-4 flex-1">
+            <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2 mt-4">ĐỐI TƯỢNG BỐ TRÍ</h2>
+            <div id="object-list" class="flex flex-col gap-2 overflow-y-auto max-h-[400px] pr-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </nav>
+        <!-- Toggle Collapse Button (Floating on the right edge of sidebar) -->
+        <button id="toggle-sidebar-btn" type="button" class="sidebar-toggle-tab" title="Ẩn bảng điều khiển">
+          <span id="toggle-sidebar-icon" class="material-symbols-outlined text-base">chevron_left</span>
+        </button>
+      </div>
+      <!-- Main Canvas Area -->
+      <main class="flex-1 relative bg-surface-container overflow-hidden flex flex-col">
+        <!-- Toolbar -->
+        <div class="bg-surface border-b border-outline-variant px-3 h-14 flex items-center justify-center gap-1.5 z-10 shrink-0">
+          <div class="flex items-center gap-0.5 bg-surface-container-low p-1 rounded-xl border border-outline-variant flex-nowrap">
+            <button data-tool="select" class="active flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface border border-primary text-primary font-label-md text-xs shadow-sm" title="Chọn và di chuyển đối tượng">
+              <span class="material-symbols-outlined text-sm">touch_app</span> <span>Chọn</span>
+            </button>
+            <button id="add-wall" data-tool="wall" class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs" title="Vẽ tường ngăn">
+              <span class="material-symbols-outlined text-sm">straighten</span> <span>Tường</span>
+            </button>
+            <button id="add-shelf" data-tool="shelf" class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs" title="Thêm kệ trưng bày hàng">
+              <span class="material-symbols-outlined text-sm">shelves</span> <span>Kệ hàng</span>
+            </button>
+            <button data-tool="entrance" class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs" title="Đặt vị trí cửa vào cho khách">
+              <span class="material-symbols-outlined text-sm">door_front</span> <span>Lối vào</span>
+            </button>
+            <button data-tool="checkout" class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs" title="Đặt vị trí quầy thu ngân">
+              <span class="material-symbols-outlined text-sm">point_of_sale</span> <span>Thu ngân</span>
+            </button>
+            <div class="w-[1px] h-4 bg-outline-variant/60 mx-0.5"></div>
+            <button id="clear-layout-btn" type="button" title="Xóa toàn bộ tường và kệ hàng (dọn trống)" class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-rose-700 hover:bg-rose-50 border border-transparent font-label-md text-xs transition-colors cursor-pointer">
+              <span class="material-symbols-outlined text-sm text-rose-600">delete_sweep</span> <span>Dọn trống</span>
+            </button>
+            <div class="w-[1px] h-4 bg-outline-variant/60 mx-0.5"></div>
+            <button id="undo-btn" type="button" title="Hoàn tác (Ctrl+Z)" disabled class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface disabled:opacity-35 disabled:cursor-not-allowed border border-transparent transition-colors cursor-pointer flex items-center justify-center">
+              <span class="material-symbols-outlined text-sm">undo</span>
+            </button>
+            <button id="redo-btn" type="button" title="Làm lại (Ctrl+Y)" disabled class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface disabled:opacity-35 disabled:cursor-not-allowed border border-transparent transition-colors cursor-pointer flex items-center justify-center">
+              <span class="material-symbols-outlined text-sm">redo</span>
+            </button>
+            <div class="w-[1px] h-4 bg-outline-variant/60 mx-0.5"></div>
+            <button id="setup-expand-btn" type="button" title="Mở rộng vùng thiết kế" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent transition-colors cursor-pointer flex items-center justify-center">
+              <span class="material-symbols-outlined text-sm">open_in_full</span>
+            </button>
+          </div>
+          <!-- Mobile/Compact Tool Palette (Preserved for compatibility) -->
+          <div class="hidden">
+            <button data-tool="select" class="active"></button>
+            <button data-tool="wall"></button>
+            <button data-tool="shelf"></button>
+            <button data-tool="entrance"></button>
+            <button data-tool="checkout"></button>
+          </div>
+        </div>
+        <!-- Canvas Container -->
+        <div class="flex-1 overflow-hidden p-2 flex items-center justify-center relative w-full h-full min-h-0">
+          <div class="grid-pattern w-full h-full max-w-full max-h-full rounded-2xl shadow-inner relative border-4 border-surface-container-highest overflow-hidden cursor-crosshair flex items-center justify-center transition-all duration-300" id="canvas-wrapper">
+             <canvas id="scene" width="960" height="640" style="position: absolute; top: 0; left: 0; z-index: 5; pointer-events: auto; touch-action: none; width: 100%; height: 100%;"></canvas>
+             <div class="absolute top-3 left-3 z-20 flex items-center rounded-full bg-surface/90 border border-outline-variant shadow-sm overflow-hidden" title="Lăn chuột để zoom 60–500%; dùng phím mũi tên để di chuyển bản đồ">
+               <button id="setup-zoom-out-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">−</button>
+               <button id="setup-zoom-reset-btn" data-canvas-zoom-label type="button" class="px-2 py-1 text-[11px] font-bold border-y-0 border-x border-outline-variant bg-transparent min-w-14">300%</button>
+               <button id="setup-zoom-in-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">+</button>
+             </div>
+          </div>
+        </div>
+      </main>
+      <!-- Right Property Panel Container (Inspector with Collapse Button) -->
+      <div id="setup-inspector-container" class="relative flex shrink-0 z-30 transition-all duration-300">
+        <button id="toggle-inspector-btn" type="button" title="Ẩn bảng thuộc tính" class="absolute top-1/2 -left-3.5 -translate-y-1/2 w-7 h-12 bg-surface border border-outline-variant rounded-l-xl flex items-center justify-center text-primary shadow-md hover:bg-primary-container z-40 cursor-pointer">
+          <span id="toggle-inspector-icon" class="material-symbols-outlined text-base">chevron_right</span>
+        </button>
+        <aside id="setup-inspector" class="w-64 bg-surface cozy-shadow border border-outline-variant p-4 flex flex-col gap-4 h-full border-l overflow-y-auto transition-all duration-300">
+          <!-- Nothing selected -->
+          <div id="nothing-selected" class="flex flex-col items-center justify-center h-full text-on-surface-variant gap-2 opacity-70">
+              <span class="material-symbols-outlined text-4xl">info</span>
+              <p class="text-center font-label-md">Chọn đối tượng trên bản đồ để xem chi tiết.</p>
+          </div>
+
+          <!-- Shelf Form -->
+          <form id="shelf-form" hidden class="flex flex-col h-full gap-4 overflow-y-auto pr-1">
+            <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+              <h3 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-secondary">shelves</span> THUỘC TÍNH KỆ HÀNG
+              </h3>
+            </div>
+            <div>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Thể loại kệ hàng (Category)</label>
+              <select id="shelf-category" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface focus:border-primary focus:ring-0 font-body-md">
+                <option value="beverage">Đồ uống / Nước giải khát</option>
+                <option value="dry-food">Hàng khô / Mì & Đồ ăn liền</option>
+                <option value="frozen-food">Hàng đông lạnh</option>
+                <option value="fresh-food">Hàng tươi sống</option>
+                <option value="snack">Bánh kẹo / Snack</option>
+                <option value="personal-care">Chăm sóc cá nhân</option>
+                <option value="cleaning">Dung dịch vệ sinh / Hóa phẩm</option>
+                <option value="household">Đồ gia dụng</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+            <!-- Shelf Orientation, Rotation & Flip -->
+            <div>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1 font-bold">Xoay &amp; Lật mặt kệ</label>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" id="btn-shelf-rotate" class="flex items-center justify-center gap-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface py-2 px-1 rounded-lg text-xs font-semibold transition-all" title="Xoay kệ 90° (Ngang ↔ Dọc)">
+                  <span class="material-symbols-outlined text-sm text-primary">rotate_right</span>
+                  <span>Xoay 90°</span>
+                </button>
+                <button type="button" id="btn-shelf-flip-h" class="flex items-center justify-center gap-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface py-2 px-1 rounded-lg text-xs font-semibold transition-all" title="Lật ngang (trái ↔ phải)">
+                  <span class="material-symbols-outlined text-sm text-primary">flip</span>
+                  <span>Lật ngang</span>
+                </button>
+                <button type="button" id="btn-shelf-flip-v" class="flex items-center justify-center gap-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface py-2 px-1 rounded-lg text-xs font-semibold transition-all" title="Lật dọc (trên ↔ dưới)">
+                  <span class="material-symbols-outlined text-sm text-primary">swap_vert</span>
+                  <span>Lật dọc</span>
+                </button>
+              </div>
+              <div class="text-[11px] text-on-surface-variant mt-1.5 flex items-center justify-between px-1">
+                <span>Kích thước: <b id="shelf-size-label" class="text-primary font-bold">2.0m × 1.0m</b></span>
+                <span id="shelf-flip-badge" class="text-[10px] bg-surface-container px-1.5 py-0.5 rounded font-mono text-on-surface-variant">0°</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="font-label-md text-label-md text-on-surface-variant block">Điểm thu hút (Valence)</label>
+                <output id="shelf-valence-out" class="text-primary font-bold">+0.20</output>
+              </div>
+              <input id="shelf-valence" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="1" min="-1" step="0.05" type="range" value="0.2">
+            </div>
+
+            <!-- Shelf Products Management -->
+            <div class="border-t border-outline-variant pt-3 flex flex-col gap-2">
+              <div class="flex justify-between items-center">
+                <label class="font-label-md text-label-md text-on-surface-variant font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm text-primary">inventory_2</span> Mặt hàng trên kệ (<span id="shelf-product-count">0</span>)
+                </label>
+              </div>
+              <div id="shelf-product-list" class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
+                <!-- Rendered dynamically -->
+              </div>
+              <div class="p-2 bg-surface-container-low rounded-lg border border-outline-variant flex flex-col gap-2 mt-1">
+                <span class="text-[11px] font-semibold text-primary">➕ Thêm mặt hàng lên kệ</span>
+                <input id="new-prod-name" placeholder="Tên sản phẩm (VD: Trà xanh)" class="w-full bg-surface border border-outline-variant rounded p-1.5 text-xs text-on-surface focus:border-primary font-body-md">
+                <div class="flex gap-2">
+                  <input id="new-prod-price" type="number" step="1000" min="0" placeholder="Giá bán (₫)" class="w-full bg-surface border border-outline-variant rounded p-1.5 text-xs text-on-surface focus:border-primary font-body-md">
+                  <button id="add-shelf-product-btn" type="button" class="bg-primary text-on-primary font-bold text-xs px-3 py-1.5 rounded hover:bg-primary/80 transition-colors whitespace-nowrap">Thêm</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-outline-variant mt-auto">
+              <button id="delete-shelf" type="button" class="w-full bg-error-container text-on-error-container font-button-text text-button-text px-4 py-2.5 rounded-xl border-b-4 border-error flex justify-center items-center gap-2 hover:bg-error hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">delete</span> Xóa kệ hàng
+              </button>
+            </div>
+          </form>
+
+          <!-- Wall Form -->
+          <form id="wall-form" hidden class="flex flex-col h-full gap-5">
+            <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+              <h3 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-outline">straighten</span> THUỘC TÍNH TƯỜNG
+              </h3>
+            </div>
+            <div>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Mã tường (ID)</label>
+              <input id="wall-id" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface-variant focus:ring-0 font-body-md" disabled>
+            </div>
+            <div>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-2">Tọa độ (Mét)</label>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
+                  <span class="font-label-md text-label-md text-on-surface-variant">X1</span>
+                  <input id="wall-x1" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
+                </div>
+                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
+                  <span class="font-label-md text-label-md text-on-surface-variant">Y1</span>
+                  <input id="wall-y1" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
+                </div>
+                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
+                  <span class="font-label-md text-label-md text-on-surface-variant">X2</span>
+                  <input id="wall-x2" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
+                </div>
+                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
+                  <span class="font-label-md text-label-md text-on-surface-variant">Y2</span>
+                  <input id="wall-y2" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
+                </div>
+              </div>
+            </div>
+            <p class="font-label-md text-sm text-on-surface-variant opacity-80 mt-2">Kéo đường thẳng để di chuyển. Kéo điểm đầu/cuối để thay đổi kích thước hoặc xoay.</p>
+            <div class="pt-4 border-t border-outline-variant mt-auto">
+              <button id="delete-wall" type="button" class="w-full bg-error-container text-on-error-container font-button-text text-button-text px-4 py-3 rounded-xl border-b-4 border-error flex justify-center items-center gap-2 hover:bg-error hover:text-white transition-colors">
+                <span class="material-symbols-outlined">delete</span> Xóa tường
+              </button>
+            </div>
+          </form>
+
+          <div id="npc-inspector" hidden></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SCREEN 3: Simulation Run ═══════ -->
+  <div id="screen-simulate" class="screen flex flex-col h-screen overflow-hidden">
+    <!-- Global Header (Full Width Responsive - Matching Setup header 1:1) -->
+    <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-50 border-b border-surface-container-highest">
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+        <div>
+          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">Mô phỏng trực tiếp</p>
+        </div>
+      </div>
+      
+      <!-- Status Badge in Center of Top Header -->
+      <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
+        <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
+          <span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span>
+          <span class="font-bold text-sm text-primary font-button-text">Đang chạy mô phỏng</span>
+        </div>
+      </div>
+
+      <!-- Right Action Group (Pill Navigation) -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="nav-pill-group">
+          <button id="btn-back-setup" data-nav-tab="setup" type="button" class="nav-pill-btn" title="Màn hình thiết lập sơ đồ">
+            <span class="material-symbols-outlined text-base">edit_square</span>
+            Thiết lập
+          </button>
+          <button data-nav-tab="simulate" type="button" class="nav-pill-btn active" title="Màn hình chạy mô phỏng">
+            <span class="material-symbols-outlined text-base">play_circle</span>
+            Mô phỏng
+          </button>
+          <button id="btn-sim-to-results" data-nav-tab="results" type="button" class="nav-pill-btn" title="Màn hình xem lịch sử và kết quả">
+            <span class="material-symbols-outlined text-base">list_alt</span>
+            Bảng kết quả
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Simulation Toolbar (Full Width Responsive) -->
+    <div class="bg-surface-container-low border-b border-outline-variant w-full h-14 z-40 shrink-0 flex items-center px-6">
+      <div class="w-full flex justify-between items-center gap-3">
+        <!-- Controls (Aligned to Left Canvas) -->
+        <div class="flex items-center gap-2">
+          <button id="play-btn" class="btn-tactile bg-primary text-on-primary rounded-full px-5 py-2 hover:brightness-110 shadow-xs flex items-center justify-center font-button-text cursor-pointer">
+            <span class="material-symbols-outlined mr-1.5" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Chạy trực tiếp
+          </button>
+          <button id="reset-btn" title="Khởi động lại" class="btn-tactile bg-surface text-on-surface-variant hover:text-error border-2 border-outline-variant rounded-full p-2 hover:bg-error-container shadow-xs flex items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined text-lg">refresh</span>
+          </button>
+        </div>
+        
+        <!-- Clock (Centered in Toolbar) -->
+        <div id="clock" class="font-display-lg text-2xl font-bold text-on-surface-variant tracking-wider bg-surface px-6 py-0.5 rounded-xl border-2 border-outline-variant shadow-inner">
+          00:00
+        </div>
+        
+        <!-- Options (Aligned to Right Sidebar) -->
+        <div class="flex items-center gap-2.5">
+          <button id="sim-expand-btn" type="button" title="Mở rộng bản đồ mô phỏng" class="btn-tactile bg-surface border-2 border-outline-variant rounded-full p-2 flex items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined text-lg">open_in_full</span>
+          </button>
+          <select id="speed">
+            <option value="1">1×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="5" selected>5×</option>
+            <option value="15">15×</option>
+            <option value="30">30×</option>
+          </select>
         </div>
       </div>
     </div>
-  </aside>
-</main>
-<section id="dashboard-panel" class="tab-dashboard-only"></section>
-<section id="emotion-panel" class="tab-emotion-only"></section>
-<footer class="outputs tab-simulate-only"><div class="metrics" id="metrics"><div><span>CONVERSION LIVE</span><b>0.0%</b><small>0 converted</small></div><div><span>PURCHASES</span><b>0</b><small>main + impulse</small></div><div><span>NOT FOUND</span><b>0.0%</b><small>outside catalog</small></div></div><div class="event-log"><strong>DECISION TRACE</strong><div id="event-log-list"><span>Ready. Edit inputs, then press Run live.</span></div></div></footer>
-<dialog id="manual-dialog"><form method="dialog"><header><div><h2>Manual NPC input</h2><p>One CSV row per NPC. Paste from Excel or edit directly.</p></div><button value="cancel">×</button></header><textarea id="manual-editor" spellcheck="false"></textarea><div class="dialog-foot"><span id="manual-error">Values are clamped to safe ranges.</span><button value="cancel">Cancel</button><button type="button" id="apply-manual" class="primary">Apply input</button></div></form></dialog>
-<dialog id="parameter-dialog"><form method="dialog"><header><div><h2>Simulation Parameter Lab</h2><p>Every coefficient used by utility, purchase, motion and time can be entered manually.</p></div><button value="cancel">×</button></header><div id="parameter-grid"></div><div class="dialog-foot"><span>Changes apply to the next Reset/Run and are stored in this browser session.</span><button value="cancel">Cancel</button><button type="button" id="reset-parameters">Defaults</button><button type="button" id="apply-parameters" class="primary">Apply parameters</button></div></form></dialog>
-<dialog id="calendar-dialog"><form method="dialog"><header><div><h2>Chọn ngày xem thống kê</h2><p>Ngày có chấm màu là ngày có dữ liệu mô phỏng đã lưu.</p></div><button value="cancel">×</button></header><div id="calendar-body"></div><div class="dialog-foot"><span>Bấm vào một ngày có chấm để xem chi tiết ngày đó.</span><button value="cancel">Đóng</button></div></form></dialog>
-<div id="toast"></div><div id="chart-tooltip" hidden></div><script type="module" src="app.js"></script>
-</body></html>
+    
+    <!-- Main Content Area -->
+    <main class="flex-1 w-full max-w-full p-2 flex flex-col lg:flex-row gap-2 items-stretch overflow-hidden min-h-0">
+      
+      <!-- LEFT / CENTER: Simulation View (Expanded to fill entire left area all the way to bottom) -->
+      <section id="simulation-stage" class="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden">
+        <!-- Hidden elements to preserve app.js bindings -->
+        <span id="active-count" class="hidden">0 active NPC</span>
+        <span id="stage-status" class="hidden">READY TO RUN</span>
+        
+        <!-- Simulation Canvas Target -->
+        <div class="flex-1 bg-surface-container rounded-2xl border-4 border-surface-container-highest overflow-hidden relative shadow-inner flex items-center justify-center h-full min-h-0">
+            <!-- Canvas is moved here by JS during runtime: -->
+            <div id="sim-canvas-container" class="w-full h-full relative max-w-full max-h-full flex items-center justify-center">
+                <!-- JS moves #scene here -->
+            </div>
+            <div class="absolute top-3 left-3 z-20 flex items-center rounded-full bg-surface/90 border border-outline-variant shadow-sm overflow-hidden" title="Lăn chuột để zoom 60–500%; dùng phím mũi tên để di chuyển bản đồ">
+              <button id="zoom-out-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">−</button>
+              <button id="zoom-reset-btn" data-canvas-zoom-label type="button" class="px-2 py-1 text-[11px] font-bold border-y-0 border-x border-outline-variant bg-transparent min-w-14">300%</button>
+              <button id="zoom-in-btn" type="button" class="px-2.5 py-1 text-sm font-bold border-0 bg-transparent">+</button>
+            </div>
+            
+            <div class="absolute bottom-3 left-4 right-4 flex items-center z-10 bg-surface/80 p-2 rounded-lg backdrop-blur shadow-sm">
+                <input id="timeline" type="range" min="0" max="1000" value="0" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary">
+            </div>
+        </div>
+      </section>
+      
+      <!-- RIGHT: Cashier Panel + Decision Trace (Log moved to right side) -->
+      <aside id="simulation-side-panel" class="w-full lg:w-64 flex flex-col h-full shrink-0 gap-2 min-h-0 overflow-hidden">
+        <!-- Cashier Station (Top - Original Large Format) -->
+        <div class="bg-surface-container-low rounded-2xl border-2 border-outline-variant p-3.5 flex flex-col relative overflow-hidden tactile-card shrink-0 shadow-sm">
+          <div class="absolute top-0 right-0 w-28 h-28 bg-secondary-container rounded-bl-full opacity-40"></div>
+          <h3 class="font-button-text text-sm text-on-surface-variant text-center mb-2 relative z-10 font-bold">Quầy thu ngân</h3>
+          
+          <!-- Portrait Image Area (Original full height) -->
+          <div id="cashier-avatar" class="w-full h-32 bg-surface-bright rounded-xl border-2 border-outline-variant mb-2 overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
+            <!-- 3 Cashier expression images (idle, smile, sad) -->
+            <img src="assets/cashier/cashier_idle.jpg" alt="Cashier" class="cashier-img cashier-img-idle object-cover object-[center_25%] w-full h-full absolute inset-0 z-10">
+            <img src="assets/cashier/cashier_smile.jpg" alt="Cashier Smile" class="cashier-img cashier-img-smile object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden">
+            <img src="assets/cashier/cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad object-cover object-[center_25%] w-full h-full absolute inset-0 z-10 hidden">
+            <div id="cashier-mood-icon-container" class="absolute bottom-1.5 right-1.5 z-20 bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded-full font-label-md text-[11px] flex items-center gap-1 shadow-sm border border-tertiary-fixed">
+              <span class="material-symbols-outlined text-xs">sentiment_satisfied</span>
+              <span id="cashier-mood">Đang trực quầy...</span>
+            </div>
+          </div>
+          
+          <!-- Staff Details -->
+          <div class="bg-surface rounded-xl p-3 border border-outline-variant relative z-10 shadow-sm flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <label class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wide">Nhân viên</label>
+              <input id="cashier-name" class="w-32 bg-surface-container border border-outline-variant rounded px-2 py-0.5 text-xs font-button-text text-primary text-right focus:ring-1 focus:ring-primary outline-none transition-shadow" type="text" value="Linh ✿" spellcheck="false">
+            </div>
+            <div class="h-px w-full bg-surface-variant"></div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-label-md text-on-surface-variant">Đã phục vụ: <b id="cashier-served" class="text-primary font-bold text-sm">0</b></span>
+              <span class="font-label-md text-on-surface-variant">Doanh thu: <b id="cashier-revenue" class="text-secondary font-bold text-sm">0 ₫</b></span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Switchable Panel (Decision Trace Log <-> Live Metrics) -->
+        <div class="flex-1 bg-surface-container-low rounded-2xl border-2 border-outline-variant p-3 flex flex-col min-h-0 overflow-hidden tactile-card shadow-sm">
+          <!-- Header with Segmented Pill Toggle Switch -->
+          <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/60 shrink-0">
+            <h4 id="panel-toggle-title" class="font-button-text text-xs uppercase text-on-surface-variant flex items-center gap-1.5 font-bold">
+              <span id="panel-toggle-icon" class="material-symbols-outlined text-sm text-primary">receipt_long</span>
+              <span id="panel-toggle-heading">Nhật ký quyết định</span>
+            </h4>
+            
+            <!-- Segmented Pill Switch -->
+            <div class="inline-flex bg-surface-container border border-outline-variant rounded-full p-0.5 gap-0.5 shadow-inner">
+              <button id="toggle-view-metrics" type="button" title="Gạt sang xem 3 chỉ số Live Metrics" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-button-text transition-all duration-200 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center gap-1">
+                <span class="material-symbols-outlined text-[12px]">monitoring</span> Chỉ số
+              </button>
+              <button id="toggle-view-log" type="button" title="Gạt sang xem nhật ký Decision Trace" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-button-text transition-all duration-200 bg-primary text-on-primary shadow-xs cursor-pointer flex items-center gap-1">
+                <span class="material-symbols-outlined text-[12px]">receipt_long</span> Nhật ký
+              </button>
+            </div>
+          </div>
+          
+          <!-- View 1: Decision Trace Log -->
+          <div id="view-log-container" class="flex-1 flex flex-col min-h-0 mt-2">
+            <div id="event-log-list" class="flex-1 bg-inverse-surface text-inverse-on-surface font-mono text-xs p-2.5 rounded-xl overflow-y-auto scroll-hidden shadow-inner flex flex-col gap-1">
+              <span>Sẵn sàng. Nhấn Chạy trực tiếp để bắt đầu.</span>
+            </div>
+          </div>
+
+          <!-- View 2: Live Metrics (Original vertical cards with fitted typography) -->
+          <div id="view-metrics-container" class="flex-1 flex flex-col min-h-0 mt-2 hidden overflow-hidden">
+            <div id="metrics" class="flex flex-col gap-1.5 flex-1 h-full justify-between">
+              <div class="metric-card bg-surface px-3 py-1 rounded-xl border border-outline-variant shadow-xs flex-1 flex flex-col justify-center">
+                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>TỶ LỆ MUA HÀNG</span></div>
+                <div class="text-sm font-extrabold text-tertiary leading-tight my-0.5"><b>0.0%</b></div>
+                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">0 đã mua</small>
+              </div>
+              <div class="metric-card bg-surface px-3 py-1 rounded-xl border border-outline-variant shadow-xs flex-1 flex flex-col justify-center">
+                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>LƯỢT MUA</span></div>
+                <div class="text-sm font-extrabold text-primary leading-tight my-0.5"><b>0</b></div>
+                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">chính + ngẫu hứng</small>
+              </div>
+              <div class="metric-card bg-surface px-3 py-1 rounded-xl border border-outline-variant shadow-xs flex-1 flex flex-col justify-center">
+                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>KHÔNG TÌM THẤY</span></div>
+                <div class="text-sm font-extrabold text-error leading-tight my-0.5"><b>0.0%</b></div>
+                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">ngoài danh mục</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- ═══════ SCREEN 4: Session Results ═══════ -->
+  <div id="screen-results" class="screen bg-background text-on-background min-h-screen relative font-body-md text-body-md overflow-x-hidden selection:bg-secondary-container selection:text-on-secondary-container">
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      <img alt="" class="w-full h-full object-cover opacity-70" src="https://lh3.googleusercontent.com/aida/AP1WRLsP5MAdLKQT-B9oPsWMSxUyDODRzMdQjrzuHk7LZfxDuXrDwk8HKjSpGEohfSnuX3Pq422Kl5gTmdanIgbcJ7PIaRdDs-nypYxHImUvIvgBi1Oh_ckzkVkL0qg2vw-ME1mK8wlvn3Zv9v3JUw3UgysK3w95_03x--P6QQYJ5_R5soodSboDtjE-o-UavrOeftJkFYrmd6n9-KG8FQsTAzvFGOxh_OTFUorAAo7zxIoVBquZiFSgf1DH1Mlm">
+      <div class="absolute inset-0 bg-background/60 backdrop-blur-sm"></div>
+    </div>
+    
+    <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-40 border-b border-surface-container-highest">
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+        <div>
+          <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">Bảng kết quả</p>
+        </div>
+      </div>
+      
+      <!-- History Badge in Center of Top Header -->
+      <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
+        <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
+          <span class="material-symbols-outlined text-base text-primary/80">history</span>
+          <span class="font-bold text-sm text-primary font-button-text">Lịch sử mô phỏng</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="nav-pill-group">
+          <button id="btn-results-back-setup" data-nav-tab="setup" type="button" class="nav-pill-btn" title="Màn hình thiết lập sơ đồ">
+            <span class="material-symbols-outlined text-base">edit_square</span> Thiết lập
+          </button>
+          <button id="btn-results-back-simulate" data-nav-tab="simulate" type="button" class="nav-pill-btn" title="Màn hình chạy mô phỏng">
+            <span class="material-symbols-outlined text-base">play_circle</span> Mô phỏng
+          </button>
+          <button data-nav-tab="results" type="button" class="nav-pill-btn active" title="Màn hình xem lịch sử và kết quả">
+            <span class="material-symbols-outlined text-base">list_alt</span> Bảng kết quả
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <main class="flex-grow w-full max-w-7xl mx-auto px-container-padding-mobile md:px-container-padding-desktop py-4 relative z-10 flex flex-col items-center justify-between min-h-[80vh]">
+      <div class="w-full flex-1 backdrop-blur-md rounded-[32px] p-2 md:p-6 border-[3px] border-surface-container shadow-[0_30px_60px_rgba(104,93,74,0.08)] relative overflow-hidden md:px-10 bg-surface flex flex-col min-h-[420px]">
+        <div class="absolute -top-10 -left-10 w-48 h-48 bg-primary-container rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+        <div class="absolute -bottom-10 -right-10 w-56 h-56 bg-secondary-container rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+
+        <div class="relative z-10 w-full flex-1 flex flex-col overflow-hidden rounded-2xl bg-surface-container-lowest border-2 border-surface-container-high shadow-inner">
+          <div class="grid grid-cols-[1fr_120px_160px_130px_48px] gap-3 px-6 py-4 bg-surface-container-low border-b-2 border-surface-container border-dashed font-label-md text-label-md text-primary tracking-wide shrink-0">
+            <div>Phiên mô phỏng</div>
+            <div>Thời gian</div>
+            <div class="text-right">Khách hàng</div>
+            <div class="text-right">Doanh thu</div>
+            <div class="text-center"></div>
+          </div>
+          
+          <div id="results-table-body" class="flex flex-col divide-y divide-surface-container-low overflow-y-auto flex-1 min-h-[250px] max-h-[58vh]">
+            <div id="results-empty-state" class="py-16 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2 my-auto">
+              <span class="material-symbols-outlined text-4xl opacity-50">receipt_long</span>
+              <span class="text-base font-semibold">Chưa có phiên mô phỏng nào được lưu.</span>
+              <span class="text-xs">Hãy chạy một phiên mô phỏng để xem kết quả chi tiết!</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center px-6 py-2.5 bg-surface-container-low/60 border-t border-surface-container-high/40 text-xs text-on-surface-variant shrink-0">
+            <span id="results-count-text">0 phiên đã lưu</span>
+            <div class="flex items-center gap-3">
+              <button id="btn-sort-revenue" type="button" class="text-on-surface-variant/80 hover:text-primary hover:underline flex items-center gap-1 transition-colors py-0.5 px-2 rounded cursor-pointer" title="Xếp hạng các phiên theo doanh thu cao nhất">
+                <span class="material-symbols-outlined text-sm">emoji_events</span> Xếp hạng doanh thu
+              </button>
+              <button id="btn-open-trash" type="button" class="text-on-surface-variant/80 hover:text-primary hover:underline flex items-center gap-1 transition-colors py-0.5 px-2 rounded cursor-pointer" title="Xem và khôi phục các phiên trong thùng rác">
+                <span class="material-symbols-outlined text-sm">restore_from_trash</span> Thùng rác
+              </button>
+              <button id="btn-clear-all-history" type="button" class="text-on-surface-variant/70 hover:text-error hover:underline flex items-center gap-1 transition-colors py-0.5 px-2 rounded cursor-pointer" title="Chuyển toàn bộ lịch sử vào thùng rác">
+                <span class="material-symbols-outlined text-sm">delete_sweep</span> Xóa tất cả
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-4 mb-2">
+        <button id="btn-evaluate" class="btn-tactile group bg-secondary text-on-secondary font-button-text text-button-text px-12 py-4 rounded-full border-b-[6px] border-on-secondary-fixed-variant hover:bg-[#8f6456] flex items-center gap-3 shadow-xl shadow-secondary/20 cursor-pointer hover:scale-105 active:scale-95 transition-all">
+          Đánh giá
+          <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform duration-300">arrow_forward</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══════ SCREEN 5: Analytics Dashboard ═══════ -->
+  <div id="screen-analytics" class="screen flex min-h-screen bg-background text-on-background">
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] dark:shadow-none flex justify-between items-center px-6 py-3 w-full mx-auto relative z-40 border-b border-surface-container-highest">
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
+          <div>
+            <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
+            <p class="font-label-md text-label-md text-on-surface-variant font-bold">Phân tích chuyên sâu</p>
+          </div>
+        </div>
+
+        <!-- Analytics Badge in Center of Top Header -->
+        <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
+          <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
+            <span class="material-symbols-outlined text-base text-primary/80">analytics</span>
+            <span class="font-bold text-sm text-primary font-button-text">Báo cáo & Phân tích</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="nav-pill-group">
+            <button id="btn-analytics-back-setup" data-nav-tab="setup" type="button" class="nav-pill-btn" title="Màn hình thiết lập sơ đồ">
+              <span class="material-symbols-outlined text-base">edit_square</span> Thiết lập
+            </button>
+            <button data-nav-tab="simulate" type="button" class="nav-pill-btn" title="Màn hình chạy mô phỏng">
+              <span class="material-symbols-outlined text-base">play_circle</span> Mô phỏng
+            </button>
+            <button id="btn-analytics-back-results" data-nav-tab="results" type="button" class="nav-pill-btn" title="Màn hình xem lịch sử và kết quả">
+              <span class="material-symbols-outlined text-base">list_alt</span> Bảng kết quả
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      <div id="dashboard-panel" class="flex-1 overflow-y-auto py-2.5 px-4 md:px-6 max-w-[1600px] mx-auto w-full">
+        <!-- Rendered dynamically by dashboard.js -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Calendar Dialog for Analytics -->
+  <dialog id="calendar-dialog" class="p-4 rounded-2xl bg-surface border border-outline-variant shadow-2xl max-w-sm w-full">
+    <div id="calendar-body"></div>
+  </dialog>
+
+  <!-- Trash & Recovery Dialog -->
+  <dialog id="trash-dialog" class="p-0 rounded-2xl bg-surface border-2 border-outline-variant shadow-2xl max-w-2xl w-full backdrop:bg-black/40 overflow-hidden">
+    <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
+      <h3 class="font-bold text-sm text-primary flex items-center gap-2">
+        <span class="material-symbols-outlined text-base text-primary">restore_from_trash</span>
+        Thùng rác (Khôi phục phiên mô phỏng)
+      </h3>
+      <button id="btn-close-trash" type="button" class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface cursor-pointer">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+    <div id="trash-list-body" class="p-4 max-h-[60vh] overflow-y-auto flex flex-col gap-2 min-h-[160px]">
+      <!-- Rendered dynamically -->
+    </div>
+    <div class="p-3 bg-surface-container-low border-t border-outline-variant flex justify-between items-center">
+      <button id="btn-restore-all-trash" type="button" class="px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-bold text-xs hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-xs">
+        <span class="material-symbols-outlined text-sm">settings_backup_restore</span> Khôi phục tất cả
+      </button>
+      <button id="btn-close-trash-footer" type="button" class="px-3.5 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-xs hover:bg-surface-container cursor-pointer">
+        Đóng
+      </button>
+    </div>
+  </dialog>
+
+  <!-- Run Diagram Dialog: layout + trajectory sơ đồ for one saved simulation run -->
+  <dialog id="run-diagram-dialog" class="p-0 rounded-2xl bg-surface border-2 border-outline-variant shadow-2xl max-w-3xl w-full backdrop:bg-black/40 overflow-hidden">
+    <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center gap-3">
+      <div class="min-w-0">
+        <h3 id="run-diagram-title" class="font-bold text-sm text-primary flex items-center gap-2 truncate">
+          <span class="material-symbols-outlined text-base text-primary shrink-0">map</span>
+          <span class="truncate">Sơ đồ phiên mô phỏng</span>
+        </h3>
+        <p id="run-diagram-meta" class="text-[11px] text-on-surface-variant mt-0.5"></p>
+      </div>
+      <button id="btn-close-run-diagram" type="button" class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface cursor-pointer shrink-0">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+    <div class="p-4">
+      <canvas id="run-diagram-canvas" width="880" height="560" class="w-full rounded-xl border border-outline-variant bg-[#1c1007]"></canvas>
+      <p id="run-diagram-status" class="text-xs text-on-surface-variant mt-2 text-center"></p>
+    </div>
+  </dialog>
+
+  <!-- Tooltip for Canvas Charts -->
+  <div id="chart-tooltip" hidden class="fixed z-50 pointer-events-none bg-surface-container-highest border border-outline-variant p-2.5 rounded-xl text-xs text-on-surface shadow-xl"></div>
+
+  <!-- Dialogs (from old app) -->
+  <dialog id="manual-dialog">
+    <form method="dialog">
+      <header>
+        <div>
+          <h2>Manual NPC input</h2>
+          <p>One CSV row per NPC. Paste from Excel or edit directly.</p>
+        </div>
+        <button value="cancel">×</button>
+      </header>
+      <textarea id="manual-editor" spellcheck="false" class="w-full h-40 border p-2 mt-2"></textarea>
+      <div class="dialog-foot mt-4 flex justify-between items-center">
+        <span id="manual-error" class="text-error text-sm">Values are clamped to safe ranges.</span>
+        <div class="flex gap-2">
+            <button value="cancel" class="px-4 py-2 border rounded-md">Cancel</button>
+            <button type="button" id="apply-manual" class="px-4 py-2 bg-primary text-on-primary rounded-md">Apply input</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+  
+  <dialog id="parameter-dialog">
+    <form method="dialog">
+      <header>
+        <div>
+          <h2>Simulation Parameter Lab</h2>
+          <p>Every coefficient used by utility, purchase, motion and time can be entered manually.</p>
+        </div>
+        <button value="cancel">×</button>
+      </header>
+      <div id="parameter-grid" class="mt-4 max-h-[60vh] overflow-y-auto"></div>
+      <div class="dialog-foot mt-4 flex justify-between items-center border-t pt-4">
+        <span class="text-sm opacity-70">Changes apply to the next Reset/Run.</span>
+        <div class="flex gap-2">
+            <button value="cancel" class="px-4 py-2 border rounded-md">Cancel</button>
+            <button type="button" id="reset-parameters" class="px-4 py-2 border rounded-md">Defaults</button>
+            <button type="button" id="apply-parameters" class="px-4 py-2 bg-primary text-on-primary rounded-md">Apply parameters</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+  
+  <!-- Layout Warning Modal Dialog (To giữa màn hình, nổi bật) -->
+  <dialog id="layout-warning-dialog" class="p-0 border-none rounded-3xl shadow-2xl bg-transparent max-w-lg w-full">
+    <div class="bg-surface border-4 border-amber-500 rounded-3xl p-6 flex flex-col items-center text-center gap-4 shadow-2xl relative">
+      <div class="w-16 h-16 rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center text-amber-600 shadow-inner">
+        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+      </div>
+      <div>
+        <h3 id="layout-warning-title" class="font-headline-lg-mobile text-2xl font-bold text-on-surface">CẢNH BÁO BỐ TRÍ CỬA HÀNG</h3>
+        <p class="font-label-md text-sm text-on-surface-variant mt-1">Phát hiện kệ hàng bị tường bao kín, NPC không thể tiếp cận!</p>
+      </div>
+      <div id="layout-warning-messages" class="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left font-body-md text-sm text-amber-900 flex flex-col gap-2 max-h-48 overflow-y-auto">
+        <!-- Warning items populated by JS -->
+      </div>
+      <div class="flex gap-3 w-full mt-2">
+        <button id="btn-warning-back-setup" type="button" class="flex-1 bg-surface-container border border-outline text-on-surface font-button-text py-3 px-4 rounded-xl hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-sm">edit</span> Về Setup sửa
+        </button>
+        <button id="btn-warning-continue" type="button" class="flex-1 bg-primary text-on-primary font-button-text py-3 px-4 rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-sm">play_arrow</span> Vẫn tiếp tục chạy
+        </button>
+      </div>
+    </div>
+  </dialog>
+  
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface px-4 py-2 rounded-lg opacity-0 pointer-events-none transition-opacity z-50"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

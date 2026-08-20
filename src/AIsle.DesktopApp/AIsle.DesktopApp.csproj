@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AIsle.DesktopApp</RootNamespace>
+    <AssemblyName>AIsleDesktop</AssemblyName>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0-mvp</InformationalVersion>
+    <ApplicationIcon>UI\assets\brand\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.3.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <ProjectReference Include="..\AIsle.Contracts\AIsle.Contracts.csproj" />
+    <ProjectReference Include="..\AIsle.Simulation\AIsle.Simulation.csproj" />
+    <Resource Include="UI\assets\store\**\*" />
+    <Resource Include="UI\assets\cashier\*.jpg" />
+    <Resource Include="UI\assets\brand\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\web\**\*">
+      <Link>UI\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="UI\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Remove="UI\assets\brand\logo.png" />
+    <Content Remove="UI\assets\brand\app.ico" />
+  </ItemGroup>
+</Project>

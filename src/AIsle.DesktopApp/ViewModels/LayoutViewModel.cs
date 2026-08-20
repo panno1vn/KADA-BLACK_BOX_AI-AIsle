@@ -1,4 +1,6 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -12,6 +14,7 @@ namespace AIsle.DesktopApp.ViewModels
 
         public ObservableCollection<Services.Wall> Walls { get; } = new();
         public ObservableCollection<Services.Shelf> Shelves { get; } = new();
+        public System.Collections.Generic.IReadOnlyCollection<AIsle.Contracts.Project.ShelfPresetDefinition> Presets => AIsle.Contracts.Project.ShelfPresets.All;
 
         [ObservableProperty] private double _storeWidth;
         [ObservableProperty] private double _storeHeight;
@@ -48,8 +51,8 @@ namespace AIsle.DesktopApp.ViewModels
             if (sender is Services.Wall wall) _service.UpdateWall(wall);
         }
 
-        public event Action RequestOpenCatalog;
-        public event Action RequestRunSimulation;
+        public event Action? RequestOpenCatalog;
+        public event Action? RequestRunSimulation;
 
         public LayoutViewModel(Services.LayoutService service)
         {
@@ -253,6 +256,39 @@ namespace AIsle.DesktopApp.ViewModels
             _service.DeleteShelf(shelf.Id);
             LoadLayout();
             StatusMessage = $"🗑 Đã xóa kệ {shelf.Label}";
+        }
+
+        [RelayCommand]
+        private void RotateSelectedShelf()
+        {
+            if (SelectedShelf != null)
+            {
+                SelectedShelf.Rotate90();
+                _service.UpdateShelf(SelectedShelf);
+                StatusMessage = $"🔄 Đã xoay kệ {SelectedShelf.Label}: {SelectedShelf.W}m × {SelectedShelf.H}m ({SelectedShelf.Rotation}°)";
+            }
+        }
+
+        [RelayCommand]
+        private void FlipSelectedShelfH()
+        {
+            if (SelectedShelf != null)
+            {
+                SelectedShelf.ToggleFlipX();
+                _service.UpdateShelf(SelectedShelf);
+                StatusMessage = $"⇄ Đã lật ngang kệ {SelectedShelf.Label}";
+            }
+        }
+
+        [RelayCommand]
+        private void FlipSelectedShelfV()
+        {
+            if (SelectedShelf != null)
+            {
+                SelectedShelf.ToggleFlipY();
+                _service.UpdateShelf(SelectedShelf);
+                StatusMessage = $"⇅ Đã lật dọc kệ {SelectedShelf.Label}";
+            }
         }
 
         [RelayCommand]

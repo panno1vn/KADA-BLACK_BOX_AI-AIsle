@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {DEFAULT_CATALOG, DEFAULT_LAYOUT} from '../web/project-defaults.js';
-import {LiveSimulation, createRng, manualPopulation, samplePoissonSpawnTimes} from '../web/live-engine.js';
+import {LiveSimulation, createRng, createRunSeed, manualPopulation, samplePoissonSpawnTimes} from '../web/live-engine.js';
 
 const constantRate = 12; // arrivals/minute => expected mean interval of 5 seconds
 const gaps = [];
@@ -18,6 +18,12 @@ for (let seed = 1; seed <= 80; seed++) {
 }
 const meanGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
 assert.ok(Math.abs(meanGap - 60 / constantRate) < .25, `mean Poisson interval ${meanGap.toFixed(3)}s should approach 5s`);
+
+const fixedCrypto = {getRandomValues(values) { values[0] = 123456; return values }};
+const randomRunA = createRunSeed(null, fixedCrypto);
+const randomRunB = createRunSeed(randomRunA, fixedCrypto);
+assert.equal(randomRunA, 123456, 'a new run must use the Web Crypto seed');
+assert.notEqual(randomRunB, randomRunA, 'consecutive runs must never reuse the same seed');
 
 const population = manualPopulation(Array.from({length: 12}, (_, index) => ({npc_id: `curve_${index}`})));
 const curvedLayout = {...structuredClone(DEFAULT_LAYOUT), spawnRateCurve: [{minute: 0, rate: 30}, {minute: 1, rate: 30}]};

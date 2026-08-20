@@ -125,18 +125,7 @@
                 <Viewbox Grid.Row="1" Stretch="Uniform" Margin="16">
                     <Canvas Width="{Binding StoreWidth}" Height="{Binding StoreHeight}" MouseDown="Canvas_MouseDown" MouseMove="Canvas_MouseMove" MouseUp="Canvas_MouseUp" Cursor="Cross">
                         <Canvas.Background>
-                            <DrawingBrush Viewport="0,0,0.5,0.5" ViewportUnits="Absolute" TileMode="Tile">
-                                <DrawingBrush.Drawing>
-                                    <DrawingGroup>
-                                        <GeometryDrawing Geometry="M0,0 L0.5,0 L0.5,0.5 L0,0.5 Z" Brush="#120a04" />
-                                        <GeometryDrawing Geometry="M0,0 L0.5,0 M0,0 L0,0.5">
-                                            <GeometryDrawing.Pen>
-                                                <Pen Brush="#33c8844a" Thickness="0.02" />
-                                            </GeometryDrawing.Pen>
-                                        </GeometryDrawing>
-                                    </DrawingGroup>
-                                </DrawingBrush.Drawing>
-                            </DrawingBrush>
+                            <ImageBrush ImageSource="pack://application:,,,/UI/assets/store/floor/san.jpg" Viewport="0,0,1,1" ViewportUnits="Absolute" TileMode="Tile" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Canvas.Background>
                         <Canvas.LayoutTransform>
                             <ScaleTransform ScaleX="50" ScaleY="50" /> <!-- Scale to make 1 unit = 50px for visualization -->
@@ -157,11 +146,20 @@
                             </ItemsControl.ItemContainerStyle>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="{Binding W}" Height="{Binding H}" 
-                                            Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource AmberBrush}" BorderThickness="0.1">
-                                        <TextBlock Text="{Binding Label}" Foreground="{StaticResource TextBrush}" FontSize="0.4" 
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
+                                    <Grid Width="{Binding W}" Height="{Binding H}">
+                                        <Image Source="{Binding Converter={StaticResource ShelfToImageConverter}}" 
+                                               Stretch="Fill" 
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                               RenderTransformOrigin="0.5,0.5">
+                                            <Image.RenderTransform>
+                                                <TransformGroup>
+                                                    <ScaleTransform ScaleX="{Binding FlipX, Converter={StaticResource BoolToScaleConverter}, FallbackValue=1}" 
+                                                                    ScaleY="{Binding FlipY, Converter={StaticResource BoolToScaleConverter}, FallbackValue=1}" />
+                                                    <RotateTransform Angle="{Binding Rotation, FallbackValue=0}" />
+                                                </TransformGroup>
+                                            </Image.RenderTransform>
+                                        </Image>
+                                    </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -176,20 +174,22 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
-                                          Stroke="{StaticResource BevelLightBrush}" StrokeThickness="0.2" StrokeEndLineCap="Round" StrokeStartLineCap="Round" />
+                                           Stroke="{StaticResource BevelLightBrush}" StrokeThickness="0.2" StrokeEndLineCap="Round" StrokeStartLineCap="Round" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
                         <!-- Entrance Marker -->
-                        <Ellipse Width="1.4" Height="1.4" Fill="{StaticResource GreenBrush}" Opacity="0.8"
-                                 Canvas.Left="{Binding EntranceX}" Canvas.Top="{Binding EntranceY}" 
-                                 Margin="-0.7,-0.7,0,0" IsHitTestVisible="False" />
+                        <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding EntranceX}" Canvas.Top="{Binding EntranceY}" 
+                              Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/cua_vao.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        </Grid>
                                  
                         <!-- Checkout Marker -->
-                        <Ellipse Width="1.4" Height="1.4" Fill="{StaticResource RedBrush}" Opacity="0.8"
-                                 Canvas.Left="{Binding CheckoutX}" Canvas.Top="{Binding CheckoutY}" 
-                                 Margin="-0.7,-0.7,0,0" IsHitTestVisible="False" />
+                        <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding CheckoutX}" Canvas.Top="{Binding CheckoutY}" 
+                              Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/quay_thu_ngan.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        </Grid>
                     </Canvas>
                 </Viewbox>
             </Grid>
@@ -224,6 +224,21 @@
                             </Grid>
                             <Slider Minimum="-1.0" Maximum="1.0" Value="{Binding SelectedShelf.Valence, UpdateSourceTrigger=PropertyChanged}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,16" />
 
+                            <!-- Rotation & Flip -->
+                            <TextBlock Text="XOAY &amp; LẬT MẶT KỆ" FontSize="10" Foreground="{StaticResource DimBrush}" FontWeight="Bold" Margin="0,0,0,6" />
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="4" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="4" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="⟳ Xoay 90°" Command="{Binding RotateSelectedShelfCommand}" Padding="4,6" FontSize="10" ToolTip="Xoay kệ 90° (Ngang ↔ Dọc)" />
+                                <Button Grid.Column="2" Content="⇄ Lật ngang" Command="{Binding FlipSelectedShelfHCommand}" Padding="4,6" FontSize="10" ToolTip="Lật ngang (trái ↔ phải)" />
+                                <Button Grid.Column="4" Content="⇅ Lật dọc" Command="{Binding FlipSelectedShelfVCommand}" Padding="4,6" FontSize="10" ToolTip="Lật dọc (trên ↔ dưới)" />
+                            </Grid>
+
                             <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -244,11 +259,11 @@
                                 <TextBlock Grid.Row="0" Grid.Column="2" Text="Y (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
                                 <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding SelectedShelf.Y, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
 
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="W (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
-                                <TextBox Grid.Row="4" Grid.Column="0" Text="{Binding SelectedShelf.W, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Rộng W (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                                <TextBox Grid.Row="4" Grid.Column="0" Text="{Binding SelectedShelf.W}" IsReadOnly="True" Background="{StaticResource PanelBrush}" Foreground="{StaticResource DimBrush}" BorderBrush="{StaticResource LineBrush}" />
 
-                                <TextBlock Grid.Row="3" Grid.Column="2" Text="H (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
-                                <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding SelectedShelf.H, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="Dài H (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                                <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding SelectedShelf.H}" IsReadOnly="True" Background="{StaticResource PanelBrush}" Foreground="{StaticResource DimBrush}" BorderBrush="{StaticResource LineBrush}" />
                             </Grid>
 
                             <Button Content="Delete shelf" Command="{Binding DeleteShelfCommand}" CommandParameter="{Binding SelectedShelf}" Background="Transparent" BorderBrush="{StaticResource RedBrush}" Foreground="{StaticResource RedBrush}" FontWeight="Bold" />

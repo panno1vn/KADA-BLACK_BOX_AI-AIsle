@@ -1,10 +1,11 @@
 {
   "Count": 80,
+  "CategoryIds": ["drinks", "snacks", "essentials"],
   "ParameterRanges": {
-    "Patience": {"Min": 0.82, "Max": 1.0}
+    "DwellSeconds": {"Min": 22.0, "Max": 30.0}
   },
   "DistributionTargets": {
-    "Patience": {"Enabled": true, "Mean": 0.92, "StandardDeviation": 0.035, "Weight": 2.0, "Tolerance": 0.05}
+    "DwellSeconds": {"Enabled": true, "Mean": 26.0, "StandardDeviation": 1.5, "Weight": 2.0, "Tolerance": 3.0}
   },
   "GeneratorSettings": {
     "EvolutionPopulationSize": 120,

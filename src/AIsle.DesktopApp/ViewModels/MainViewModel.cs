@@ -29,7 +29,7 @@ namespace AIsle.DesktopApp.ViewModels
             var layoutService = new Services.LayoutService();
             _historyService = new Services.HistoryService();
 
-            CatalogVM = new CatalogViewModel(catalogService);
+            CatalogVM = new CatalogViewModel(catalogService, layoutService);
             _layoutVM = new LayoutViewModel(layoutService);
             _simulationVM = new SimulationViewModel(catalogService, layoutService, _historyService);
 

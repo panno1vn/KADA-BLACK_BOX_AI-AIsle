@@ -13,7 +13,7 @@ namespace AIsle.Simulation.Population.Genetic
 {
     public sealed class GeneticPopulationGenerator : IPopulationGenerator
     {
-        public const string Version = "population-geneticsharp-v2";
+        public const string Version = "population-geneticsharp-v3";
 
         public PopulationDefinition Generate(PopulationConfig config)
         {
@@ -57,48 +57,53 @@ namespace AIsle.Simulation.Population.Genetic
         private static NPCProfile ToProfile(AIsleNpcChromosome chromosome, PopulationConfig config)
         {
             var categories = config.CategoryIds ?? Array.Empty<string>();
-            var preferences = new CategoryPreference[categories.Length];
-            var total = 0.0;
-            for (var index = 0; index < categories.Length; index++)
-            {
-                total += Math.Max(0.0, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + index));
-            }
+            var selector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount)));
+            var categoryIndex = categories.Length > 0 ? Math.Min(categories.Length - 1, (int)(selector * categories.Length)) : 0;
+            var normalCategory = categories.Length > 0 ? categories[categoryIndex] : PopulationConfig.PhantomCategory;
 
-            for (var index = 0; index < categories.Length; index++)
-            {
-                var raw = Math.Max(0.0, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + index));
-                preferences[index] = new CategoryPreference(categories[index], total <= 1e-12 ? 1.0 / categories.Length : raw / total);
-            }
+            var missionSelector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + 1)));
+            var phantomRoll = Math.Max(0.0, Math.Min(1.0, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + 2)));
+            var isPhantom = config.PhantomNeedRate > 0 && phantomRoll < config.PhantomNeedRate;
+            var targetCategory = isPhantom ? PopulationConfig.PhantomCategory : normalCategory;
+
+            var preferences = isPhantom
+                ? Array.Empty<CategoryPreference>()
+                : new[] { new CategoryPreference(normalCategory, 1.0) };
 
             return new NPCProfile
             {
                 Id = "npc-" + Guid.NewGuid().ToString("N"),
                 WalkingSpeed = chromosome.ValueAt(0),
-                Patience = chromosome.ValueAt(1),
-                Exploration = chromosome.ValueAt(2),
-                Sociability = chromosome.ValueAt(3),
-                Impulsiveness = chromosome.ValueAt(4),
-                CrowdTolerance = chromosome.ValueAt(5),
-                PriceSensitivity = chromosome.ValueAt(6),
+                InitialNeed = chromosome.ValueAt(1),
+                NeedGrowthPerMinute = chromosome.ValueAt(2),
+                InitialExplorationNeed = chromosome.ValueAt(3),
+                ExplorationGrowthPerMinute = chromosome.ValueAt(4),
+                AffectAttractor = chromosome.ValueAt(5),
+                AffectStability = chromosome.ValueAt(6),
+                AffectDispersion = chromosome.ValueAt(7),
+                AffectRecovery = chromosome.ValueAt(8),
+                DwellSeconds = chromosome.ValueAt(9),
+                Impulsiveness = chromosome.ValueAt(10),
+                PriceSensitivity = chromosome.ValueAt(11),
+                TargetCategory = targetCategory,
                 CategoryPreferences = preferences,
-                ShoppingMission = SelectMission(chromosome.ValueAt(AIsleNpcChromosome.TraitCount + categories.Length), config.ShoppingMissionWeights)
+                ShoppingMission = SelectMission(config.ShoppingMissionWeights, missionSelector)
             };
         }
 
-        private static ShoppingMission SelectMission(double value, ShoppingMissionWeight[] missionWeights)
+        private static ShoppingMission SelectMission(ShoppingMissionWeight[] weights, double selector)
         {
-            var weights = missionWeights ?? Array.Empty<ShoppingMissionWeight>();
+            var source = weights ?? Array.Empty<ShoppingMissionWeight>();
             var total = 0.0;
-            for (var index = 0; index < weights.Length; index++) total += Math.Max(0.0, weights[index].Weight);
-            if (weights.Length == 0 || total <= 0.0) return ShoppingMission.Routine;
-            var cursor = Math.Max(0.0, Math.Min(0.999999999999, value)) * total;
-            var cumulative = 0.0;
-            for (var index = 0; index < weights.Length; index++)
+            for (var index = 0; index < source.Length; index++) total += Math.Max(0.0, source[index].Weight);
+            var roll = selector * total;
+            for (var index = 0; index < source.Length; index++)
             {
-                cumulative += Math.Max(0.0, weights[index].Weight);
-                if (cursor < cumulative) return weights[index].Mission;
+                roll -= Math.Max(0.0, source[index].Weight);
+                if (roll <= 0.0) return source[index].Mission;
             }
-            return weights[weights.Length - 1].Mission;
+
+            return source[source.Length - 1].Mission;
         }
     }
 }

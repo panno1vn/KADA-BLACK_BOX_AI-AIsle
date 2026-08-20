@@ -81,18 +81,7 @@
                 <Viewbox Grid.Row="1" Stretch="Uniform" Margin="16">
                     <Canvas Width="{Binding StoreWidth}" Height="{Binding StoreHeight}">
                         <Canvas.Background>
-                            <DrawingBrush Viewport="0,0,0.5,0.5" ViewportUnits="Absolute" TileMode="Tile">
-                                <DrawingBrush.Drawing>
-                                    <DrawingGroup>
-                                        <GeometryDrawing Geometry="M0,0 L0.5,0 L0.5,0.5 L0,0.5 Z" Brush="#120a04" />
-                                        <GeometryDrawing Geometry="M0,0 L0.5,0 M0,0 L0,0.5">
-                                            <GeometryDrawing.Pen>
-                                                <Pen Brush="#33c8844a" Thickness="0.02" />
-                                            </GeometryDrawing.Pen>
-                                        </GeometryDrawing>
-                                    </DrawingGroup>
-                                </DrawingBrush.Drawing>
-                            </DrawingBrush>
+                            <ImageBrush ImageSource="pack://application:,,,/UI/assets/store/floor/san.jpg" Viewport="0,0,1,1" ViewportUnits="Absolute" TileMode="Tile" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         </Canvas.Background>
                         <Canvas.LayoutTransform>
                             <ScaleTransform ScaleX="50" ScaleY="50" />
@@ -113,11 +102,20 @@
                             </ItemsControl.ItemContainerStyle>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="{Binding W}" Height="{Binding H}" 
-                                            Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DimBrush}" BorderThickness="0.1">
-                                        <TextBlock Text="{Binding Label}" Foreground="{StaticResource DimBrush}" FontSize="0.4" 
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-                                    </Border>
+                                    <Grid Width="{Binding W}" Height="{Binding H}">
+                                        <Image Source="{Binding Converter={StaticResource ShelfToImageConverter}}" 
+                                               Stretch="Fill" 
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                               RenderTransformOrigin="0.5,0.5">
+                                            <Image.RenderTransform>
+                                                <TransformGroup>
+                                                    <ScaleTransform ScaleX="{Binding FlipX, Converter={StaticResource BoolToScaleConverter}, FallbackValue=1}" 
+                                                                    ScaleY="{Binding FlipY, Converter={StaticResource BoolToScaleConverter}, FallbackValue=1}" />
+                                                    <RotateTransform Angle="{Binding Rotation, FallbackValue=0}" />
+                                                </TransformGroup>
+                                            </Image.RenderTransform>
+                                        </Image>
+                                    </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -136,6 +134,18 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <!-- Entrance Marker -->
+                        <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding EntranceX}" Canvas.Top="{Binding EntranceY}" 
+                              Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/cua_vao.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        </Grid>
+                                 
+                        <!-- Checkout Marker -->
+                        <Grid Width="1.2" Height="1.2" Canvas.Left="{Binding CheckoutX}" Canvas.Top="{Binding CheckoutY}" 
+                              Margin="-0.6,-0.6,0,0" IsHitTestVisible="False">
+                            <Image Source="pack://application:,,,/UI/assets/store/fixtures/quay_thu_ngan.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        </Grid>
 
                         <!-- Agents -->
                         <ItemsControl ItemsSource="{Binding State.Agents}">
@@ -181,7 +191,7 @@
                         <!-- Avatar -->
                         <Border Width="180" Height="240" BorderThickness="3" BorderBrush="{StaticResource LineBrush}" CornerRadius="12" Background="#120a04" Margin="0,0,0,16">
                             <!-- TODO: Add Trigger to change image based on Mood -->
-                            <Image Source="pack://application:,,,/Assets/cashier_idle.jpg" Stretch="UniformToFill" />
+                            <Image Source="pack://application:,,,/UI/assets/cashier/cashier_idle.jpg" Stretch="UniformToFill" />
                         </Border>
 
                         <TextBlock Text="NHÂN VIÊN THU NGÂN" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8" />

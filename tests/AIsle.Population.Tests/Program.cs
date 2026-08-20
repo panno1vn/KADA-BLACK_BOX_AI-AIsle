@@ -21,6 +21,7 @@ internal static class Program
             RunStatisticsChecks();
             RunFitnessChecks();
             RunGeneratorAbstractionChecks();
+            RunPhantomRateChecks();
             RunDependencyBoundaryChecks(root);
             Console.WriteLine("PASS: Population source-first verification completed.");
             return 0;
@@ -30,6 +31,23 @@ internal static class Program
             Console.Error.WriteLine("FAIL: " + exception);
             return 1;
         }
+    }
+
+    private static void RunPhantomRateChecks()
+    {
+        var config = new PopulationConfig
+        {
+            Count = 1000,
+            PhantomNeedRate = 0.12,
+            CategoryIds = new[] { "drinks", "snacks" }
+        };
+        var population = new GeneticPopulationGenerator().Generate(config);
+        var phantomCount = population.NPCProfiles.Count(p => string.Equals(p.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal));
+        var rate = (double)phantomCount / population.NPCProfiles.Length;
+        // Expected ~0.12, sample size 1000 -> tolerance ±0.05
+        Assert(Math.Abs(rate - 0.12) <= 0.05, $"Phantom need rate {rate:F3} is outside expected tolerance (target 0.12 ± 0.05).");
+        Assert(population.NPCProfiles.Where(p => string.Equals(p.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal)).All(p => p.CategoryPreferences.Length == 0), "Phantom profile should have empty category preferences.");
+        Console.WriteLine($"PASS phantom rate statistical checks (rate={rate:F3}, count={phantomCount}/1000)");
     }
 
     private static void RunScenario(string root, string scenario)
@@ -49,7 +67,7 @@ internal static class Program
         var serialized = JsonSerializer.Serialize(first, JsonOptions);
         var roundTrip = JsonSerializer.Deserialize<PopulationDefinition>(serialized, JsonOptions);
         Assert(roundTrip != null && roundTrip.NPCProfiles.Length == first.NPCProfiles.Length, scenario + ": serialization round-trip failed.");
-        Assert(roundTrip.NPCProfiles.All(profile => profile != null && double.IsFinite(profile.Patience)), scenario + ": round-trip contains invalid values.");
+        Assert(roundTrip.NPCProfiles.All(profile => profile != null && double.IsFinite(profile.InitialNeed) && !string.IsNullOrWhiteSpace(profile.TargetCategory)), scenario + ": round-trip contains invalid active values.");
         Console.WriteLine("PASS invariant scenario " + scenario + " count=" + expected.Count);
     }
 
@@ -58,19 +76,35 @@ internal static class Program
         var validation = new PopulationValidator().Validate(definition, config);
         Assert(validation.Valid, label + " invalid: " + string.Join("; ", validation.Errors));
         Assert(definition.NPCProfiles.All(profile => profile != null && !string.IsNullOrWhiteSpace(profile.Id)), label + ": invalid profile.");
+        Assert(definition.NPCProfiles.All(profile => (profile.CategoryPreferences.Length > 0 || string.Equals(profile.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal))
+            && profile.Impulsiveness >= config.ParameterRanges.Impulsiveness.Min
+            && profile.Impulsiveness <= config.ParameterRanges.Impulsiveness.Max
+            && profile.PriceSensitivity >= config.ParameterRanges.PriceSensitivity.Min
+            && profile.PriceSensitivity <= config.ParameterRanges.PriceSensitivity.Max),
+            label + ": S8 shopping fields were not generated within bounds.");
     }
 
     private static void RunValidatorFailureChecks()
     {
-        var config = new PopulationConfig { Count = 2 };
+        var config = new PopulationConfig { Count = 2, CategoryIds = new[] { "drinks" } };
         var population = new GeneticPopulationGenerator().Generate(config);
         population.NPCProfiles[1].Id = population.NPCProfiles[0].Id;
-        population.NPCProfiles[0].Patience = double.NaN;
+        population.NPCProfiles[0].InitialNeed = double.NaN;
         var result = new PopulationValidator().Validate(population, config);
         Assert(!result.Valid && result.Errors.Length >= 2, "Validator accepted invalid population.");
-        try { new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 0 }); }
-        catch (ArgumentException) { Console.WriteLine("PASS validator rejection checks"); return; }
-        throw new InvalidOperationException("Generator accepted invalid config.");
+        try { new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 0, CategoryIds = new[] { "drinks" } }); }
+        catch (ArgumentException) { }
+
+        try
+        {
+            new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 10, CategoryIds = Array.Empty<string>() });
+            throw new InvalidOperationException("Generator accepted empty CategoryIds.");
+        }
+        catch (ArgumentException)
+        {
+            Console.WriteLine("PASS validator rejection checks");
+            return;
+        }
     }
 
     private static void RunStatisticsChecks()
@@ -80,13 +114,27 @@ internal static class Program
         AssertClose(2.0, stats.Mean, 1e-12, "Mean incorrect.");
         AssertClose(2.0, stats.Median, 1e-12, "Median incorrect.");
         AssertClose(Math.Sqrt(2.0 / 3.0), stats.StandardDeviation, 1e-12, "Population std incorrect.");
+        Assert(stats.Percentile10 <= stats.Percentile25 && stats.Percentile25 <= stats.Percentile50
+            && stats.Percentile50 <= stats.Percentile75 && stats.Percentile75 <= stats.Percentile90,
+            "Percentiles are not ordered.");
+
+        var config = new PopulationConfig { Count = 120, CategoryIds = new[] { "drinks" } };
+        config.DistributionTargets.InitialNeed = new DistributionTarget
+        {
+            Enabled = true, Mean = 0.65, StandardDeviation = 0.08, Weight = 1.0, Tolerance = 0.18
+        };
+        var generated = new GeneticPopulationGenerator().Generate(config);
+        var generatedStats = PopulationStatistics.Calculate(generated).InitialNeed;
+        Assert(Math.Abs(generatedStats.Mean - 0.65) <= 0.18, "Generated distribution mean is outside configured sanity tolerance.");
+        Assert(generatedStats.Min >= config.ParameterRanges.InitialNeed.Min && generatedStats.Max <= config.ParameterRanges.InitialNeed.Max,
+            "Generated distribution escaped configured bounds.");
         Console.WriteLine("PASS Math.NET statistics checks");
     }
 
     private static void RunFitnessChecks()
     {
-        var config = new PopulationConfig();
-        config.DistributionTargets.Patience = new DistributionTarget { Enabled = true, Mean = 0.8, StandardDeviation = 0.1, Weight = 1.0, Tolerance = 0.2 };
+        var config = new PopulationConfig { CategoryIds = new[] { "drinks" } };
+        config.DistributionTargets.InitialNeed = new DistributionTarget { Enabled = true, Mean = 0.8, StandardDeviation = 0.1, Weight = 1.0, Tolerance = 0.2 };
         var near = new AIsleNpcChromosome(config);
         var far = new AIsleNpcChromosome(config);
         near.SetValueAt(1, 0.8);
@@ -121,15 +169,17 @@ internal static class Program
 
     private static NPCProfile CreateProfile(string id, double speed) => new NPCProfile
     {
-        Id = id, WalkingSpeed = speed, Patience = 0.5, Exploration = 0.5, Sociability = 0.5,
-        Impulsiveness = 0.5, CrowdTolerance = 0.5, PriceSensitivity = 0.5,
+        Id = id, WalkingSpeed = speed, InitialNeed = 0.5, NeedGrowthPerMinute = 0.01,
+        InitialExplorationNeed = 0.4, ExplorationGrowthPerMinute = 0.01, AffectAttractor = 0.2,
+        AffectStability = 0.6, AffectDispersion = 0.4, AffectRecovery = 0.15,
+        DwellSeconds = 10, TargetCategory = "essentials", Impulsiveness = 0.5, PriceSensitivity = 0.5,
         CategoryPreferences = new[] { new CategoryPreference("essentials", 1.0) }, ShoppingMission = ShoppingMission.Routine
     };
 
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current != null) { if (File.Exists(Path.Combine(current.FullName, "docs", "run.md"))) return current.FullName; current = current.Parent; }
+        while (current != null) { if (File.Exists(Path.Combine(current.FullName, "docs", "rule.md"))) return current.FullName; current = current.Parent; }
         throw new DirectoryNotFoundException("Repository root not found.");
     }
 
