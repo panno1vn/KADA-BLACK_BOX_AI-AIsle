@@ -1278,6 +1278,65 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS.
 - Phạm vi Git: Chỉ local trên `develop`.
 
+## 2026-08-21 00:45 (UTC+07:00) — Antigravity
+
+- Lý do: Tích hợp bộ asset đồ họa (pixel art) cho kệ hàng, nền sàn, lối vào và quầy thu ngân trong siêu thị theo xác nhận từ người dùng.
+- Đã thực hiện:
+  - Sao chép và cấu hình đồng bộ bộ asset trong `src/AIsle.DesktopApp/Assets/`, `src/AIsle.DesktopApp/UI/assets/` và `web/assets/`:
+    - `do_uong.jpg`: Kệ / Tủ mát Đồ uống (`beverage` / `s1`).
+    - `hang_tuoi_song.png`: Tủ mát nằm ngang Hàng tươi sống / Đồ ăn nhanh (`instant-food` / `fresh` / `s2`).
+    - `snack.png`: Kệ đứng / Endcap Bánh kẹo & Ăn vặt (`snack` / `candy` / `s3`, `s6`).
+    - `hang_kho_cham_soc_ca_nhan.png`: Kệ chuẩn ngang 3 tầng Hàng khô & Chăm sóc cá nhân (`personal-care` / `dry-food` / `s4`).
+    - `hoa_pham.png`: Kệ đứng Hóa phẩm & Gia dụng (`household` / `cleaning` / `s5`).
+    - `cua_vao.png`: Cửa kính tự động 2 cánh tại Lối vào (Entrance).
+    - `quay_thu_ngan.png`: Quầy thu ngân có máy POS tính tiền tại Quầy thu ngân (Checkout).
+    - `san.jpg`: Texture gạch nền lát sàn siêu thị (Floor Grid).
+  - Cập nhật Desktop App (.NET WPF):
+    - `AIsle.DesktopApp.csproj`: Đăng ký tài nguyên và cấu hình copy output cho toàn bộ file ảnh jpg, png trong Assets và UI assets.
+    - `Converters.cs`: Thêm `ShelfToImageConverter` tự động ánh xạ thông minh danh mục, nhãn và ID kệ sang asset tương ứng.
+    - `App.xaml`: Đăng ký converter trong ResourceDictionary.
+    - `LayoutView.xaml` & `SimulationView.xaml`: Render texture gạch nền `san.jpg`, hiển thị hình ảnh kệ sắc nét dạng NearestNeighbor kèm nhãn viền mờ tương phản cao, và sprite cho Lối vào + Quầy thu ngân.
+    - `SimulationViewModel.cs`: Bổ sung tọa độ Lối vào và Thu ngân đồng bộ hiển thị.
+  - Cập nhật Web UI & Canvas:
+    - `web/app.js`: Tải trước `STORE_ASSETS`, vẽ texture sàn `san.jpg`, vẽ kệ hàng với pixel art và nhãn pill nổi bật, hiển thị sprite cho Lối vào và Quầy thu ngân.
+- Kết quả: Giao diện mô phỏng và bố trí mặt bằng hiển thị đồ họa chân thực, trực quan, sinh động.
+- Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-21 00:54 (UTC+07:00) — Antigravity
+
+- Lý do: Tinh chỉnh đồ họa sàn (khớp 1 ô caro 1:1, bỏ các đường kẻ thô), ẩn nhãn chữ và viền mặc định trên kệ, bổ sung tính năng Xoay 90° (ngang/dọc) và Lật mặt kệ (ngang/dọc) thay cho dropdown kích thước cố định.
+- Đã thực hiện:
+  - Nền sàn (Floor):
+    - Khớp chính xác mỗi ô gạch `san.jpg` vừa vặn tỷ lệ 1x1m ô caro trên canvas.
+    - Loại bỏ các nét vẽ đường kẻ lưới thủ công đè lên mặt sàn, giúp nền sạch sẽ, liền mạch và tự nhiên.
+  - Kệ hàng (Shelves):
+    - Bỏ các nhãn text đè lên mặt kệ và đường viền mặc định, hiển thị trọn vẹn pixel art nguyên bản.
+    - Bổ sung chỉ báo chọn (selection outline) màu vàng mảnh với các điểm neo góc khi nhấp chọn kệ.
+    - Bỏ nhãn chữ dưới Lối vào và Quầy thu ngân, hiển thị sprite sạch đẹp.
+  - Xoay & Lật mặt kệ (Rotation & Flip):
+    - `web/index.html` & `web/app.js`: Thêm nút bấm **Xoay 90°** (`#btn-shelf-rotate`), **Lật ngang** (`#btn-shelf-flip-h`), **Lật dọc** (`#btn-shelf-flip-v`) kèm nhãn hiển thị kích thước và góc quay.
+    - Render canvas áp dụng `ctx.rotate()` và `ctx.scale()` linh hoạt.
+    - Bổ sung phím tắt: phím `R` để xoay kệ, `Delete`/`Backspace` để xóa đối tượng được chọn.
+    - Cập nhật đồng bộ trong .NET Desktop App WPF (`Shelf.cs`, `LayoutViewModel.cs`, `LayoutView.xaml`, `SimulationView.xaml`, `Converters.cs`).
+- Kết quả: Thao tác bố trí linh hoạt, xoay và lật kệ mượt mà; sàn và kệ hiển thị sắc nét, không bị che khuất bởi nhãn text hay đường kẻ thừa.
+- Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
+## 2026-08-21 01:06 (UTC+07:00) — Antigravity
+
+- Lý do: Bảo toàn tỉ lệ gốc (aspect ratio) cho toàn bộ kệ hàng và sprite, tích hợp texture dầm kim loại từ `wall.png` cho các thanh tường siêu thị.
+- Đã thực hiện:
+  - Tỉ lệ gốc & Không bị co giãn (Aspect Ratio Preservation):
+    - Khởi tạo bảng kích thước tương xứng theo từng chủng loại kệ (`SHELF_CATEGORY_DIMENSIONS`): Hàng khô 3.0m × 1.8m (1.67:1), Đồ uống 1.2m × 1.6m (0.75:1), Hàng tươi sống 2.0m × 1.3m (1.51:1), Snack 0.7m × 1.8m (0.39:1), Thu ngân 1.0m × 2.4m, Cửa vào 1.8m × 1.6m.
+    - Cập nhật thuật toán render canvas tự động tính toán `imgRatio` và căn giữa vừa khít trong bounding box mà không làm co giãn hay méo pixel art.
+  - Xử lý và tích hợp `wall.png`:
+    - Sao chép `wall.png` vào `src/AIsle.DesktopApp/Assets/` và `web/assets/asset/`.
+    - Tạo phong cách vẽ tường mới dạng thanh dầm kim loại pixel art mô phỏng theo `wall.png` với lớp bóng đổ trên, nẹp vát cạnh dưới và các khớp nối đầu thanh tường.
+- Kết quả: Kệ hàng giữ trọn vẹn nét vẽ gốc sắc nét, không bị méo; các bức tường hiển thị chân thực, ăn khớp hoàn hảo với phong cách đồ họa chung của siêu thị.
+- Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS; .NET DesktopApp tests PASS.
+- Phạm vi Git: Chỉ local trên `develop`.
+
 
 
 

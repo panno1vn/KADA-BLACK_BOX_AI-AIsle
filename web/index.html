@@ -342,13 +342,27 @@
                 <option value="other">Khác</option>
               </select>
             </div>
+            <!-- Shelf Orientation, Rotation & Flip -->
             <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Kích thước kệ (Cố định theo Preset)</label>
-              <select id="shelf-preset" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface focus:border-primary focus:ring-0 font-body-md">
-                <option value="standard">Kệ đôi tiêu chuẩn (2.0m × 1.0m)</option>
-                <option value="cooler">Tủ mát / Kệ vuông (1.0m × 1.0m)</option>
-                <option value="endcap">Kệ đầu dãy / Slim (1.0m × 2.0m)</option>
-              </select>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1 font-bold">Xoay &amp; Lật mặt kệ</label>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" id="btn-shelf-rotate" class="flex items-center justify-center gap-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface py-2 px-1 rounded-lg text-xs font-semibold transition-all" title="Xoay kệ 90° (Ngang ↔ Dọc)">
+                  <span class="material-symbols-outlined text-sm text-primary">rotate_right</span>
+                  <span>Xoay 90°</span>
+                </button>
+                <button type="button" id="btn-shelf-flip-h" class="flex items-center justify-center gap-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface py-2 px-1 rounded-lg text-xs font-semibold transition-all" title="Lật ngang (trái ↔ phải)">
+                  <span class="material-symbols-outlined text-sm text-primary">flip</span>
+                  <span>Lật ngang</span>
+                </button>
+                <button type="button" id="btn-shelf-flip-v" class="flex items-center justify-center gap-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface py-2 px-1 rounded-lg text-xs font-semibold transition-all" title="Lật dọc (trên ↔ dưới)">
+                  <span class="material-symbols-outlined text-sm text-primary">swap_vert</span>
+                  <span>Lật dọc</span>
+                </button>
+              </div>
+              <div class="text-[11px] text-on-surface-variant mt-1.5 flex items-center justify-between px-1">
+                <span>Kích thước: <b id="shelf-size-label" class="text-primary font-bold">2.0m × 1.0m</b></span>
+                <span id="shelf-flip-badge" class="text-[10px] bg-surface-container px-1.5 py-0.5 rounded font-mono text-on-surface-variant">0°</span>
+              </div>
             </div>
             <div>
               <div class="flex justify-between items-center mb-1">

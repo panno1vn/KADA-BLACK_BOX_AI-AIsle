@@ -26,6 +26,8 @@
 
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             <conv:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" />
+            <conv:ShelfToImageConverter x:Key="ShelfToImageConverter" />
+            <conv:BoolToScaleConverter x:Key="BoolToScaleConverter" />
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
             <conv:BooleanToBrushConverter x:Key="BooleanToBrushConverter" TrueBrush="{StaticResource LineBrush}" FalseBrush="Transparent" />
