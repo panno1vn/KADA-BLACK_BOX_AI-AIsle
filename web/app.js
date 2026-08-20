@@ -39,6 +39,74 @@ let liveHistory=[],maxRecordedTime=0,rewindTime=null;
 let historySortMode='date';
 const colors={WAITING:'#8b6b4a',DECIDING:'#a87bca',TRANSIT:'#5fa8d3',QUEUE:'#d59b45',DWELL:'#ffca58',PURCHASED:'#5dba4f',CHECKOUT:'#e05252',LEAVING:'#e05252'};
 const npcRenderer=new NpcSpriteRenderer({assets:NPC_SPRITE_ASSETS});
+
+const STORE_ASSETS = {
+  floor: { src: 'assets/asset/san.jpg', img: new Image(), ready: false },
+  wall: { src: 'assets/asset/wall.png', img: new Image(), ready: false },
+  entrance: { src: 'assets/asset/cua_vao.png', img: new Image(), ready: false },
+  checkout: { src: 'assets/asset/quay_thu_ngan.png', img: new Image(), ready: false },
+  beverage: { src: 'assets/asset/do_uong.jpg', img: new Image(), ready: false },
+  'instant-food': { src: 'assets/asset/hang_tuoi_song.png', img: new Image(), ready: false },
+  'fresh-food': { src: 'assets/asset/hang_tuoi_song.png', img: new Image(), ready: false },
+  'frozen-food': { src: 'assets/asset/hang_tuoi_song.png', img: new Image(), ready: false },
+  snack: { src: 'assets/asset/snack.png', img: new Image(), ready: false },
+  candy: { src: 'assets/asset/snack.png', img: new Image(), ready: false },
+  'personal-care': { src: 'assets/asset/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false },
+  'dry-food': { src: 'assets/asset/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false },
+  cleaning: { src: 'assets/asset/hoa_pham.png', img: new Image(), ready: false },
+  household: { src: 'assets/asset/hoa_pham.png', img: new Image(), ready: false },
+  defaultShelf: { src: 'assets/asset/hang_kho_cham_soc_ca_nhan.png', img: new Image(), ready: false }
+};
+
+const SHELF_CATEGORY_DIMENSIONS = {
+  beverage: { w: 1.2, h: 1.6 },
+  'instant-food': { w: 2.0, h: 1.3 },
+  'fresh-food': { w: 2.0, h: 1.3 },
+  'frozen-food': { w: 2.0, h: 1.3 },
+  snack: { w: 0.7, h: 1.8 },
+  candy: { w: 0.7, h: 1.8 },
+  'personal-care': { w: 3.0, h: 1.8 },
+  'dry-food': { w: 3.0, h: 1.8 },
+  cleaning: { w: 1.2, h: 1.6 },
+  household: { w: 1.2, h: 1.6 },
+  other: { w: 2.0, h: 1.4 }
+};
+
+// These are layout objects, not decorative map pins. Their stored point is
+// the centre, keeping the visual, hit area and simulation approach aligned.
+const STORE_ENTITY_DIMENSIONS = {
+  entrance: { w: 1.8, h: 1.6 },
+  checkout: { w: 1.0, h: 2.4 }
+};
+function entityBounds(type, point){
+  const size=STORE_ENTITY_DIMENSIONS[type];
+  return point&&size?{x:point.x-size.w/2,y:point.y-size.h/2,w:size.w,h:size.h}:null;
+}
+function checkoutApproachPoint(point){
+  const size=STORE_ENTITY_DIMENSIONS.checkout;
+  return point?{x:point.x,y:point.y+size.h/2+.35}:null;
+}
+
+Object.values(STORE_ASSETS).forEach(asset => {
+  asset.img.onload = () => { asset.ready = true; if(typeof draw === 'function') draw(); };
+  asset.img.onerror = () => { asset.ready = false; };
+  asset.img.src = asset.src;
+});
+
+function getShelfAsset(shelf) {
+  if (!shelf) return STORE_ASSETS.defaultShelf;
+  const cat = (shelf.category || '').toLowerCase();
+  const label = (shelf.label || '').toLowerCase();
+  const id = (shelf.id || '').toLowerCase();
+  if (cat === 'beverage' || label.includes('uống') || id === 's1') return STORE_ASSETS.beverage;
+  if (cat === 'instant-food' || cat === 'fresh-food' || cat === 'frozen-food' || label.includes('tươi') || label.includes('nhanh') || id === 's2') return STORE_ASSETS['instant-food'];
+  if (cat === 'snack' || cat === 'candy' || label.includes('snack') || label.includes('kẹo') || id === 's3' || id === 's6') return STORE_ASSETS.snack;
+  if (cat === 'personal-care' || cat === 'dry-food' || label.includes('cá nhân') || label.includes('khô') || id === 's4') return STORE_ASSETS['personal-care'];
+  if (cat === 'cleaning' || cat === 'household' || label.includes('hóa phẩm') || label.includes('gia dụng') || id === 's5') return STORE_ASSETS.household;
+  return STORE_ASSETS[cat] || STORE_ASSETS.defaultShelf;
+}
+
+let floorPattern = null;
 let currentTab='welcome';
 let lastPurchaseCount=0;
 let lastFinishedCount=0;
@@ -153,14 +221,14 @@ function updateCashier(){
   if(servedEl)servedEl.textContent=served;
   if(revEl)revEl.textContent=money(rev);
   
-  const checkoutPos=layout?.checkout||simulation.layout?.checkout;
+  const checkoutPos=checkoutApproachPoint(layout?.checkout);
   if(!checkoutPos)return;
   
-  // Chỉ kích hoạt khi khách hàng thực sự đã đi tới sát quầy thu ngân (khoảng cách <= 0.65m)
+  // Chỉ kích hoạt khi khách hàng thực sự đã đứng trước mặt quầy thu ngân.
   const customerAtCounter=simulation.agents?.find(a=>{
     if(a.finished)return false;
     const dist=Math.hypot(a.x-checkoutPos.x,a.y-checkoutPos.y);
-    return dist<=0.65;
+    return dist<=0.4;
   });
   
   if(customerAtCounter){
@@ -242,7 +310,7 @@ function bind(){
   const speedSel=$('#speed');if(speedSel)speedSel.onchange=async()=>{try{if(simulation)await simulation.setSpeed(Number($('#speed').value));showSystemEvent(`Playback speed ${$('#speed').value}×. Physics tick remains ${parameters.tickSeconds}s.`)}catch(error){showSystemEvent(error.message)}};
   const timelineEl=$('#timeline');if(timelineEl){timelineEl.oninput=timelineEl.onchange=e=>seekTo(Number(e.target.value)/1000*durationSeconds());}
   const addWallBtn=$('#add-wall');if(addWallBtn)addWallBtn.onclick=()=>{pushUndoState();const id='w'+Date.now();layout.walls.push({id,x1:4,y1:3,x2:6,y2:3});selected={type:'wall',id};renderObjects();renderInspector();markDirty('Wall added.');draw();saveProject()};
-  const addShelfBtn=$('#add-shelf');if(addShelfBtn)addShelfBtn.onclick=()=>{pushUndoState();const id='s'+Date.now();const preset=SHELF_PRESETS.standard;const category='beverage';const label=CATEGORY_NAMES[category]||'Đồ uống';layout.shelves.push({id,label,presetId:'standard',category,x:4,y:3,w:preset.w,h:preset.h,valence:.2});selected={type:'shelf',id};renderObjects();renderInspector();markDirty('Kệ hàng mới đã được thêm.');draw();saveProject()};
+  const addShelfBtn=$('#add-shelf');if(addShelfBtn)addShelfBtn.onclick=()=>{pushUndoState();const id='s'+Date.now();const category='dry-food';const dims=SHELF_CATEGORY_DIMENSIONS[category]||{w:3.0,h:1.8};const label=CATEGORY_NAMES[category]||'Hàng khô';layout.shelves.push({id,label,presetId:'standard',category,x:4,y:3,w:dims.w,h:dims.h,valence:.2});selected={type:'shelf',id};renderObjects();renderInspector();markDirty('Kệ hàng mới đã được thêm.');draw();saveProject()};
   const exportBtn=$('#export-btn');if(exportBtn)exportBtn.onclick=exportSimulation;
   const canvas=$('#scene');
   if(canvas){
@@ -251,8 +319,11 @@ function bind(){
     canvas.onpointerup=pointerUp;
     new ResizeObserver(resizeCanvas).observe(canvas);
   }
-  ['shelf-preset','shelf-category','shelf-valence'].forEach(id=>{const el=$('#'+id);if(el)el.oninput=el.onchange=()=>{pushUndoState();updateShelf();}});
+  ['shelf-category','shelf-valence'].forEach(id=>{const el=$('#'+id);if(el)el.oninput=el.onchange=()=>{pushUndoState();updateShelf();}});
   ['wall-x1','wall-y1','wall-x2','wall-y2'].forEach(id=>{const el=$('#'+id);if(el)el.oninput=()=>{pushUndoState();updateWall();};});
+  const btnShelfRot=$('#btn-shelf-rotate');if(btnShelfRot)btnShelfRot.onclick=rotateSelectedShelf;
+  const btnShelfFlipH=$('#btn-shelf-flip-h');if(btnShelfFlipH)btnShelfFlipH.onclick=()=>flipSelectedShelf('h');
+  const btnShelfFlipV=$('#btn-shelf-flip-v');if(btnShelfFlipV)btnShelfFlipV.onclick=()=>flipSelectedShelf('v');
   const addProdBtn=$('#add-shelf-product-btn');if(addProdBtn)addProdBtn.onclick=addProductToSelectedShelf;
   const newProdName=$('#new-prod-name');if(newProdName)newProdName.onkeydown=e=>{if(e.key==='Enter')addProductToSelectedShelf();};
   const newProdPrice=$('#new-prod-price');if(newProdPrice)newProdPrice.onkeydown=e=>{if(e.key==='Enter')addProductToSelectedShelf();};
@@ -263,10 +334,16 @@ function bind(){
   const btnUndo=$('#undo-btn');if(btnUndo)btnUndo.onclick=undo;
   const btnRedo=$('#redo-btn');if(btnRedo)btnRedo.onclick=redo;
   window.addEventListener('keydown',e=>{
+    const tag=document.activeElement?.tagName?.toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select')return;
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
       if(e.shiftKey){e.preventDefault();redo()}else{e.preventDefault();undo()}
     }else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){
       e.preventDefault();redo()
+    }else if(e.key.toLowerCase()==='r'&&selected?.type==='shelf'){
+      e.preventDefault();rotateSelectedShelf();
+    }else if((e.key==='Delete'||e.key==='Backspace')&&selected){
+      e.preventDefault();deleteSelected(selected.type);
     }
   });
   $$('.tab-btn').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));
@@ -1195,12 +1272,53 @@ function renderInspector(){
   if(wall){$('#wall-id').value=wall.id;for(const key of['x1','y1','x2','y2'])$('#wall-'+key).value=wall[key]}
   if(shelf){
     const catEl=$('#shelf-category');if(catEl)catEl.value=shelf.category||'beverage';
-    const presetEl=$('#shelf-preset');if(presetEl)presetEl.value=shelf.presetId||'standard';
     const valEl=$('#shelf-valence');if(valEl)valEl.value=shelf.valence;
     const valOut=$('#shelf-valence-out');if(valOut)valOut.textContent=(shelf.valence>=0?'+':'')+Number(shelf.valence).toFixed(2);
+    
+    const sizeLabel=$('#shelf-size-label');
+    if(sizeLabel)sizeLabel.textContent=`${(shelf.w||2).toFixed(1)}m × ${(shelf.h||1).toFixed(1)}m`;
+    const flipBadge=$('#shelf-flip-badge');
+    if(flipBadge){
+      const flips=[];
+      if(shelf.flipX)flips.push('Lật H');
+      if(shelf.flipY)flips.push('Lật V');
+      flipBadge.textContent=`${shelf.rotation||0}°${flips.length?' ('+flips.join(', ')+')':''}`;
+    }
     renderShelfProducts(shelf);
   }
   if(agent){$('#npc-inspector').innerHTML=`<div class="border-b border-outline-variant pb-2 mb-3"><h3 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold flex items-center gap-2"><span class="material-symbols-outlined text-lg text-primary">person</span> THÔNG TIN KHÁCH HÀNG</h3></div><h4 class="font-bold text-xs text-primary mb-1">${escapeHTML(agent.id)}</h4><p class="text-xs text-on-surface">Trạng thái: <b>${agent.status}</b></p><p class="text-xs text-on-surface">Mục tiêu: <b>${escapeHTML(agent.target||'Chỉ xem dạo')}</b></p><p class="text-[11px] text-on-surface-variant mt-2">Nguồn: <b>C# Simulation Core</b></p>`}
+}
+function rotateSelectedShelf(){
+  if(selected?.type!=='shelf')return;
+  const s=layout.shelves.find(x=>x.id===selected.id);
+  if(!s)return;
+  pushUndoState();
+  const temp=s.w;
+  s.w=s.h;
+  s.h=temp;
+  s.rotation=((s.rotation||0)+90)%360;
+  normalizeLayout();
+  renderObjects();
+  renderInspector();
+  markDirty(`Đã xoay kệ (${s.w.toFixed(1)}m × ${s.h.toFixed(1)}m, ${s.rotation}°).`);
+  draw();
+  saveProject();
+}
+function flipSelectedShelf(axis='h'){
+  if(selected?.type!=='shelf')return;
+  const s=layout.shelves.find(x=>x.id===selected.id);
+  if(!s)return;
+  pushUndoState();
+  if(axis==='h'){
+    s.flipX=!s.flipX;
+    markDirty('Đã lật ngang mặt kệ.');
+  }else{
+    s.flipY=!s.flipY;
+    markDirty('Đã lật dọc mặt kệ.');
+  }
+  renderInspector();
+  draw();
+  saveProject();
 }
 function renderShelfProducts(shelf){
   const listEl=$('#shelf-product-list'),countEl=$('#shelf-product-count');
@@ -1260,47 +1378,6 @@ function deleteProductFromShelf(prodId,shelf){
   catalog=catalog.filter(p=>p.id!==prodId);
   renderShelfProducts(shelf);
   markDirty('Đã xóa mặt hàng khỏi kệ.');
-  saveProject();
-}
-function updateShelf(){
-  if(selected?.type!=='shelf')return;
-  const s=layout.shelves.find(x=>x.id===selected.id);
-  if(!s)return;
-  const oldCategory=s.category;
-  s.category=$('#shelf-category')?.value||'other';
-  s.label=CATEGORY_NAMES[s.category]||s.category;
-  s.presetId=$('#shelf-preset')?.value||'standard';
-  const preset=SHELF_PRESETS[s.presetId]||SHELF_PRESETS.standard;
-  s.w=preset.w;
-  s.h=preset.h;
-  const valEl=$('#shelf-valence');
-  if(valEl){
-    s.valence=Number(valEl.value);
-    const valOut=$('#shelf-valence-out');
-    if(valOut)valOut.textContent=(s.valence>=0?'+':'')+s.valence.toFixed(2);
-  }
-  if(oldCategory!==s.category&&catalog){
-    catalog.forEach(p=>{if(p.shelf===s.id||p.shelfId===s.id)p.category=s.category});
-  }
-  renderObjects();
-  renderShelfProducts(s);
-  markDirty('Thuộc tính kệ hàng đã thay đổi.');
-  draw();
-  saveProject();
-}
-function updateWall(){if(selected?.type!=='wall')return;const w=layout.walls.find(x=>x.id===selected.id);for(const key of['x1','y1','x2','y2'])w[key]=clamp(Number($('#wall-'+key).value),0,key.startsWith('x')?layout.width:layout.height);renderObjects();markDirty('Wall geometry changed.');draw();saveProject()}
-function deleteSelected(type){
-  if(selected?.type!==type)return;
-  pushUndoState();
-  if(type==='shelf'){
-    layout.shelves=layout.shelves.filter(s=>s.id!==selected.id);
-    if(catalog)catalog=catalog.filter(p=>p.shelf!==selected.id&&p.shelfId!==selected.id);
-  }else layout.walls=layout.walls.filter(w=>w.id!==selected.id);
-  selected=null;
-  renderObjects();
-  renderInspector();
-  markDirty(`${type==='wall'?'Wall':'Shelf'} removed.`);
-  draw();
   saveProject();
 }
 
@@ -1534,6 +1611,56 @@ function pointerUp(event){
   saveProject();
 }
 
+function updateShelf(){
+  if(selected?.type!=='shelf')return;
+  const s=layout.shelves.find(x=>x.id===selected.id);
+  if(!s)return;
+  const oldCategory=s.category;
+  s.category=$('#shelf-category')?.value||'other';
+  s.label=CATEGORY_NAMES[s.category]||s.category;
+  if(oldCategory!==s.category){
+    const defDims=SHELF_CATEGORY_DIMENSIONS[s.category]||{w:2.0,h:1.4};
+    if((s.rotation||0)%180===90){
+      s.w=defDims.h;
+      s.h=defDims.w;
+    }else{
+      s.w=defDims.w;
+      s.h=defDims.h;
+    }
+  }
+  const valEl=$('#shelf-valence');
+  if(valEl){
+    s.valence=Number(valEl.value);
+    const valOut=$('#shelf-valence-out');
+    if(valOut)valOut.textContent=(s.valence>=0?'+':'')+s.valence.toFixed(2);
+  }
+  if(oldCategory!==s.category&&catalog){
+    catalog.forEach(p=>{if(p.shelf===s.id||p.shelfId===s.id)p.category=s.category});
+  }
+  renderObjects();
+  renderInspector();
+  markDirty('Thuộc tính kệ hàng đã thay đổi.');
+  draw();
+  saveProject();
+}
+function updateWall(){if(selected?.type!=='wall')return;const w=layout.walls.find(x=>x.id===selected.id);for(const key of['x1','y1','x2','y2'])w[key]=clamp(Number($('#wall-'+key).value),0,key.startsWith('x')?layout.width:layout.height);renderObjects();markDirty('Wall geometry changed.');draw();saveProject()}
+function deleteSelected(type){
+  if(selected?.type!==type)return;
+  pushUndoState();
+  if(type==='shelf'){
+    layout.shelves=layout.shelves.filter(s=>s.id!==selected.id);
+    if(catalog)catalog=catalog.filter(p=>p.shelf!==selected.id&&p.shelfId!==selected.id);
+  }else if(type==='wall'){
+    layout.walls=layout.walls.filter(w=>w.id!==selected.id);
+  }
+  selected=null;
+  renderObjects();
+  renderInspector();
+  markDirty('Object deleted.');
+  draw();
+  saveProject();
+}
+
 function draw(){
   if(!layout)return;
   const canvas=$('#scene');
@@ -1546,27 +1673,135 @@ function draw(){
   ctx.save();
   ctx.translate(ox,oy);
 
-  const startGX=Math.floor(worldMinX*2);
-  const endGX=Math.ceil(worldMaxX*2);
-  const startGY=Math.floor(worldMinY*2);
-  const endGY=Math.ceil(worldMaxY*2);
+  // Floor texture: each tile unit fits exactly 1x1m cell
+  const startGX=Math.floor(worldMinX);
+  const endGX=Math.ceil(worldMaxX);
+  const startGY=Math.floor(worldMinY);
+  const endGY=Math.ceil(worldMaxY);
 
-  for(let x=startGX;x<=endGX;x++){
-    ctx.strokeStyle=x%4===0?'#3a1c0d':'#241008';
-    ctx.beginPath();
-    ctx.moveTo(x/2*sx,worldMinY*sy);
-    ctx.lineTo(x/2*sx,worldMaxY*sy);
-    ctx.stroke();
+  if(STORE_ASSETS.floor.ready && STORE_ASSETS.floor.img.naturalWidth > 0){
+    ctx.imageSmoothingEnabled=false;
+    for(let gx=startGX;gx<endGX;gx++){
+      for(let gy=startGY;gy<endGY;gy++){
+        ctx.drawImage(STORE_ASSETS.floor.img, gx*sx, gy*sy, sx, sy);
+      }
+    }
+  } else {
+    ctx.fillStyle='#1c1007';
+    ctx.fillRect(worldMinX*sx, worldMinY*sy, (worldMaxX-worldMinX)*sx, (worldMaxY-worldMinY)*sy);
   }
-  for(let y=startGY;y<=endGY;y++){
-    ctx.strokeStyle=y%4===0?'#3a1c0d':'#241008';
-    ctx.beginPath();
-    ctx.moveTo(worldMinX*sx,y/2*sy);
-    ctx.lineTo(worldMaxX*sx,y/2*sy);
-    ctx.stroke();
+
+  // Draw Walls with metallic beam styling derived from wall.png
+  for(const wall of layout.walls){
+    const isSelected=selected?.type==='wall'&&selected.id===wall.id;
+    const dx=(wall.x2-wall.x1)*sx;
+    const dy=(wall.y2-wall.y1)*sy;
+    const len=Math.hypot(dx,dy);
+    const angle=Math.atan2(dy,dx);
+
+    ctx.save();
+    ctx.translate(wall.x1*sx, wall.y1*sy);
+    ctx.rotate(angle);
+
+    const beamH=isSelected?12:10;
+    // Dark metallic beam base
+    ctx.fillStyle=isSelected?'#ffca58':'#1e1c24';
+    ctx.fillRect(0, -beamH/2, len, beamH);
+
+    // Metallic highlight strip
+    ctx.fillStyle=isSelected?'#ffe082':'#3d3846';
+    ctx.fillRect(0, -beamH/2, len, beamH*0.35);
+
+    // Bevel bottom shadow
+    ctx.fillStyle=isSelected?'#ffb300':'#110f14';
+    ctx.fillRect(0, beamH/2-beamH*0.25, len, beamH*0.25);
+
+    // Joint caps
+    ctx.fillStyle=isSelected?'#fff3d6':'#5c5468';
+    ctx.fillRect(-2, -beamH/2-1, 4, beamH+2);
+    ctx.fillRect(len-2, -beamH/2-1, 4, beamH+2);
+
+    ctx.restore();
+
+    if(isSelected){
+      for(const p of[{x:wall.x1,y:wall.y1},{x:wall.x2,y:wall.y2}]){
+        ctx.fillStyle='#120a04';
+        ctx.strokeStyle='#ffca58';
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.arc(p.x*sx,p.y*sy,7,0,Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
   }
-  for(const wall of layout.walls){const isSelected=selected?.type==='wall'&&selected.id===wall.id;ctx.strokeStyle=isSelected?'#ffca58':'#c8844a';ctx.lineWidth=isSelected?10:8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(wall.x1*sx,wall.y1*sy);ctx.lineTo(wall.x2*sx,wall.y2*sy);ctx.stroke();ctx.strokeStyle=isSelected?'#fff3d6':'#dab078';ctx.lineWidth=2;ctx.stroke();if(isSelected){for(const p of[{x:wall.x1,y:wall.y1},{x:wall.x2,y:wall.y2}]){ctx.fillStyle='#120a04';ctx.strokeStyle='#ffca58';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,7,0,Math.PI*2);ctx.fill();ctx.stroke()}}}for(const s of layout.shelves){ctx.fillStyle='#2e1509';ctx.strokeStyle=selected?.type==='shelf'&&selected.id===s.id?'#ffca58':'#6b3519';ctx.lineWidth=selected?.id===s.id?3:2;ctx.fillRect(s.x*sx,s.y*sy,s.w*sx,s.h*sy);ctx.strokeRect(s.x*sx,s.y*sy,s.w*sx,s.h*sy);ctx.fillStyle='#f5e6c8';ctx.font='700 11px "Nunito Sans", sans-serif';ctx.textAlign='center';ctx.fillText(s.label,(s.x+s.w/2)*sx,(s.y+s.h/2)*sy+4)}marker(ctx,layout.entrance,'🚪','LỐI VÀO','#5dba4f',sx,sy);marker(ctx,layout.checkout,'🛒','THU NGÂN','#e05252',sx,sy);
-  if(draft){ctx.strokeStyle='#ffca58';ctx.setLineDash([6,4]);ctx.lineWidth=2;if(tool==='wall'){ctx.beginPath();ctx.moveTo(draft.start.x*sx,draft.start.y*sy);ctx.lineTo(draft.end.x*sx,draft.end.y*sy);ctx.stroke()}else ctx.strokeRect(draft.start.x*sx,draft.start.y*sy,(draft.end.x-draft.start.x)*sx,(draft.end.y-draft.start.y)*sy);ctx.setLineDash([])}
+
+  // Draw Shelves (Preserve native aspect ratio without stretching/distortion)
+  for(const s of layout.shelves){
+    const isSelected=selected?.type==='shelf'&&selected.id===s.id;
+    const asset=getShelfAsset(s);
+    const rx=s.x*sx, ry=s.y*sy, rw=s.w*sx, rh=s.h*sy;
+
+    ctx.save();
+    ctx.translate(rx+rw/2, ry+rh/2);
+
+    const rotation=(s.rotation||0)*Math.PI/180;
+    if(rotation) ctx.rotate(rotation);
+
+    const scaleX=s.flipX?-1:1;
+    const scaleY=s.flipY?-1:1;
+    if(scaleX!==1||scaleY!==1) ctx.scale(scaleX,scaleY);
+
+    if(asset?.ready && asset.img.naturalWidth > 0){
+      const imgRatio=asset.img.naturalWidth/asset.img.naturalHeight;
+      const boxRatio=rw/rh;
+      let drawW=rw, drawH=rh;
+      if(boxRatio>imgRatio){
+        drawW=rh*imgRatio;
+      }else{
+        drawH=rw/imgRatio;
+      }
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(asset.img, -drawW/2, -drawH/2, drawW, drawH);
+    } else {
+      ctx.fillStyle='#2e1509';
+      ctx.fillRect(-rw/2, -rh/2, rw, rh);
+    }
+    ctx.restore();
+
+    // Clean selection highlight box if selected
+    if(isSelected){
+      ctx.strokeStyle='#ffca58';
+      ctx.lineWidth=2;
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.fillStyle='#ffca58';
+      const sz=5;
+      ctx.fillRect(rx-sz/2, ry-sz/2, sz, sz);
+      ctx.fillRect(rx+rw-sz/2, ry-sz/2, sz, sz);
+      ctx.fillRect(rx-sz/2, ry+rh-sz/2, sz, sz);
+      ctx.fillRect(rx+rw-sz/2, ry+rh-sz/2, sz, sz);
+    }
+  }
+
+  // Entrance & Checkout Markers (Proportional crisp pixel-art sprites)
+  drawMarkerWithAsset(ctx, layout.entrance, STORE_ASSETS.entrance, '🚪', 'LỐI VÀO', '#5dba4f', sx, sy);
+  drawMarkerWithAsset(ctx, layout.checkout, STORE_ASSETS.checkout, '🛒', 'THU NGÂN', '#e05252', sx, sy);
+
+  if(draft){
+    ctx.strokeStyle='#ffca58';
+    ctx.setLineDash([6,4]);
+    ctx.lineWidth=2;
+    if(tool==='wall'){
+      ctx.beginPath();
+      ctx.moveTo(draft.start.x*sx,draft.start.y*sy);
+      ctx.lineTo(draft.end.x*sx,draft.end.y*sy);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(draft.start.x*sx,draft.start.y*sy,(draft.end.x-draft.start.x)*sx,(draft.end.y-draft.start.y)*sy);
+    }
+    ctx.setLineDash([]);
+  }
+
   if(simulation&&!dirty){
     const visibleAgents=[];
     const agentsList = rewindTime !== null ? getRewindAgents(rewindTime) : simulation.agents;
@@ -1602,6 +1837,21 @@ function draw(){
     : (simulation?.snapshot().active || 0);
   $('#active-count').textContent=`${activeCount} khách đang trong cửa hàng`;
   ctx.textAlign='left'}
+
+function drawMarkerWithAsset(ctx, p, asset, icon, label, color, sx, sy){
+  if(!p) return;
+  if(asset?.ready && asset.img.naturalWidth > 0){
+    const imgRatio=asset.img.naturalWidth/asset.img.naturalHeight;
+    const baseH=(asset===STORE_ASSETS.checkout?2.4:1.6)*sy;
+    const baseW=baseH*imgRatio;
+    const mx=p.x*sx-baseW/2, my=p.y*sy-baseH/2;
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(asset.img, mx, my, baseW, baseH);
+  } else {
+    marker(ctx, p, icon, label, color, sx, sy);
+  }
+}
+
 function marker(ctx,p,icon,label,color,sx,sy){if(!p)return;ctx.fillStyle='#120a04';ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=color;ctx.font='bold 14px "Nunito Sans", sans-serif';ctx.textAlign='center';ctx.fillText(icon,p.x*sx,p.y*sy+5);ctx.font='bold 10px "Nunito Sans", sans-serif';ctx.fillText(label,p.x*sx,p.y*sy-20)}
 
 function openManual(){const columns='npc_id,target_category,need_product,need_growth,need_explore,explore_growth,attractor,stability,dispersion,recovery,speed,dwell,steadiness',sample='test_001,beverage,0.8,0.02,0.25,0.01,0.3,0.65,0.4,0.15,1.3,9,0.75';$('#manual-editor').value=columns+'\n'+(manualRows.length?manualRows.map(row=>columns.split(',').map(k=>row[k]??'').join(',')).join('\n'):sample);$('#manual-error').textContent='Values are clamped to safe ranges.';$('#manual-dialog').showModal()}

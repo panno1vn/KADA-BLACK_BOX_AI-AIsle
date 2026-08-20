@@ -20,11 +20,16 @@
     <ProjectReference Include="..\AIsle.Contracts\AIsle.Contracts.csproj" />
     <ProjectReference Include="..\AIsle.Simulation\AIsle.Simulation.csproj" />
     <Resource Include="Assets\*.jpg" />
+    <Resource Include="Assets\*.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="..\..\web\**\*">
       <Link>UI\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="UI\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

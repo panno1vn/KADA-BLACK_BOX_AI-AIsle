@@ -20,6 +20,10 @@ namespace AIsle.DesktopApp.ViewModels
         // Layout Properties
         [ObservableProperty] private double _storeWidth;
         [ObservableProperty] private double _storeHeight;
+        [ObservableProperty] private double _entranceX;
+        [ObservableProperty] private double _entranceY;
+        [ObservableProperty] private double _checkoutX;
+        [ObservableProperty] private double _checkoutY;
         public ObservableCollection<Services.Wall> Walls { get; } = new();
         public ObservableCollection<Services.Shelf> Shelves { get; } = new();
         public ObservableCollection<Services.Npc> ActiveNpcs { get; } = new();
@@ -43,6 +47,10 @@ namespace AIsle.DesktopApp.ViewModels
             var layout = _layoutService.GetLayout();
             StoreWidth = layout.Width;
             StoreHeight = layout.Height;
+            EntranceX = layout.Entrance?.X ?? 0;
+            EntranceY = layout.Entrance?.Y ?? 0;
+            CheckoutX = layout.Checkout?.X ?? 0;
+            CheckoutY = layout.Checkout?.Y ?? 0;
 
             Walls.Clear();
             foreach (var w in layout.Walls) Walls.Add(w);

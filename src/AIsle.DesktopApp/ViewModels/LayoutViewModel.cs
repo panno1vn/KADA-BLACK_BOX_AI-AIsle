@@ -259,6 +259,39 @@ namespace AIsle.DesktopApp.ViewModels
         }
 
         [RelayCommand]
+        private void RotateSelectedShelf()
+        {
+            if (SelectedShelf != null)
+            {
+                SelectedShelf.Rotate90();
+                _service.UpdateShelf(SelectedShelf);
+                StatusMessage = $"🔄 Đã xoay kệ {SelectedShelf.Label}: {SelectedShelf.W}m × {SelectedShelf.H}m ({SelectedShelf.Rotation}°)";
+            }
+        }
+
+        [RelayCommand]
+        private void FlipSelectedShelfH()
+        {
+            if (SelectedShelf != null)
+            {
+                SelectedShelf.ToggleFlipX();
+                _service.UpdateShelf(SelectedShelf);
+                StatusMessage = $"⇄ Đã lật ngang kệ {SelectedShelf.Label}";
+            }
+        }
+
+        [RelayCommand]
+        private void FlipSelectedShelfV()
+        {
+            if (SelectedShelf != null)
+            {
+                SelectedShelf.ToggleFlipY();
+                _service.UpdateShelf(SelectedShelf);
+                StatusMessage = $"⇅ Đã lật dọc kệ {SelectedShelf.Label}";
+            }
+        }
+
+        [RelayCommand]
         private void OpenCatalog()
         {
             RequestOpenCatalog?.Invoke();

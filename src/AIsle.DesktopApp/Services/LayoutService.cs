@@ -45,6 +45,20 @@ namespace AIsle.DesktopApp.Services
         [ObservableProperty] private double _w = 2.0;
         [ObservableProperty] private double _h = 1.0;
         [ObservableProperty] private double _valence;
+        [ObservableProperty] private double _rotation;
+        [ObservableProperty] private bool _flipX;
+        [ObservableProperty] private bool _flipY;
+
+        public void Rotate90()
+        {
+            var temp = W;
+            W = H;
+            H = temp;
+            Rotation = (Rotation + 90) % 360;
+        }
+
+        public void ToggleFlipX() => FlipX = !FlipX;
+        public void ToggleFlipY() => FlipY = !FlipY;
 
         partial void OnPresetIdChanged(string value)
         {
