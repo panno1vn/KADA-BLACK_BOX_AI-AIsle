@@ -51,6 +51,7 @@ namespace AIsle.Contracts.Project
         public string? Id { get; set; }
         public string? Label { get; set; }
         public string? Category { get; set; }
+        public string? PresetId { get; set; }
         public double X { get; set; }
         public double Y { get; set; }
         public double W { get; set; }
@@ -65,6 +66,11 @@ namespace AIsle.Contracts.Project
         public string? Name { get; set; }
         public string? Category { get; set; }
         public string? Shelf { get; set; }
+        public string? ShelfId
+        {
+            get => Shelf;
+            set => Shelf = value;
+        }
         public double Price { get; set; }
     }
 

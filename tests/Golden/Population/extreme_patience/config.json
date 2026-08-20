@@ -1,5 +1,6 @@
 {
   "Count": 80,
+  "CategoryIds": ["drinks", "snacks", "essentials"],
   "ParameterRanges": {
     "DwellSeconds": {"Min": 22.0, "Max": 30.0}
   },

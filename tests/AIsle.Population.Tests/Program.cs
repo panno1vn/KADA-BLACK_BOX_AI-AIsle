@@ -21,6 +21,7 @@ internal static class Program
             RunStatisticsChecks();
             RunFitnessChecks();
             RunGeneratorAbstractionChecks();
+            RunPhantomRateChecks();
             RunDependencyBoundaryChecks(root);
             Console.WriteLine("PASS: Population source-first verification completed.");
             return 0;
@@ -30,6 +31,23 @@ internal static class Program
             Console.Error.WriteLine("FAIL: " + exception);
             return 1;
         }
+    }
+
+    private static void RunPhantomRateChecks()
+    {
+        var config = new PopulationConfig
+        {
+            Count = 1000,
+            PhantomNeedRate = 0.12,
+            CategoryIds = new[] { "drinks", "snacks" }
+        };
+        var population = new GeneticPopulationGenerator().Generate(config);
+        var phantomCount = population.NPCProfiles.Count(p => string.Equals(p.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal));
+        var rate = (double)phantomCount / population.NPCProfiles.Length;
+        // Expected ~0.12, sample size 1000 -> tolerance ±0.05
+        Assert(Math.Abs(rate - 0.12) <= 0.05, $"Phantom need rate {rate:F3} is outside expected tolerance (target 0.12 ± 0.05).");
+        Assert(population.NPCProfiles.Where(p => string.Equals(p.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal)).All(p => p.CategoryPreferences.Length == 0), "Phantom profile should have empty category preferences.");
+        Console.WriteLine($"PASS phantom rate statistical checks (rate={rate:F3}, count={phantomCount}/1000)");
     }
 
     private static void RunScenario(string root, string scenario)
@@ -58,7 +76,7 @@ internal static class Program
         var validation = new PopulationValidator().Validate(definition, config);
         Assert(validation.Valid, label + " invalid: " + string.Join("; ", validation.Errors));
         Assert(definition.NPCProfiles.All(profile => profile != null && !string.IsNullOrWhiteSpace(profile.Id)), label + ": invalid profile.");
-        Assert(definition.NPCProfiles.All(profile => profile.CategoryPreferences.Length > 0
+        Assert(definition.NPCProfiles.All(profile => (profile.CategoryPreferences.Length > 0 || string.Equals(profile.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal))
             && profile.Impulsiveness >= config.ParameterRanges.Impulsiveness.Min
             && profile.Impulsiveness <= config.ParameterRanges.Impulsiveness.Max
             && profile.PriceSensitivity >= config.ParameterRanges.PriceSensitivity.Min
@@ -68,15 +86,25 @@ internal static class Program
 
     private static void RunValidatorFailureChecks()
     {
-        var config = new PopulationConfig { Count = 2 };
+        var config = new PopulationConfig { Count = 2, CategoryIds = new[] { "drinks" } };
         var population = new GeneticPopulationGenerator().Generate(config);
         population.NPCProfiles[1].Id = population.NPCProfiles[0].Id;
         population.NPCProfiles[0].InitialNeed = double.NaN;
         var result = new PopulationValidator().Validate(population, config);
         Assert(!result.Valid && result.Errors.Length >= 2, "Validator accepted invalid population.");
-        try { new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 0 }); }
-        catch (ArgumentException) { Console.WriteLine("PASS validator rejection checks"); return; }
-        throw new InvalidOperationException("Generator accepted invalid config.");
+        try { new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 0, CategoryIds = new[] { "drinks" } }); }
+        catch (ArgumentException) { }
+
+        try
+        {
+            new GeneticPopulationGenerator().Generate(new PopulationConfig { Count = 10, CategoryIds = Array.Empty<string>() });
+            throw new InvalidOperationException("Generator accepted empty CategoryIds.");
+        }
+        catch (ArgumentException)
+        {
+            Console.WriteLine("PASS validator rejection checks");
+            return;
+        }
     }
 
     private static void RunStatisticsChecks()
@@ -90,7 +118,7 @@ internal static class Program
             && stats.Percentile50 <= stats.Percentile75 && stats.Percentile75 <= stats.Percentile90,
             "Percentiles are not ordered.");
 
-        var config = new PopulationConfig { Count = 120 };
+        var config = new PopulationConfig { Count = 120, CategoryIds = new[] { "drinks" } };
         config.DistributionTargets.InitialNeed = new DistributionTarget
         {
             Enabled = true, Mean = 0.65, StandardDeviation = 0.08, Weight = 1.0, Tolerance = 0.18
@@ -105,7 +133,7 @@ internal static class Program
 
     private static void RunFitnessChecks()
     {
-        var config = new PopulationConfig();
+        var config = new PopulationConfig { CategoryIds = new[] { "drinks" } };
         config.DistributionTargets.InitialNeed = new DistributionTarget { Enabled = true, Mean = 0.8, StandardDeviation = 0.1, Weight = 1.0, Tolerance = 0.2 };
         var near = new AIsleNpcChromosome(config);
         var far = new AIsleNpcChromosome(config);

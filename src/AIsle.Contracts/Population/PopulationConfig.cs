@@ -5,11 +5,14 @@ namespace AIsle.Contracts.Population
     [Serializable]
     public sealed class PopulationConfig
     {
+        public const string PhantomCategory = "__phantom__";
+
         public int Count = 200;
+        public double PhantomNeedRate = 0.10;
         public PopulationParameterRanges ParameterRanges = new PopulationParameterRanges();
         public PopulationDistributionTargets DistributionTargets = new PopulationDistributionTargets();
         public GeneratorSettings GeneratorSettings = new GeneratorSettings();
-        public string[] CategoryIds = { "drinks", "snacks", "essentials" };
+        public string[] CategoryIds = Array.Empty<string>();
         public ShoppingMissionWeight[] ShoppingMissionWeights =
         {
             new ShoppingMissionWeight { Mission = ShoppingMission.Routine, Weight = 0.35 },

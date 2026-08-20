@@ -58,9 +58,17 @@ namespace AIsle.Simulation.Population.Genetic
         {
             var categories = config.CategoryIds ?? Array.Empty<string>();
             var selector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount)));
-            var categoryIndex = Math.Min(categories.Length - 1, (int)(selector * categories.Length));
-            var category = categories[categoryIndex];
+            var categoryIndex = categories.Length > 0 ? Math.Min(categories.Length - 1, (int)(selector * categories.Length)) : 0;
+            var normalCategory = categories.Length > 0 ? categories[categoryIndex] : PopulationConfig.PhantomCategory;
+
             var missionSelector = Math.Max(0.0, Math.Min(0.999999999999, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + 1)));
+            var phantomRoll = Math.Max(0.0, Math.Min(1.0, chromosome.ValueAt(AIsleNpcChromosome.TraitCount + 2)));
+            var isPhantom = config.PhantomNeedRate > 0 && phantomRoll < config.PhantomNeedRate;
+            var targetCategory = isPhantom ? PopulationConfig.PhantomCategory : normalCategory;
+
+            var preferences = isPhantom
+                ? Array.Empty<CategoryPreference>()
+                : new[] { new CategoryPreference(normalCategory, 1.0) };
 
             return new NPCProfile
             {
@@ -77,8 +85,8 @@ namespace AIsle.Simulation.Population.Genetic
                 DwellSeconds = chromosome.ValueAt(9),
                 Impulsiveness = chromosome.ValueAt(10),
                 PriceSensitivity = chromosome.ValueAt(11),
-                TargetCategory = category,
-                CategoryPreferences = new[] { new CategoryPreference(category, 1.0) },
+                TargetCategory = targetCategory,
+                CategoryPreferences = preferences,
                 ShoppingMission = SelectMission(config.ShoppingMissionWeights, missionSelector)
             };
         }

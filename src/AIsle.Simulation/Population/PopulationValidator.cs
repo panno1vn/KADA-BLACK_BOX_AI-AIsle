@@ -60,17 +60,18 @@ namespace AIsle.Simulation.Population
                 ValidateValue(errors, profile.Id, "DwellSeconds", profile.DwellSeconds, config.ParameterRanges.DwellSeconds);
                 ValidateValue(errors, profile.Id, "Impulsiveness", profile.Impulsiveness, config.ParameterRanges.Impulsiveness);
                 ValidateValue(errors, profile.Id, "PriceSensitivity", profile.PriceSensitivity, config.ParameterRanges.PriceSensitivity);
-                if (!categories.Contains(profile.TargetCategory))
+                var isPhantomTarget = string.Equals(profile.TargetCategory, PopulationConfig.PhantomCategory, StringComparison.Ordinal);
+                if (!isPhantomTarget && !categories.Contains(profile.TargetCategory))
                 {
                     errors.Add("NPC " + profile.Id + " has an invalid TargetCategory.");
                 }
 
                 var preferences = profile.CategoryPreferences ?? Array.Empty<CategoryPreference>();
-                if (preferences.Length == 0)
+                if (preferences.Length == 0 && !isPhantomTarget)
                 {
                     errors.Add("NPC " + profile.Id + " has no category preference.");
                 }
-                else
+                else if (preferences.Length > 0)
                 {
                     var preferredCategories = new HashSet<string>(StringComparer.Ordinal);
                     for (var preferenceIndex = 0; preferenceIndex < preferences.Length; preferenceIndex++)

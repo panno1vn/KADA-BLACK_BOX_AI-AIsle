@@ -9,10 +9,13 @@ namespace AIsle.DesktopApp.ViewModels
         public override string Title => "Quản lý Sản phẩm";
 
         private readonly Services.CatalogService _service;
+        private readonly Services.LayoutService? _layoutService;
 
         public ObservableCollection<Services.Product> Products { get; } = new();
+        public ObservableCollection<Services.Shelf> AvailableShelves { get; } = new();
 
         [ObservableProperty] private Services.Product? _selectedProduct;
+        [ObservableProperty] private Services.Shelf? _selectedShelf;
         [ObservableProperty] private string _editId = "";
         [ObservableProperty] private string _editName = "";
         [ObservableProperty] private string _editCategory = "";
@@ -20,11 +23,37 @@ namespace AIsle.DesktopApp.ViewModels
         [ObservableProperty] private string _editPrice = "";
         [ObservableProperty] private bool _isEditing;
         [ObservableProperty] private string _statusMessage = "";
+        [ObservableProperty] private bool _hasAvailableShelves;
 
-        public CatalogViewModel(Services.CatalogService service)
+        public CatalogViewModel(Services.CatalogService service, Services.LayoutService? layoutService = null)
         {
             _service = service;
+            _layoutService = layoutService;
+            RefreshAvailableShelves();
             LoadProducts();
+        }
+
+        public void RefreshAvailableShelves()
+        {
+            AvailableShelves.Clear();
+            if (_layoutService != null)
+            {
+                var layout = _layoutService.GetLayout();
+                foreach (var shelf in layout.Shelves)
+                {
+                    AvailableShelves.Add(shelf);
+                }
+            }
+            HasAvailableShelves = AvailableShelves.Count > 0;
+        }
+
+        partial void OnSelectedShelfChanged(Services.Shelf? value)
+        {
+            if (value != null)
+            {
+                EditShelf = value.Id;
+                EditCategory = value.Category;
+            }
         }
 
         private void LoadProducts()
@@ -37,23 +66,45 @@ namespace AIsle.DesktopApp.ViewModels
         {
             if (value != null)
             {
+                RefreshAvailableShelves();
                 EditId = value.Id;
                 EditName = value.Name;
                 EditCategory = value.Category;
                 EditShelf = value.Shelf;
                 EditPrice = value.Price.ToString("F0");
+                SelectedShelf = null;
+                foreach (var s in AvailableShelves)
+                {
+                    if (string.Equals(s.Id, value.Shelf, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        SelectedShelf = s;
+                        break;
+                    }
+                }
                 IsEditing = true;
             }
         }
 
-        [RelayCommand]
+        partial void OnHasAvailableShelvesChanged(bool value)
+        {
+            NewProductCommand.NotifyCanExecuteChanged();
+            if (!value)
+            {
+                StatusMessage = "⚠ Chưa có kệ hàng nào! Vui lòng tạo kệ ở Setup Layout trước.";
+            }
+        }
+
+        [RelayCommand(CanExecute = nameof(HasAvailableShelves))]
         private void NewProduct()
         {
+            RefreshAvailableShelves();
+
             EditId = "";
             EditName = "";
             EditCategory = "";
             EditShelf = "";
             EditPrice = "";
+            SelectedShelf = AvailableShelves.Count > 0 ? AvailableShelves[0] : null;
             IsEditing = true;
             SelectedProduct = null;
             StatusMessage = "Nhập thông tin sản phẩm mới...";

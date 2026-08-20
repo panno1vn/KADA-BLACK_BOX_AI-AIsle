@@ -170,7 +170,7 @@ internal static class Program
         {
             requestId = "population-001",
             type = "population.generate",
-            payload = new { config = new PopulationConfig { Count = 12 } }
+            payload = new { config = new PopulationConfig { Count = 12, CategoryIds = new[] { "drinks", "snacks" } } }
         }, new JsonSerializerOptions { IncludeFields = true });
         using var response = JsonDocument.Parse(new BridgeMessageProcessor().Process(request));
         var root = response.RootElement;

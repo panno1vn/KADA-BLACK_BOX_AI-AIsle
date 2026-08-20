@@ -302,3 +302,34 @@ un.bat đã sẵn sàng khởi chạy ứng dụng C# Desktop.
 un.bat hoặc mở trực tiếp Builds/Desktop/AIsleDesktop.exe để trải nghiệm ứng dụng C# Desktop.
 - Phạm vi đồng bộ: Chỉ local.
 
+## 2026-08-19 23:45 (UTC+07:00) — Codex — Triển khai Phantom Need & Tham chiếu Catalog cho Task 10
+
+- Lý do sửa: Yêu cầu từ task.md để đồng bộ Catalog/Layout với cơ chế Phantom Need, đổi UI cho phép cấu hình preset và đảm bảo GA hỗ trợ nhu cầu ảo (phantom), đúng thứ tự SYSTEM → UI.
+- Đã sửa/đã làm:
+  - **S-A. Contracts (SYSTEM)**: Thêm `ShelfPresets` cố định size (Standard/Cooler/Endcap). Sửa `Product` đổi `Shelf` thành `ShelfId`. `PopulationConfig` bỏ hard-code `CategoryIds` và thêm `PhantomNeedRate`.
+  - **S-B. Simulation/GA (SYSTEM)**: Sửa `PopulationApplicationService.Generate()` để đọc đúng `CategoryIds` từ payload/Catalog và bắt `ArgumentException` chuyển thành `ValidationResult` khi Catalog rỗng. `GeneticPopulationGenerator` thêm cơ chế PhantomNeedRoll (nếu < PhantomNeedRate thì gán `__phantom__`). Viết test thống kê xác nhận phân bố Phantom.
+  - **S-C. Utility Decision (SYSTEM)**: Tận dụng `ExplorationNeed/Impulsiveness` hiện có của NPC khi `TargetCategory == "__phantom__"` để tự do chọn kệ mà không cần khóa cứng mục tiêu.
+  - **U-A. Layout UI**: Đổi UI chỉnh sửa Shelf sang ComboBox chọn Preset cố định (W/H readonly).
+  - **U-B. Catalog UI**: Đổi `EditShelf` thành ComboBox (đọc từ `LayoutService.Shelves`), `EditCategory` tự set theo kệ chọn. Thêm `CanExecute` cho `NewProductCommand` để cảnh báo và block form khi Layout chưa có kệ nào.
+  - **M-Verify**: Pass E2E simulation (GA tạo phantom NPC hợp lệ, NPC khám phá và kết thúc journey không lỗi văng), mọi luồng hoạt động chính xác thuần C# mà không đụng framework ngoài (như Unity/Smart Objects).
+- Đối chiếu Result_Plan.md: Phù hợp với milestone Task 10 (cơ chế simulation thuần C#, không mang logic phụ thuộc web prototype, UX được validate chặn ngặt).
+- Trạng thái: Đạt.
+- Kiểm tra: `dotnet run` 100% tests Population và DesktopApp (QA smoke, bridge, validation error) đều PASS; Manual verify E2E đều pass.
+- Nên làm tiếp theo: Chờ lệnh người dùng test ở local trước khi commit/push thay đổi.
+- Phạm vi đồng bộ: Chỉ local.
+
+## 2026-08-20 09:00 (UTC+07:00) — Codex — Tích hợp commit remote 8e40127 & Hoàn thiện UI/UX Web Studio
+
+- Lý do sửa: Đồng bộ cải tiến giao diện và cơ chế lưu lịch sử từ commit mới `8e40127` trên remote `origin/develop`, kết hợp xử lý toàn bộ lỗi UI/UX trên local theo yêu cầu của người dùng.
+- Đã sửa/đã làm:
+  - Tích hợp thay đổi từ remote `8e40127`: cập nhật layout bảng kết quả `Results` mở rộng, hàm `saveSimulationSession` hỗ trợ lưu đa phiên mượt mà không xung đột mã, tích hợp test bridge `history.save` trong `AIsle.DesktopApp.Tests`.
+  - Khắc phục lỗi CSS `[hidden]` bị đè bởi Tailwind `.flex` khiến các form inspector bị chồng lấn.
+  - Thiết kế lại danh sách đối tượng (Object List) sang dạng card với icon và badge phân biệt rõ ràng.
+  - Hoàn thiện 100% Việt hóa cho tất cả các màn hình (Setup, Simulate, Results, Analytics).
+  - Tinh chỉnh biểu đồ Analytics sang dữ liệu bán lẻ cửa hàng.
+- Đối chiếu Result_Plan.md: Hoàn thiện chất lượng UI/UX của Studio và đồng bộ với nhánh develop.
+- Trạng thái: Đạt.
+- Kiểm tra: 14/14 Node.js tests PASS; Toàn bộ test suite .NET (Population, Simulation, DesktopApp, Results) PASS; dotnet build 0 error, 0 warning; git diff --check sạch whitespace.
+- Nên làm tiếp theo: Người dùng kiểm tra trực tiếp trên local trước khi có lệnh commit/push.
+- Phạm vi đồng bộ: Chỉ local; chưa commit, chưa push.
+

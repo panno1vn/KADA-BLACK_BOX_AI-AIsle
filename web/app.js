@@ -11,6 +11,26 @@ const money=n=>new Intl.NumberFormat('vi-VN').format(Math.round(n))+' ₫';
 const pct=n=>(n*100).toFixed(1)+'%';
 const escapeHTML=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+export const SHELF_PRESETS={
+  standard:{w:2.0,h:1.0,label:'Kệ đôi tiêu chuẩn (2.0m × 1.0m)'},
+  cooler:{w:1.0,h:1.0,label:'Tủ mát / Kệ vuông (1.0m × 1.0m)'},
+  endcap:{w:1.0,h:2.0,label:'Kệ đầu dãy / Slim (1.0m × 2.0m)'}
+};
+
+export const CATEGORY_NAMES={
+  'beverage':'Đồ uống',
+  'dry-food':'Hàng khô',
+  'instant-food':'Đồ ăn nhanh',
+  'frozen-food':'Hàng đông lạnh',
+  'fresh-food':'Hàng tươi sống',
+  'snack':'Bánh kẹo / Snack',
+  'personal-care':'Chăm sóc cá nhân',
+  'cleaning':'Dung dịch vệ sinh',
+  'household':'Đồ gia dụng',
+  'candy':'Kẹo & Gum',
+  'other':'Khác'
+};
+
 let layout,catalog,simulation=null,simResult=null,manualRows=[],parameters={...DEFAULT_PARAMETERS};
 let selected=null,tool='select',draft=null,drag=null,playing=false,lastFrame=0,dirty=true;
 let lastRunSeed=null;
@@ -49,6 +69,12 @@ function switchTab(tab){
       window.initCharts();
     }
   }
+  if(tab==='setup'&&playing){
+    playing=false;
+    simulation?.pause().catch(error=>showSystemEvent(error.message));
+    $('#play-btn').textContent='▶ Run live';
+    $('#stage-status').textContent='PAUSED';
+  }
   if(tab==='setup'){
     tool='select';
     $$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool==='select'));
@@ -64,26 +90,6 @@ function switchTab(tab){
   requestAnimationFrame(()=>{resizeCanvas();draw()});
 }
 window.switchTab = switchTab;
-
-async function returnToSetup(){
-  if(playing){
-    playing=false;
-    try{await simulation?.pause();}catch(e){}
-  }
-  const current=simulation;
-  simulation=null;
-  simResult=null;
-  $('#play-btn').textContent='▶ Run live';
-  $('#stage-status').textContent='EDIT MODE';
-  $('#clock').textContent='00:00';
-  $('#timeline').value=0;
-  $('#active-count').textContent='0 active NPC';
-
-  if(current&&((current.time||0)>0||(current.snapshot?.()?.spawned||0)>0)){
-    await saveSimulationSession(current, true);
-  }
-  switchTab('setup');
-}
 function triggerCashierReaction(type='happy'){const avatar=$('#cashier-avatar'),mood=$('#cashier-mood');if(!avatar)return;avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.classList.remove('happy','sad');void avatar.offsetWidth;if(type==='happy'){avatar.classList.add('cashier-react');mood.textContent=cashierMoods[Math.floor(Math.random()*cashierMoods.length)];mood.classList.add('happy')}else if(type==='smile'){avatar.classList.add('cashier-smile');mood.textContent='Cảm ơn quý khách~';mood.classList.add('happy')}else if(type==='sad'){avatar.classList.add('cashier-sad');mood.textContent='Trời ơi, hổng mua gì sao...';mood.classList.add('sad')}clearTimeout(triggerCashierReaction.t);triggerCashierReaction.t=setTimeout(()=>{avatar.classList.remove('cashier-react','cashier-smile','cashier-sad');mood.textContent='Đang chờ khách...';mood.classList.remove('happy','sad')},2800)}
 function updateCashier(){if(!simulation)return;const s=simulation.snapshot();const served=simulation.stats.converted||0;const rev=s.revenue||0;$('#cashier-served').textContent=served;$('#cashier-revenue').textContent=money(rev);if(s.purchases>lastPurchaseCount&&lastPurchaseCount>=0){const latest=simulation.purchases[simulation.purchases.length-1];if(latest&&latest.price<10000){triggerCashierReaction('smile')}else{triggerCashierReaction('happy')}}else{const finishedCount=simulation.agents.filter(a=>a.finished).length;if(finishedCount>lastFinishedCount){const finished=simulation.agents.filter(a=>a.finished);const last=finished[finished.length-1];if(!last.converted){triggerCashierReaction('sad')}}lastFinishedCount=finishedCount}lastPurchaseCount=s.purchases}
 
@@ -146,30 +152,26 @@ function bind(){
   $('#speed').onchange=async()=>{try{if(simulation)await simulation.setSpeed(Number($('#speed').value));showSystemEvent(`Playback speed ${$('#speed').value}×. Physics tick remains ${parameters.tickSeconds}s.`)}catch(error){showSystemEvent(error.message)}};
   $('#timeline').onchange=e=>seekTo(Number(e.target.value)/1000*durationSeconds());
   $('#add-wall').onclick=()=>{const id='w'+Date.now();layout.walls.push({id,x1:4,y1:3,x2:6,y2:3});selected={type:'wall',id};renderObjects();renderInspector();markDirty('Wall added.');draw();saveProject()};
-  $('#add-shelf').onclick=()=>{const id='s'+Date.now();layout.shelves.push({id,label:'New shelf',category:'other',x:4,y:3,w:2,h:.7,valence:.2});selected={type:'shelf',id};renderObjects();renderInspector();markDirty('Smart object added.');draw();saveProject()};
+  $('#add-shelf').onclick=()=>{const id='s'+Date.now();const preset=SHELF_PRESETS.standard;const category='beverage';const label=CATEGORY_NAMES[category]||'Đồ uống';layout.shelves.push({id,label,presetId:'standard',category,x:4,y:3,w:preset.w,h:preset.h,valence:.2});selected={type:'shelf',id};renderObjects();renderInspector();markDirty('Kệ hàng mới đã được thêm.');draw();saveProject()};
   $('#export-btn').onclick=exportSimulation;
   const canvas=$('#scene');canvas.onpointerdown=pointerDown;canvas.onpointermove=pointerMove;canvas.onpointerup=pointerUp;
   new ResizeObserver(resizeCanvas).observe(canvas);
-  ['shelf-label','shelf-category','shelf-valence','shelf-x','shelf-y','shelf-w','shelf-h'].forEach(id=>$('#'+id).oninput=updateShelf);
+  ['shelf-preset','shelf-category','shelf-valence'].forEach(id=>{const el=$('#'+id);if(el)el.oninput=el.onchange=updateShelf});
+  const addProdBtn=$('#add-shelf-product-btn');if(addProdBtn)addProdBtn.onclick=addProductToSelectedShelf;
   ['wall-x1','wall-y1','wall-x2','wall-y2'].forEach(id=>$('#'+id).oninput=updateWall);
   $('#delete-shelf').onclick=()=>deleteSelected('shelf');
   $('#delete-wall').onclick=()=>deleteSelected('wall');
   $$('.tab-btn').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));
   const inputRunName=$('#run-name');if(inputRunName)inputRunName.oninput=()=>markDirty('Tên cửa hàng đã thay đổi.');
   const btnNew=$('#btn-new');if(btnNew)btnNew.onclick=()=>switchTab('setup');
-  const btnLoad=$('#btn-load');if(btnLoad)btnLoad.onclick=()=>{loadHistoryList();switchTab('results');};
-  const btnRunSim=$('#btn-run-sim');
-  if(btnRunSim)btnRunSim.onclick=()=>{
-    checkLayoutAndNotify();
-    switchTab('simulate');
-  };
-  const btnBackSetup=$('#btn-back-setup');
-  if(btnBackSetup)btnBackSetup.onclick=()=>returnToSetup();
+  const btnLoad=$('#btn-load');if(btnLoad)btnLoad.onclick=()=>switchTab('results');
+  const btnRunSim=$('#btn-run-sim');if(btnRunSim)btnRunSim.onclick=()=>{checkLayoutAndNotify();switchTab('simulate');};
+  const btnBackSetup=$('#btn-back-setup');if(btnBackSetup)btnBackSetup.onclick=()=>switchTab('setup');
   const btnEvaluate=$('#btn-evaluate');if(btnEvaluate)btnEvaluate.onclick=()=>switchTab('analytics');
-  const btnResBackSetup=$('#btn-results-back-setup');if(btnResBackSetup)btnResBackSetup.onclick=()=>returnToSetup();
+  const btnResBackSetup=$('#btn-results-back-setup');if(btnResBackSetup)btnResBackSetup.onclick=()=>switchTab('setup');
   const btnResBackSim=$('#btn-results-back-simulate');if(btnResBackSim)btnResBackSim.onclick=()=>switchTab('simulate');
-  const btnAnaBackSetup=$('#btn-analytics-back-setup');if(btnAnaBackSetup)btnAnaBackSetup.onclick=()=>returnToSetup();
-  const btnAnaBackRes=$('#btn-analytics-back-results');if(btnAnaBackRes)btnAnaBackRes.onclick=()=>{loadHistoryList();switchTab('results');};
+  const btnAnaBackSetup=$('#btn-analytics-back-setup');if(btnAnaBackSetup)btnAnaBackSetup.onclick=()=>switchTab('setup');
+  const btnAnaBackRes=$('#btn-analytics-back-results');if(btnAnaBackRes)btnAnaBackRes.onclick=()=>switchTab('results');
   const btnWarnBack=$('#btn-warning-back-setup');if(btnWarnBack)btnWarnBack.onclick=()=>{$('#layout-warning-dialog')?.close();switchTab('setup');};
   const btnWarnCont=$('#btn-warning-continue');if(btnWarnCont)btnWarnCont.onclick=()=>{$('#layout-warning-dialog')?.close();};
   const toggleSidebarBtn=$('#toggle-sidebar-btn');
@@ -268,9 +270,9 @@ async function population(){if($('#population-mode').value==='manual'){if(!manua
 function mapManualProfile(profile){return{id:profile.id,walkingSpeed:profile.speed,patience:.5,exploration:profile.needExplore,sociability:.5,impulsiveness:.5,crowdTolerance:.5,priceSensitivity:.5,targetCategory:profile.target||'',initialNeed:profile.needProduct,needGrowthPerMinute:profile.needGrowth,initialExplorationNeed:profile.needExplore,explorationGrowthPerMinute:profile.exploreGrowth,affectAttractor:profile.attractor,affectStability:profile.stability,affectDispersion:profile.dispersion,affectRecovery:profile.recovery,dwellSeconds:profile.dwell,categoryPreferences:[],shoppingMission:0}}
 function simulationInput(profiles){return{name:$('#run-name').value,layout:{width:layout.width,height:layout.height,walls:layout.walls,shelves:layout.shelves.map(shelf=>({...shelf,width:shelf.w,height:shelf.h})),entrance:layout.entrance,checkout:layout.checkout,spawnRateCurve:layout.spawnRateCurve||[]},catalog:catalog.map(product=>({...product,shelfId:product.shelf})),population:{populationId:`desktop-${crypto.randomUUID()}`,npcProfiles:profiles,metadata:{generatorName:$('#population-mode').value==='manual'?'manual-input':'GeneticSharp',generatorVersion:'desktop-bridge'}},config:{...parameters,durationMinutes:Number($('#duration').value)}}}
 async function createSimulation(){if(!window.aisleBridge?.request)throw new Error('Run Live requires the AIsle Desktop bridge.');checkLayoutAndNotify();const profiles=await population();const adapter=new NativeSimulationAdapter(window.aisleBridge,profiles,durationSeconds());await adapter.start(simulationInput(profiles));await adapter.setSpeed(Number($('#speed').value));simulation=adapter;lastRunSeed=adapter.seed;npcRenderer.reset(adapter.seed,performance.now());simResult=null;dirty=false;selected=null;lastPurchaseCount=0;lastFinishedCount=0;updateAll();return simulation}
-async function toggleRun(){try{if(dirty||!simulation||simulation.completed){await createSimulation();playing=simulation.running}else if(playing){await simulation.pause();playing=false;await saveSimulationSession(simulation,true)}else{await simulation.setSpeed(Number($('#speed').value));await simulation.resume();playing=simulation.running}$('#play-btn').textContent=playing?'❚❚ Pause':'▶ Run live';$('#stage-status').textContent=playing?'RUNNING LIVE':'PAUSED';if(playing){lastFrame=0;requestAnimationFrame(frame)}}catch(error){playing=false;toast(error.message);showSystemEvent(error.message)}}
-async function resetSimulation(){playing=false;try{if(simulation&&((simulation.time||0)>0||(simulation.snapshot?.()?.spawned||0)>0)){await saveSimulationSession(simulation,true)}await createSimulation();await simulation.reset();await simulation.pause();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent='RESET · T=0';showSystemEvent('Reset với phiên chạy ngẫu nhiên mới. Bấm Run live để bắt đầu.')}catch(error){toast(error.message);showSystemEvent(error.message)}}
-async function singleStep(){playing=false;try{const created=dirty||!simulation||simulation.completed;if(created){await createSimulation();await simulation.pause()}else await simulation.step();$('#play-btn').textContent='▶ Run live';$('#stage-status').textContent=`SINGLE STEP · Δt=${parameters.tickSeconds}s`;updateAll()}catch(error){toast(error.message);showSystemEvent(error.message)}}
+async function toggleRun(){try{if(dirty||!simulation||simulation.completed){await createSimulation();playing=simulation.running}else if(playing){await simulation.pause();playing=false}else{await simulation.setSpeed(Number($('#speed').value));await simulation.resume();playing=simulation.running}$('#play-btn').textContent=playing?'❚❚ Tạm dừng':'▶ Chạy trực tiếp';$('#stage-status').textContent=playing?'ĐANG CHẠY MÔ PHỎNG':'TẠM DỪNG';if(playing){lastFrame=0;requestAnimationFrame(frame)}}catch(error){playing=false;toast(error.message);showSystemEvent(error.message)}}
+async function resetSimulation(){playing=false;try{await createSimulation();await simulation.reset();await simulation.pause();$('#play-btn').textContent='▶ Chạy trực tiếp';$('#stage-status').textContent='ĐÃ ĐẶT LẠI · T=0';showSystemEvent('Đã đặt lại phiên mô phỏng mới.')}catch(error){toast(error.message);showSystemEvent(error.message)}}
+async function singleStep(){playing=false;try{const created=dirty||!simulation||simulation.completed;if(created){await createSimulation();await simulation.pause()}else await simulation.step();$('#play-btn').textContent='▶ Chạy trực tiếp';$('#stage-status').textContent=`BƯỚC ĐƠN · Δt=${parameters.tickSeconds}s`;updateAll()}catch(error){toast(error.message);showSystemEvent(error.message)}}
 async function frame(now){
   if(!playing||!simulation)return;
   if(now-lastFrame>=50){
@@ -286,8 +288,8 @@ async function frame(now){
   }
   if(simulation.completed){
     playing=false;
-    $('#play-btn').textContent='▶ Run live';
-    $('#stage-status').textContent='COMPLETE';
+    $('#play-btn').textContent='▶ Chạy trực tiếp';
+    $('#stage-status').textContent='HOÀN THÀNH';
     const finishedSim=simulation;
     await saveSimulationSession(finishedSim,true);
     updateResultsScreen();
@@ -367,9 +369,10 @@ async function loadHistoryList(){
   }else{
     if(!emptyState){
       tableBody.innerHTML=`
-        <div id="results-empty-state" class="py-12 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-3xl opacity-50">receipt_long</span>
-          <span>Chưa có phiên mô phỏng nào được lưu. Hãy chạy một phiên để xem kết quả!</span>
+        <div id="results-empty-state" class="py-16 text-center text-on-surface-variant text-sm font-mono opacity-60 flex flex-col items-center justify-center gap-2 my-auto">
+          <span class="material-symbols-outlined text-4xl opacity-50">receipt_long</span>
+          <span class="text-base font-semibold">Chưa có phiên mô phỏng nào được lưu.</span>
+          <span class="text-xs">Hãy chạy một phiên mô phỏng để xem kết quả chi tiết!</span>
         </div>
       `;
     }
@@ -388,8 +391,43 @@ function renderEvents(){if(!simulation)return;const items=simulation.events.slic
 
 function renderObjects(){
   if(!layout)return;
-  const walls=layout.walls.map((w,index)=>`<button data-type="wall" data-id="${w.id}" class="${selected?.type==='wall'&&selected.id===w.id?'active':''}"><i class="wall-swatch"></i>Wall ${index+1}<small>${pointDistance({x:w.x1,y:w.y1},{x:w.x2,y:w.y2}).toFixed(2)} m</small></button>`);
-  const shelves=layout.shelves.map(s=>`<button data-type="shelf" data-id="${s.id}" class="${selected?.type==='shelf'&&selected.id===s.id?'active':''}"><i></i>${escapeHTML(s.label)}<small>${escapeHTML(s.category)}</small></button>`);
+  const walls=layout.walls.map((w,index)=>{
+    const isSelected=selected?.type==='wall'&&selected.id===w.id;
+    const len=pointDistance({x:w.x1,y:w.y1},{x:w.x2,y:w.y2}).toFixed(2);
+    return `
+      <button type="button" data-type="wall" data-id="${w.id}" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+        isSelected
+          ? 'bg-primary text-on-primary font-bold shadow-xs'
+          : 'bg-surface hover:bg-surface-container-high border border-outline-variant text-on-surface'
+      }">
+        <span class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm opacity-80">straighten</span>
+          <span>Tường ${index+1}</span>
+        </span>
+        <span class="text-[11px] font-mono opacity-80">${len} m</span>
+      </button>
+    `;
+  });
+  const shelves=layout.shelves.map(s=>{
+    const isSelected=selected?.type==='shelf'&&selected.id===s.id;
+    const catName=CATEGORY_NAMES[s.category]||s.category||'Kệ hàng';
+    const prodCount=(catalog||[]).filter(p=>p.shelf===s.id||p.shelfId===s.id).length;
+    return `
+      <button type="button" data-type="shelf" data-id="${s.id}" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+        isSelected
+          ? 'bg-primary text-on-primary font-bold shadow-xs'
+          : 'bg-surface hover:bg-surface-container-high border border-outline-variant text-on-surface'
+      }">
+        <span class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm ${isSelected?'text-on-primary':'text-secondary'}">shelves</span>
+          <span class="truncate max-w-[130px]">${escapeHTML(s.label||catName)}</span>
+        </span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${isSelected?'bg-on-primary/20 text-on-primary':'bg-surface-container text-on-surface-variant'}">
+          ${prodCount} món
+        </span>
+      </button>
+    `;
+  });
   $('#object-list').innerHTML=[...walls,...shelves].join('');
   $$('#object-list button').forEach(button=>button.onclick=()=>{selected={type:button.dataset.type,id:button.dataset.id};renderObjects();renderInspector();draw()});
 }
@@ -397,12 +435,113 @@ function renderInspector(){
   const wall=selected?.type==='wall'?layout.walls.find(w=>w.id===selected.id):null,shelf=selected?.type==='shelf'?layout.shelves.find(s=>s.id===selected.id):null,agent=selected?.type==='npc'&&simulation?simulation.agents.find(a=>a.id===selected.id):null;
   $('#nothing-selected').hidden=!!(wall||shelf||agent);$('#wall-form').hidden=!wall;$('#shelf-form').hidden=!shelf;$('#npc-inspector').hidden=!agent;
   if(wall){$('#wall-id').value=wall.id;for(const key of['x1','y1','x2','y2'])$('#wall-'+key).value=wall[key]}
-  if(shelf){$('#shelf-id').value=shelf.id;$('#shelf-label').value=shelf.label;$('#shelf-category').value=shelf.category;$('#shelf-valence').value=shelf.valence;$('#shelf-valence-out').textContent=(shelf.valence>=0?'+':'')+Number(shelf.valence).toFixed(2);for(const key of['x','y','w','h'])$('#shelf-'+key).value=shelf[key]}
-  if(agent){$('#npc-inspector').innerHTML=`<h3>${escapeHTML(agent.id)}</h3><p>Status <b>${agent.status}</b></p><p>Target <b>${escapeHTML(agent.target||'browse only')}</b></p><p>Runtime source <b>C# Simulation Core</b></p>`}
+  if(shelf){
+    const catEl=$('#shelf-category');if(catEl)catEl.value=shelf.category||'beverage';
+    const presetEl=$('#shelf-preset');if(presetEl)presetEl.value=shelf.presetId||'standard';
+    const valEl=$('#shelf-valence');if(valEl)valEl.value=shelf.valence;
+    const valOut=$('#shelf-valence-out');if(valOut)valOut.textContent=(shelf.valence>=0?'+':'')+Number(shelf.valence).toFixed(2);
+    renderShelfProducts(shelf);
+  }
+  if(agent){$('#npc-inspector').innerHTML=`<h3 class="font-bold text-base text-primary">${escapeHTML(agent.id)}</h3><p class="text-xs text-on-surface">Trạng thái: <b>${agent.status}</b></p><p class="text-xs text-on-surface">Mục tiêu: <b>${escapeHTML(agent.target||'Chỉ xem dạo')}</b></p><p class="text-[11px] text-on-surface-variant">Nguồn: <b>C# Simulation Core</b></p>`}
 }
-function updateShelf(){if(selected?.type!=='shelf')return;const s=layout.shelves.find(x=>x.id===selected.id);s.label=$('#shelf-label').value;s.category=$('#shelf-category').value;s.valence=Number($('#shelf-valence').value);for(const key of['x','y','w','h'])s[key]=Number($('#shelf-'+key).value);$('#shelf-valence-out').textContent=(s.valence>=0?'+':'')+s.valence.toFixed(2);renderObjects();markDirty('Smart object parameters changed.');draw();saveProject()}
+function renderShelfProducts(shelf){
+  const listEl=$('#shelf-product-list'),countEl=$('#shelf-product-count');
+  if(!listEl||!countEl||!shelf)return;
+  const prods=(catalog||[]).filter(p=>p.shelf===shelf.id||p.shelfId===shelf.id);
+  countEl.textContent=prods.length;
+  if(!prods.length){
+    listEl.innerHTML='<div class="text-[11px] text-on-surface-variant italic p-2 text-center bg-surface-container-low rounded border border-outline-variant/50">Chưa có mặt hàng nào trên kệ này.</div>';
+    return;
+  }
+  listEl.innerHTML=prods.map(p=>`
+    <div class="flex justify-between items-center bg-surface-container-low px-2.5 py-1.5 rounded border border-outline-variant text-xs">
+      <div class="flex flex-col min-w-0 pr-2">
+        <span class="font-bold text-on-surface truncate text-xs">${escapeHTML(p.name)}</span>
+        <span class="text-[10px] text-primary font-semibold">${Number(p.price||0).toLocaleString('vi-VN')} ₫</span>
+      </div>
+      <button type="button" data-prod-id="${p.id}" class="delete-prod-btn text-on-surface-variant hover:text-error p-1 rounded transition-colors flex items-center justify-center shrink-0" title="Xóa mặt hàng">
+        <span class="material-symbols-outlined text-sm">delete</span>
+      </button>
+    </div>
+  `).join('');
+  listEl.querySelectorAll('.delete-prod-btn').forEach(btn=>{
+    btn.onclick=e=>{
+      e.preventDefault();
+      deleteProductFromShelf(btn.dataset.prodId,shelf);
+    };
+  });
+}
+function addProductToSelectedShelf(){
+  if(selected?.type!=='shelf')return;
+  const shelf=layout.shelves.find(x=>x.id===selected.id);
+  if(!shelf)return;
+  const nameInput=$('#new-prod-name'),priceInput=$('#new-prod-price');
+  const name=nameInput.value.trim();
+  if(!name){nameInput.focus();toast('Vui lòng nhập tên mặt hàng.');return}
+  const price=Math.max(0,Number(priceInput.value)||15000);
+  const newProduct={
+    id:'p'+Date.now(),
+    name,
+    category:shelf.category||'other',
+    shelf:shelf.id,
+    shelfId:shelf.id,
+    price
+  };
+  if(!catalog)catalog=[];
+  catalog.push(newProduct);
+  nameInput.value='';
+  priceInput.value='';
+  renderShelfProducts(shelf);
+  markDirty(`Đã thêm mặt hàng ${name} vào kệ.`);
+  saveProject();
+}
+function deleteProductFromShelf(prodId,shelf){
+  if(!catalog)return;
+  catalog=catalog.filter(p=>p.id!==prodId);
+  renderShelfProducts(shelf);
+  markDirty('Đã xóa mặt hàng khỏi kệ.');
+  saveProject();
+}
+function updateShelf(){
+  if(selected?.type!=='shelf')return;
+  const s=layout.shelves.find(x=>x.id===selected.id);
+  if(!s)return;
+  const oldCategory=s.category;
+  s.category=$('#shelf-category')?.value||'other';
+  s.label=CATEGORY_NAMES[s.category]||s.category;
+  s.presetId=$('#shelf-preset')?.value||'standard';
+  const preset=SHELF_PRESETS[s.presetId]||SHELF_PRESETS.standard;
+  s.w=preset.w;
+  s.h=preset.h;
+  const valEl=$('#shelf-valence');
+  if(valEl){
+    s.valence=Number(valEl.value);
+    const valOut=$('#shelf-valence-out');
+    if(valOut)valOut.textContent=(s.valence>=0?'+':'')+s.valence.toFixed(2);
+  }
+  if(oldCategory!==s.category&&catalog){
+    catalog.forEach(p=>{if(p.shelf===s.id||p.shelfId===s.id)p.category=s.category});
+  }
+  renderObjects();
+  renderShelfProducts(s);
+  markDirty('Thuộc tính kệ hàng đã thay đổi.');
+  draw();
+  saveProject();
+}
 function updateWall(){if(selected?.type!=='wall')return;const w=layout.walls.find(x=>x.id===selected.id);for(const key of['x1','y1','x2','y2'])w[key]=clamp(Number($('#wall-'+key).value),0,key.startsWith('x')?layout.width:layout.height);renderObjects();markDirty('Wall geometry changed.');draw();saveProject()}
-function deleteSelected(type){if(selected?.type!==type)return;if(type==='shelf')layout.shelves=layout.shelves.filter(s=>s.id!==selected.id);else layout.walls=layout.walls.filter(w=>w.id!==selected.id);selected=null;renderObjects();renderInspector();markDirty(`${type==='wall'?'Wall':'Shelf'} removed.`);draw();saveProject()}
+function deleteSelected(type){
+  if(selected?.type!==type)return;
+  if(type==='shelf'){
+    layout.shelves=layout.shelves.filter(s=>s.id!==selected.id);
+    if(catalog)catalog=catalog.filter(p=>p.shelf!==selected.id&&p.shelfId!==selected.id);
+  }else layout.walls=layout.walls.filter(w=>w.id!==selected.id);
+  selected=null;
+  renderObjects();
+  renderInspector();
+  markDirty(`${type==='wall'?'Wall':'Shelf'} removed.`);
+  draw();
+  saveProject();
+}
 
 function getCanvasTransform(){const canvas=$('#scene'),W=canvas.width,H=canvas.height;if(!layout)return{sx:1,sy:1,ox:0,oy:0,W,H,scale:1};const scale=Math.min(W/layout.width,H/layout.height);const ox=(W-layout.width*scale)/2,oy=(H-layout.height*scale)/2;return{sx:scale,sy:scale,ox,oy,W,H,scale}}
 function canvasPoint(event){const r=$('#scene').getBoundingClientRect(),{scale,ox,oy}=getCanvasTransform();const px=event.clientX-r.left,py=event.clientY-r.top;return{x:clamp(Math.round(((px-ox)/scale)*4)/4,0,layout.width),y:clamp(Math.round(((py-oy)/scale)*4)/4,0,layout.height)}}
@@ -429,16 +568,16 @@ function pointerMove(event){
   markDirty('Layout geometry changed.');renderObjects();renderInspector();draw();
 }
 function pointerUp(event){
-  const p=canvasPoint(event);if(draft){if(tool==='wall'&&pointDistance(p,draft.start)>.4){const wall={id:'w'+Date.now(),x1:draft.start.x,y1:draft.start.y,x2:p.x,y2:p.y};layout.walls.push(wall);selected={type:'wall',id:wall.id}}if(tool==='shelf'){const x=Math.min(p.x,draft.start.x),y=Math.min(p.y,draft.start.y),w=Math.abs(p.x-draft.start.x),h=Math.abs(p.y-draft.start.y);if(w>=.5&&h>=.4){const shelf={id:'s'+Date.now(),label:`Shelf ${layout.shelves.length+1}`,category:'other',x,y,w,h,valence:.2};layout.shelves.push(shelf);selected={type:'shelf',id:shelf.id}}}draft=null;renderObjects();renderInspector();markDirty()}
+  const p=canvasPoint(event);if(draft){if(tool==='wall'&&pointDistance(p,draft.start)>.4){const wall={id:'w'+Date.now(),x1:draft.start.x,y1:draft.start.y,x2:p.x,y2:p.y};layout.walls.push(wall);selected={type:'wall',id:wall.id}}if(tool==='shelf'){const x=Math.min(p.x,draft.start.x),y=Math.min(p.y,draft.start.y),w=Math.abs(p.x-draft.start.x),h=Math.abs(p.y-draft.start.y);if(w>=.5&&h>=.4){const category='beverage';const preset=SHELF_PRESETS.standard;const shelf={id:'s'+Date.now(),label:CATEGORY_NAMES[category]||'Đồ uống',presetId:'standard',category,x,y,w:preset.w,h:preset.h,valence:.2};layout.shelves.push(shelf);selected={type:'shelf',id:shelf.id}}}draft=null;renderObjects();renderInspector();markDirty()}
   drag=null;event.currentTarget.releasePointerCapture?.(event.pointerId);saveProject();draw();
 }
 
-function draw(){if(!layout)return;const canvas=$('#scene'),ctx=canvas.getContext('2d'),{sx,sy,ox,oy,W,H}=getCanvasTransform();ctx.clearRect(0,0,W,H);ctx.fillStyle='#120a04';ctx.fillRect(0,0,W,H);ctx.save();ctx.translate(ox,oy);ctx.fillStyle='#1c1007';ctx.fillRect(0,0,layout.width*sx,layout.height*sy);for(let x=0;x<=layout.width*2;x++){ctx.strokeStyle=x%4===0?'#3a1c0d':'#241008';ctx.beginPath();ctx.moveTo(x/2*sx,0);ctx.lineTo(x/2*sx,layout.height*sy);ctx.stroke()}for(let y=0;y<=layout.height*2;y++){ctx.strokeStyle=y%4===0?'#3a1c0d':'#241008';ctx.beginPath();ctx.moveTo(0,y/2*sy);ctx.lineTo(layout.width*sx,y/2*sy);ctx.stroke()}ctx.strokeStyle='#5a301a';ctx.lineWidth=2;ctx.strokeRect(0,0,layout.width*sx,layout.height*sy);for(const wall of layout.walls){const isSelected=selected?.type==='wall'&&selected.id===wall.id;ctx.strokeStyle=isSelected?'#ffca58':'#c8844a';ctx.lineWidth=isSelected?10:8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(wall.x1*sx,wall.y1*sy);ctx.lineTo(wall.x2*sx,wall.y2*sy);ctx.stroke();ctx.strokeStyle=isSelected?'#fff3d6':'#dab078';ctx.lineWidth=2;ctx.stroke();if(isSelected){for(const p of[{x:wall.x1,y:wall.y1},{x:wall.x2,y:wall.y2}]){ctx.fillStyle='#120a04';ctx.strokeStyle='#ffca58';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,7,0,Math.PI*2);ctx.fill();ctx.stroke()}}}for(const s of layout.shelves){ctx.fillStyle='#2e1509';ctx.strokeStyle=selected?.type==='shelf'&&selected.id===s.id?'#ffca58':'#6b3519';ctx.lineWidth=selected?.id===s.id?3:2;ctx.fillRect(s.x*sx,s.y*sy,s.w*sx,s.h*sy);ctx.strokeRect(s.x*sx,s.y*sy,s.w*sx,s.h*sy);ctx.fillStyle='#f5e6c8';ctx.font='600 11px Pixelify Sans, Inter';ctx.textAlign='center';ctx.fillText(s.label,(s.x+s.w/2)*sx,(s.y+s.h/2)*sy+4)}marker(ctx,layout.entrance,'▽','ENTRANCE','#5dba4f',sx,sy);marker(ctx,layout.checkout,'◇','CHECKOUT','#e05252',sx,sy);
+function draw(){if(!layout)return;const canvas=$('#scene'),ctx=canvas.getContext('2d'),{sx,sy,ox,oy,W,H}=getCanvasTransform();ctx.clearRect(0,0,W,H);ctx.fillStyle='#120a04';ctx.fillRect(0,0,W,H);ctx.save();ctx.translate(ox,oy);ctx.fillStyle='#1c1007';ctx.fillRect(0,0,layout.width*sx,layout.height*sy);for(let x=0;x<=layout.width*2;x++){ctx.strokeStyle=x%4===0?'#3a1c0d':'#241008';ctx.beginPath();ctx.moveTo(x/2*sx,0);ctx.lineTo(x/2*sx,layout.height*sy);ctx.stroke()}for(let y=0;y<=layout.height*2;y++){ctx.strokeStyle=y%4===0?'#3a1c0d':'#241008';ctx.beginPath();ctx.moveTo(0,y/2*sy);ctx.lineTo(layout.width*sx,y/2*sy);ctx.stroke()}ctx.strokeStyle='#5a301a';ctx.lineWidth=2;ctx.strokeRect(0,0,layout.width*sx,layout.height*sy);for(const wall of layout.walls){const isSelected=selected?.type==='wall'&&selected.id===wall.id;ctx.strokeStyle=isSelected?'#ffca58':'#c8844a';ctx.lineWidth=isSelected?10:8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(wall.x1*sx,wall.y1*sy);ctx.lineTo(wall.x2*sx,wall.y2*sy);ctx.stroke();ctx.strokeStyle=isSelected?'#fff3d6':'#dab078';ctx.lineWidth=2;ctx.stroke();if(isSelected){for(const p of[{x:wall.x1,y:wall.y1},{x:wall.x2,y:wall.y2}]){ctx.fillStyle='#120a04';ctx.strokeStyle='#ffca58';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,7,0,Math.PI*2);ctx.fill();ctx.stroke()}}}for(const s of layout.shelves){ctx.fillStyle='#2e1509';ctx.strokeStyle=selected?.type==='shelf'&&selected.id===s.id?'#ffca58':'#6b3519';ctx.lineWidth=selected?.id===s.id?3:2;ctx.fillRect(s.x*sx,s.y*sy,s.w*sx,s.h*sy);ctx.strokeRect(s.x*sx,s.y*sy,s.w*sx,s.h*sy);ctx.fillStyle='#f5e6c8';ctx.font='700 11px "Nunito Sans", sans-serif';ctx.textAlign='center';ctx.fillText(s.label,(s.x+s.w/2)*sx,(s.y+s.h/2)*sy+4)}marker(ctx,layout.entrance,'🚪','LỐI VÀO','#5dba4f',sx,sy);marker(ctx,layout.checkout,'🛒','THU NGÂN','#e05252',sx,sy);
   if(draft){ctx.strokeStyle='#ffca58';ctx.setLineDash([6,4]);ctx.lineWidth=2;if(tool==='wall'){ctx.beginPath();ctx.moveTo(draft.start.x*sx,draft.start.y*sy);ctx.lineTo(draft.end.x*sx,draft.end.y*sy);ctx.stroke()}else ctx.strokeRect(draft.start.x*sx,draft.start.y*sy,(draft.end.x-draft.start.x)*sx,(draft.end.y-draft.start.y)*sy);ctx.setLineDash([])}
   if(simulation&&!dirty){const visibleAgents=[];for(const agent of simulation.agents){if(agent.status==='WAITING'||agent.finished)continue;const shelfId=agent.currentShelf||agent.targetId,shelf=agent.status==='DWELL'&&shelfId?layout.shelves.find(item=>item.id===shelfId):null;visibleAgents.push(shelf?{...agent,facingDx:(shelf.x+shelf.w/2)-agent.x,facingDy:(shelf.y+shelf.h/2)-agent.y}:agent);if(agent.trail.length>1){ctx.strokeStyle=colors[agent.status]+'35';ctx.lineWidth=1;ctx.beginPath();agent.trail.forEach((p,i)=>i?ctx.lineTo(p.x*sx,p.y*sy):ctx.moveTo(p.x*sx,p.y*sy));ctx.stroke()}if(selected?.type==='npc'&&selected.id===agent.id&&agent.path.length){ctx.strokeStyle='#ffffff90';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(agent.x*sx,agent.y*sy);for(let i=agent.pathIndex;i<agent.path.length;i++)ctx.lineTo(agent.path[i].x*sx,agent.path[i].y*sy);ctx.stroke();ctx.setLineDash([])}}npcRenderer.draw(ctx,visibleAgents,{runSeed:simulation.seed,animationTimeMs:performance.now(),running:playing,scaleX:sx,scaleY:sy,selectedId:selected?.type==='npc'?selected.id:null,fallbackColors:colors})}else npcRenderer.draw(ctx,[],{runSeed:lastRunSeed,animationTimeMs:performance.now(),running:false,scaleX:sx,scaleY:sy});
   ctx.restore();
-  $('#clock').textContent=formatTime(simulation?.time||0);$('#timeline').value=simulation?simulation.time/durationSeconds()*1000:0;$('#active-count').textContent=`${simulation?.snapshot().active||0} active NPC`;ctx.textAlign='left'}
-function marker(ctx,p,icon,label,color,sx,sy){if(!p)return;ctx.fillStyle='#120a04';ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=color;ctx.font='bold 14px VT323, monospace';ctx.textAlign='center';ctx.fillText(icon,p.x*sx,p.y*sy+5);ctx.font='10px VT323, monospace';ctx.fillText(label,p.x*sx,p.y*sy-20)}
+  $('#clock').textContent=formatTime(simulation?.time||0);$('#timeline').value=simulation?simulation.time/durationSeconds()*1000:0;$('#active-count').textContent=`${simulation?.snapshot().active||0} khách đang trong cửa hàng`;ctx.textAlign='left'}
+function marker(ctx,p,icon,label,color,sx,sy){if(!p)return;ctx.fillStyle='#120a04';ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=color;ctx.font='bold 14px "Nunito Sans", sans-serif';ctx.textAlign='center';ctx.fillText(icon,p.x*sx,p.y*sy+5);ctx.font='bold 10px "Nunito Sans", sans-serif';ctx.fillText(label,p.x*sx,p.y*sy-20)}
 
 function openManual(){const columns='npc_id,target_category,need_product,need_growth,need_explore,explore_growth,attractor,stability,dispersion,recovery,speed,dwell,steadiness',sample='test_001,beverage,0.8,0.02,0.25,0.01,0.3,0.65,0.4,0.15,1.3,9,0.75';$('#manual-editor').value=columns+'\n'+(manualRows.length?manualRows.map(row=>columns.split(',').map(k=>row[k]??'').join(',')).join('\n'):sample);$('#manual-error').textContent='Values are clamped to safe ranges.';$('#manual-dialog').showModal()}
 function applyManual(){try{const lines=$('#manual-editor').value.trim().split(/\r?\n/),headers=lines.shift().split(',').map(x=>x.trim());manualRows=lines.filter(Boolean).map(line=>Object.fromEntries(headers.map((h,i)=>[h,line.split(',')[i]?.trim()??''])));manualPopulation(manualRows);if(!manualRows.length)throw new Error('Enter at least one NPC row.');$('#manual-count').textContent=manualRows.length;$('#population-mode').value='manual';$('#npc-count').disabled=true;$('#manual-dialog').close();markDirty(`${manualRows.length} manual NPC inputs applied.`)}catch(error){$('#manual-error').textContent=error.message;$('#manual-error').style.color='#e05252'}}

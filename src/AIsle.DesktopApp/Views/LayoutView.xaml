@@ -224,6 +224,9 @@
                             </Grid>
                             <Slider Minimum="-1.0" Maximum="1.0" Value="{Binding SelectedShelf.Valence, UpdateSourceTrigger=PropertyChanged}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,16" />
 
+                            <TextBlock Text="Kích thước mẫu (Preset)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding Presets}" SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding SelectedShelf.PresetId, UpdateSourceTrigger=PropertyChanged}" Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" Margin="0,0,0,12" />
+
                             <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -244,11 +247,11 @@
                                 <TextBlock Grid.Row="0" Grid.Column="2" Text="Y (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
                                 <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding SelectedShelf.Y, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
 
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="W (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
-                                <TextBox Grid.Row="4" Grid.Column="0" Text="{Binding SelectedShelf.W, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Rộng W (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                                <TextBox Grid.Row="4" Grid.Column="0" Text="{Binding SelectedShelf.W}" IsReadOnly="True" Background="{StaticResource PanelBrush}" Foreground="{StaticResource DimBrush}" BorderBrush="{StaticResource LineBrush}" />
 
-                                <TextBlock Grid.Row="3" Grid.Column="2" Text="H (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
-                                <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding SelectedShelf.H, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource LineBrush}" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="Dài H (m)" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,0,4" />
+                                <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding SelectedShelf.H}" IsReadOnly="True" Background="{StaticResource PanelBrush}" Foreground="{StaticResource DimBrush}" BorderBrush="{StaticResource LineBrush}" />
                             </Grid>
 
                             <Button Content="Delete shelf" Command="{Binding DeleteShelfCommand}" CommandParameter="{Binding SelectedShelf}" Background="Transparent" BorderBrush="{StaticResource RedBrush}" Foreground="{StaticResource RedBrush}" FontWeight="Bold" />

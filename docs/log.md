@@ -402,7 +402,6 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: Release build 0 warning/0 error; Desktop, Results, Simulation, Population và benchmark correctness pass; 13/13 file JavaScript test pass, gồm Task 10 queue/native UI và renderer.
 - Asset: `git ls-files asset` và cây `origin/develop` dưới thư mục gốc `asset/` đều rỗng; `/asset/` tiếp tục được ignore, ảnh local không bị đẩy.
 
-
 ## 2026-08-19 18:14 (UTC+07:00) — Antigravity
 
 - Lý do sửa: Chuyển đổi và tích hợp giao diện Purrfect Pantry UI sang nhánh develop theo yêu cầu của chủ dự án.
@@ -695,54 +694,11 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và app Desktop thanh thoát, sạch sẽ.
 - Phạm vi đồng bộ: Local trên `develop`.
 
+## 2026-08-19 23:26 (UTC+07:00) — Codex — Sửa lỗi Validation UX và Population Application Service cho Phantom Need
 
-## 2026-08-19 22:15 (UTC+07:00) — Antigravity
-
-- Lý do sửa: Khắc phục việc các phiên mô phỏng tiếp theo không được thêm (append) vào bảng kết quả (LOAD) mà chỉ hiển thị 1 phiên cũ.
+- Lý do sửa: Khách hàng yêu cầu kiểm tra kỹ lại task phantom, cụ thể UI validation khi tạo sản phẩm chưa có kệ bị thiếu UX (disable form/hiển thị tin nhắn) và generator quăng lỗi thay vì trả về `ValidationResult` (khiến UI không nhận được lỗi clear nếu thiếu category).
 - Đã sửa/đã làm:
-  1. Cải tiến `loadHistoryList()` trong `web/app.js`: Hợp nhất (merge) toàn diện danh sách từ cả C# bridge (`history.list`) và `localStorage` theo ID và thời gian tạo, sắp xếp phiên mới nhất lên đầu để nối tiếp (append) tất cả các phiên mô phỏng thay vì ghi đè hay bỏ sót.
-  2. Cập nhật `saveLiveResult()`: Tự động tạo unique ID nếu bị trùng lặp, lưu kết quả phiên chạy liên tục vào danh sách lịch sử.
-  3. Cập nhật `switchTab()`: Tự động lưu phiên mô phỏng hiện tại khi người dùng chuyển sang màn hình Bảng kết quả (LOAD) để không bị mất dữ liệu phiên vừa chạy.
-- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass, các phiên chạy mới được thêm liên tiếp vào danh sách LOAD.
-- Phạm vi đồng bộ: Local trên `develop`.
-
-
-## 2026-08-19 22:28 (UTC+07:00) — Antigravity
-
-- Lý do sửa: Khắc phục lỗi xung đột script chuyển màn hình trong `web/index.html` và đồng bộ hóa cơ chế ghi nhận nhiều phiên chạy (multi-run append) vào Bảng kết quả (LOAD).
-- Đã sửa/đã làm:
-  1. Loại bỏ hoàn toàn khối JavaScript điều hướng inline bị trùng lặp/xung đột trong `web/index.html` (chỉ giữ lại `window.initCharts`), thống nhất toàn bộ luồng điều hướng màn hình và nạp dữ liệu qua `switchTab()` trong `web/app.js`.
-  2. Nâng cấp `saveLiveResult()` và `loadHistoryList()` trong `web/app.js`: Đảm bảo mỗi lần chạy mô phỏng mới luôn sinh ID riêng, tự động lưu và ghép nối (append) các phiên trước vào danh sách LOAD mà không bị ghi đè hay mất dữ liệu khi quay lại Setup rồi chạy tiếp.
-- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và hệ thống lưu nối tiếp danh sách nhiều phiên chạy hoàn hảo.
-- Phạm vi đồng bộ: Local trên `develop`.
-
-
-## 2026-08-19 22:47 (UTC+07:00) — Antigravity
-
-- Lý do sửa: Mở rộng khung chứa phiên chạy (LOAD table card) trên màn hình kết quả và xử lý tự động lưu phiên chạy khi Pause/Chuyển tab/Reset để đảm bảo mỗi lần chạy đều được lưu thêm vào danh sách.
-- Đã sửa/đã làm:
-  1. Mở rộng kích thước khung danh sách phiên chạy trên màn hình `screen-results` trong `web/index.html` lên toàn màn hình thoáng rộng (`max-w-[96%]`, chiều cao linh hoạt `min-h-[85vh]`, bảng cuộn mượt mà `max-h-[58vh]`).
-  2. Bổ sung cơ chế auto-save phiên mô phỏng khi người dùng bấm `❚❚ Pause`, bấm `Setup Store`, bấm `Run Simulation` mới hoặc bấm `Reset`, đảm bảo mọi phiên chạy có tiến trình đều được lưu và ghi nhận thành một dòng mới (append) trong bảng LOAD.
-- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và giao diện LOAD mở rộng thoáng đãng, lưu đầy đủ mọi phiên mô phỏng.
-- Phạm vi đồng bộ: Local trên `develop`.
-
-
-## 2026-08-19 23:01 (UTC+07:00) — Antigravity
-
-- Lý do sửa: Khắc phục việc khi quay về Setup thì app vẫn giữ phiên cũ (không vào phiên mới) và không ghi nhận các phiên chạy trước vào danh sách LOAD.
-- Đã sửa/đã làm:
-  1. Nâng cấp xử lý `switchTab('setup')` và các nút quay về Setup (`#btn-back-setup`, `#btn-results-back-setup`, `#btn-analytics-back-setup`): Ngay khi bấm quay về Setup, hệ thống lập tức lưu phiên vừa chạy vào lịch sử (nếu có tiến trình `time > 0` hoặc `spawned > 0`), đồng thời hủy liên kết phiên cũ (`simulation = null`, reset đồng hồ về 00:00) để vào ngay phiên mới tinh.
-  2. Lần bấm `Run Simulation` $\rightarrow$ `Run live` tiếp theo sẽ tự động khởi tạo một phiên mô phỏng hoàn toàn độc lập với ID riêng, và lưu tiếp thành một dòng riêng biệt trong bảng kết quả LOAD.
-- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass và mỗi lần quay lại Setup sẽ tự động lưu và mở phiên mới.
-- Phạm vi đồng bộ: Local trên `develop`.
-
-
-## 2026-08-19 23:26 (UTC+07:00) — Antigravity
-
-- Lý do sửa: Khắc phục triệt để lỗi không lưu phiên mô phỏng mới (chỉ hiện phiên cũ 20:13) do xung đột bất đồng bộ khi chuyển tab hủy tham chiếu đối tượng mô phỏng trước khi hoàn tất lưu.
-- Đã sửa/đã làm:
-  1. Tái cấu trúc hàm lưu `saveSimulationSession(simToSave, force)`: Tiếp nhận trực tiếp đối tượng mô phỏng cần lưu độc lập với biến toàn cục `simulation`, đảm bảo quá trình gọi bridge C# và lưu vào LocalStorage luôn hoàn tất trọn vẹn ngay cả khi giao diện đã chuyển tab và khởi tạo phiên mới.
-  2. Bổ sung cơ chế fallback ID thông minh khi lưu để tránh trùng lặp (`duplicate_history_id`), tự động lưu ngay khi bấm `❚❚ Pause`, bấm `Setup Store` (`returnToSetup()`), bấm `Reset` hoặc khi hoàn thành phiên.
-  3. Rebuild toàn bộ project Desktop App và cập nhật các asset UI mới nhất vào `.build/bin`.
-- Trạng thái: Đạt. Toàn bộ 14 test JavaScript pass, test C# pass, quy trình lưu phiên hoạt động ổn định và hiển thị chuẩn xác từng mốc thời gian thực tế.
-- Phạm vi đồng bộ: Local trên `develop`.
+  1. `CatalogViewModel.cs`: Thêm `CanExecute` vào `NewProductCommand` binding với `HasAvailableShelves`, đảm bảo gọi `NotifyCanExecuteChanged()` kèm StatusMessage cảnh báo khi Layout chưa có kệ nào.
+  2. `PopulationApplicationService.cs`: Sửa `Generate()` bắt `ArgumentException` của config (chứa lỗi "At least one category is required" khi Catalog rỗng/categoryIds rỗng từ JS) và wrap vào `ValidationResult` thay vì làm bubble crash bridge. JS frontend vốn đã tự truyền category theo Catalog. Phantom path choice tự vận hành đúng qua exploration mission weight trong code hiện có.
+- Kiểm tra: `dotnet run` test Population và DesktopApp đều PASS. Behavior đáp ứng chính xác yêu cầu của Task phantom need + validation.
+- Phạm vi Git: Chỉ local trên `develop`.

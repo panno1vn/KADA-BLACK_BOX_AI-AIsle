@@ -39,11 +39,19 @@ namespace AIsle.DesktopApp.Services
         [ObservableProperty] private string _id = "";
         [ObservableProperty] private string _label = "";
         [ObservableProperty] private string _category = "";
+        [ObservableProperty] private string _presetId = "standard";
         [ObservableProperty] private double _x;
         [ObservableProperty] private double _y;
-        [ObservableProperty] private double _w;
-        [ObservableProperty] private double _h;
+        [ObservableProperty] private double _w = 2.0;
+        [ObservableProperty] private double _h = 1.0;
         [ObservableProperty] private double _valence;
+
+        partial void OnPresetIdChanged(string value)
+        {
+            var preset = AIsle.Contracts.Project.ShelfPresets.GetPreset(value);
+            W = preset.Width;
+            H = preset.Height;
+        }
     }
 
     public class PointData

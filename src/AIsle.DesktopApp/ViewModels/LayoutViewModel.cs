@@ -14,6 +14,7 @@ namespace AIsle.DesktopApp.ViewModels
 
         public ObservableCollection<Services.Wall> Walls { get; } = new();
         public ObservableCollection<Services.Shelf> Shelves { get; } = new();
+        public System.Collections.Generic.IReadOnlyCollection<AIsle.Contracts.Project.ShelfPresetDefinition> Presets => AIsle.Contracts.Project.ShelfPresets.All;
 
         [ObservableProperty] private double _storeWidth;
         [ObservableProperty] private double _storeHeight;

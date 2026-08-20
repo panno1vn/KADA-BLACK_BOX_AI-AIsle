@@ -21,7 +21,20 @@ namespace AIsle.DesktopApp.Application
         public PopulationGenerationResult Generate(PopulationConfig config)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
-            var definition = _generator.Generate(config);
+
+            PopulationDefinition definition;
+            try
+            {
+                definition = _generator.Generate(config);
+            }
+            catch (ArgumentException exception)
+            {
+                return new PopulationGenerationResult
+                {
+                    Validation = new ValidationResult { Valid = false, Errors = new[] { exception.Message } }
+                };
+            }
+
             return new PopulationGenerationResult
             {
                 Profiles = definition.NPCProfiles ?? Array.Empty<NPCProfile>(),

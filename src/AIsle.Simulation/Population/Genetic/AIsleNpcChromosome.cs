@@ -11,7 +11,7 @@ namespace AIsle.Simulation.Population.Genetic
         private readonly PopulationConfig _config;
 
         public AIsleNpcChromosome(PopulationConfig config)
-            : base(TraitCount + 2)
+            : base(TraitCount + 3)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             CreateGenes();

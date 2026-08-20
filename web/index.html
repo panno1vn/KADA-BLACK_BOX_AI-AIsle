@@ -155,12 +155,12 @@
           <!-- Embedded 'New' Button on a Jar -->
           <button id="btn-new" class="absolute top-[35%] left-[25%] md:left-[30%] group py-2 px-4 bg-[#f4e4c1]/90 text-[#5e4b3c] font-button-text text-sm rounded-lg border-2 border-[#d3b88c] hover:bg-primary-fixed active:scale-95 transition-all duration-300 ease-out shadow-md rotate-[-5deg] flex items-center gap-1">
             <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-            New Jar
+            Tạo cửa hàng mới
           </button>
           <!-- Embedded 'Load' Button on a Basket/Tag -->
           <button id="btn-load" class="absolute bottom-[20%] right-[30%] md:right-[25%] group py-2 px-4 bg-[#ffccbb]/90 text-[#613e32] font-button-text text-sm rounded-sm border-l-4 border-[#c88d7b] hover:bg-secondary-fixed active:scale-95 transition-all duration-300 ease-out shadow-md rotate-[3deg] flex items-center gap-1 before:content-[''] before:absolute before:-left-[12px] before:top-1/2 before:-translate-y-1/2 before:w-0 before:h-0 before:border-t-[8px] before:border-t-transparent before:border-r-[8px] before:border-r-[#ffccbb]/90 before:border-b-[8px] before:border-b-transparent">
             <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">folder_open</span>
-            Load Pantry
+            Mở cửa hàng đã lưu
           </button>
         </div>
       </div>
@@ -177,7 +177,7 @@
         <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
         <div>
           <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
-          <p class="font-label-md text-label-md text-on-surface-variant font-bold">AISLE Setup</p>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">Thiết lập cửa hàng</p>
         </div>
       </div>
       
@@ -189,16 +189,16 @@
             <label for="run-name" class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none">Tên cửa hàng</label>
             <input id="run-name" type="text" value="Cửa hàng tiện lợi Cozy" placeholder="Nhập tên cửa hàng..." class="bg-transparent border-none outline-none font-bold text-sm text-primary placeholder:text-on-surface-variant/40 w-full p-0 leading-tight focus:ring-0" spellcheck="false">
           </div>
-          <span id="save-state" class="text-[10px] text-on-surface-variant font-mono px-2 py-0.5 bg-surface-container rounded-full border border-outline-variant shrink-0">● Saved</span>
+          <span id="save-state" class="text-[10px] text-on-surface-variant font-mono px-2 py-0.5 bg-surface-container rounded-full border border-outline-variant shrink-0">● Đã lưu</span>
         </div>
       </div>
 
       <div class="flex items-center gap-4 shrink-0">
-        <button id="export-btn" style="display:none;">Export</button>
+        <button id="export-btn" style="display:none;">Xuất dữ liệu</button>
 
         <button id="btn-run-sim" class="btn-tactile bg-primary text-on-primary font-button-text text-button-text px-6 py-3 rounded-full border-b-4 border-on-primary-fixed flex items-center gap-2 shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer">
           <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
-          Run Simulation
+          Chạy mô phỏng
         </button>
       </div>
     </header>
@@ -208,17 +208,17 @@
         <nav id="setup-sidebar" class="bg-surface-container-low flex flex-col p-4 gap-6 w-72 rounded-r-xl shadow-md overflow-y-auto border-r border-surface-container-highest transition-all duration-300">
           <!-- Simulation Input -->
           <div class="flex flex-col gap-4">
-            <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2">SIMULATION INPUT</h2>
+            <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2">ĐẦU VÀO MÔ PHỎNG</h2>
             <div style="display:none;">
-              <label class="font-label-md text-label-md text-on-surface block mb-2">Population source</label>
+              <label class="font-label-md text-label-md text-on-surface block mb-2">Nguồn khách hàng</label>
               <select id="population-mode" class="w-full bg-surface border-2 border-outline-variant rounded-xl p-3 text-on-surface focus:border-primary focus:ring-0 font-body-md appearance-none cursor-pointer">
-                <option value="ga" selected>Generate with GA</option>
-                <option value="manual">Manual NPC input</option>
+                <option value="ga" selected>Tự động (GA)</option>
+                <option value="manual">Thủ công</option>
               </select>
             </div>
             <div>
               <div class="flex justify-between items-center mb-2">
-                <label class="font-label-md text-label-md text-on-surface block">NPC count</label>
+                <label class="font-label-md text-label-md text-on-surface block">Số lượng khách</label>
                 <output id="npc-output" class="text-primary font-bold">180</output>
               </div>
               <input id="npc-count" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="200" min="150" type="range" value="180" step="5">
@@ -229,32 +229,32 @@
             </div>
             <div>
               <div class="flex justify-between items-center mb-2">
-                <label class="font-label-md text-label-md text-on-surface block">Duration</label>
-                <output id="duration-output" class="text-primary font-bold">30 min</output>
+                <label class="font-label-md text-label-md text-on-surface block">Thời lượng</label>
+                <output id="duration-output" class="text-primary font-bold">30 phút</output>
               </div>
               <input id="duration" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="60" min="5" type="range" value="30" step="5">
               <div class="flex justify-between text-xs text-on-surface-variant mt-1">
-                <span>5m</span>
-                <span>60m</span>
+                <span>5 phút</span>
+                <span>60 phút</span>
               </div>
             </div>
             <input id="seed" type="number" value="42" style="display:none;">
             <button id="manual-btn" style="display:none;" class="w-full bg-surface border border-outline text-on-surface font-label-md py-2 rounded-xl flex justify-between px-3 items-center mt-2">
-              Edit manual NPCs… <b id="manual-count" class="bg-primary text-on-primary px-2 rounded-md">0</b>
+              Chỉnh sửa khách thủ công… <b id="manual-count" class="bg-primary text-on-primary px-2 rounded-md">0</b>
             </button>
           </div>
           <!-- Layout Objects -->
           <div class="flex flex-col gap-4 flex-1">
-            <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2 mt-4">LAYOUT OBJECTS</h2>
-            <div id="object-list" class="flex flex-col gap-2 overflow-y-auto max-h-48 pr-2">
+            <h2 class="font-label-md text-on-surface-variant tracking-wider uppercase text-sm font-bold border-b border-outline-variant pb-2 mt-4">ĐỐI TƯỢNG BỐ TRÍ</h2>
+            <div id="object-list" class="flex flex-col gap-2 overflow-y-auto max-h-[400px] pr-2">
               <!-- Populated by JS -->
             </div>
             <div class="flex gap-2 mt-2">
               <button id="add-wall" class="flex-1 bg-surface border-2 border-dashed border-outline text-on-surface font-label-md py-2 rounded-xl flex items-center justify-center gap-1 hover:border-primary">
-                <span class="material-symbols-outlined text-sm">add</span> Wall
+                <span class="material-symbols-outlined text-sm">add</span> Tường
               </button>
               <button id="add-shelf" class="flex-1 bg-surface border-2 border-dashed border-outline text-on-surface font-label-md py-2 rounded-xl flex items-center justify-center gap-1 hover:border-primary">
-                <span class="material-symbols-outlined text-sm">add</span> Shelf
+                <span class="material-symbols-outlined text-sm">add</span> Kệ hàng
               </button>
             </div>
           </div>
@@ -269,19 +269,19 @@
         <div class="bg-surface border-b border-outline-variant px-6 py-2 flex items-center gap-2 z-10">
           <div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant">
             <button data-tool="select" class="active flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-primary text-primary font-label-md text-xs shadow-sm">
-              <span class="material-symbols-outlined text-sm">touch_app</span> Select
+              <span class="material-symbols-outlined text-sm">touch_app</span> Chọn
             </button>
             <button data-tool="wall" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs">
-              <span class="material-symbols-outlined text-sm">straighten</span> Wall
+              <span class="material-symbols-outlined text-sm">straighten</span> Tường
             </button>
             <button data-tool="shelf" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs">
-              <span class="material-symbols-outlined text-sm">shelves</span> Shelf
+              <span class="material-symbols-outlined text-sm">shelves</span> Kệ hàng
             </button>
             <button data-tool="entrance" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs">
-              <span class="material-symbols-outlined text-sm">door_front</span> Entrance
+              <span class="material-symbols-outlined text-sm">door_front</span> Lối vào
             </button>
             <button data-tool="checkout" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface border border-transparent font-label-md text-xs">
-              <span class="material-symbols-outlined text-sm">point_of_sale</span> Checkout
+              <span class="material-symbols-outlined text-sm">point_of_sale</span> Quầy thu ngân
             </button>
           </div>
           <!-- Mobile/Compact Tool Palette (Preserved for compatibility) -->
@@ -309,61 +309,71 @@
           <!-- Nothing selected -->
           <div id="nothing-selected" class="flex flex-col items-center justify-center h-full text-on-surface-variant gap-2 opacity-70">
               <span class="material-symbols-outlined text-4xl">info</span>
-              <p class="text-center font-label-md">Select a wall, shelf or NPC to inspect it.</p>
+              <p class="text-center font-label-md">Chọn đối tượng trên bản đồ để xem chi tiết.</p>
           </div>
 
           <!-- Shelf Form -->
-          <form id="shelf-form" hidden class="flex flex-col h-full gap-5">
-            <div class="flex justify-between items-start border-b border-outline-variant pb-4">
+          <form id="shelf-form" hidden class="flex flex-col h-full gap-4 overflow-y-auto pr-1">
+            <div class="flex justify-between items-start border-b border-outline-variant pb-3">
               <div>
                 <h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight flex items-center gap-2">
-                  <span class="material-symbols-outlined text-secondary">shelves</span> Shelf Properties
+                  <span class="material-symbols-outlined text-secondary">shelves</span> Thuộc tính Kệ hàng
                 </h3>
               </div>
             </div>
             <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">ID</label>
-              <input id="shelf-id" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface-variant focus:ring-0 font-body-md" disabled>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Thể loại kệ hàng (Category)</label>
+              <select id="shelf-category" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface focus:border-primary focus:ring-0 font-body-md">
+                <option value="beverage">Đồ uống / Nước giải khát</option>
+                <option value="dry-food">Hàng khô / Mì & Đồ ăn liền</option>
+                <option value="frozen-food">Hàng đông lạnh</option>
+                <option value="fresh-food">Hàng tươi sống</option>
+                <option value="snack">Bánh kẹo / Snack</option>
+                <option value="personal-care">Chăm sóc cá nhân</option>
+                <option value="cleaning">Dung dịch vệ sinh / Hóa phẩm</option>
+                <option value="household">Đồ gia dụng</option>
+                <option value="other">Khác</option>
+              </select>
             </div>
             <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Label</label>
-              <input id="shelf-label" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface focus:border-primary focus:ring-0 font-body-md">
-            </div>
-            <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Category</label>
-              <input id="shelf-category" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface focus:border-primary focus:ring-0 font-body-md">
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Kích thước kệ (Cố định theo Preset)</label>
+              <select id="shelf-preset" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface focus:border-primary focus:ring-0 font-body-md">
+                <option value="standard">Kệ đôi tiêu chuẩn (2.0m × 1.0m)</option>
+                <option value="cooler">Tủ mát / Kệ vuông (1.0m × 1.0m)</option>
+                <option value="endcap">Kệ đầu dãy / Slim (1.0m × 2.0m)</option>
+              </select>
             </div>
             <div>
               <div class="flex justify-between items-center mb-1">
-                <label class="font-label-md text-label-md text-on-surface-variant block">Base valence</label>
+                <label class="font-label-md text-label-md text-on-surface-variant block">Điểm thu hút (Valence)</label>
                 <output id="shelf-valence-out" class="text-primary font-bold">+0.20</output>
               </div>
               <input id="shelf-valence" class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="1" min="-1" step="0.05" type="range" value="0.2">
             </div>
-            <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-2">Transform (Meters)</label>
-              <div class="grid grid-cols-2 gap-3">
-                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
-                  <span class="font-label-md text-label-md text-on-surface-variant">X</span>
-                  <input id="shelf-x" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
-                </div>
-                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
-                  <span class="font-label-md text-label-md text-on-surface-variant">Y</span>
-                  <input id="shelf-y" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
-                </div>
-                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
-                  <span class="font-label-md text-label-md text-on-surface-variant">W</span>
-                  <input id="shelf-w" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
-                </div>
-                <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
-                  <span class="font-label-md text-label-md text-on-surface-variant">H</span>
-                  <input id="shelf-h" class="w-16 bg-transparent border-none text-right font-body-md font-bold text-primary p-0 focus:ring-0" type="number" step=".25">
+
+            <!-- Shelf Products Management -->
+            <div class="border-t border-outline-variant pt-3 flex flex-col gap-2">
+              <div class="flex justify-between items-center">
+                <label class="font-label-md text-label-md text-on-surface-variant font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm text-primary">inventory_2</span> Mặt hàng trên kệ (<span id="shelf-product-count">0</span>)
+                </label>
+              </div>
+              <div id="shelf-product-list" class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
+                <!-- Rendered dynamically -->
+              </div>
+              <div class="p-2 bg-surface-container-low rounded-lg border border-outline-variant flex flex-col gap-2 mt-1">
+                <span class="text-[11px] font-semibold text-primary">➕ Thêm mặt hàng lên kệ</span>
+                <input id="new-prod-name" placeholder="Tên sản phẩm (VD: Trà xanh)" class="w-full bg-surface border border-outline-variant rounded p-1.5 text-xs text-on-surface focus:border-primary font-body-md">
+                <div class="flex gap-2">
+                  <input id="new-prod-price" type="number" step="1000" min="0" placeholder="Giá bán (₫)" class="w-full bg-surface border border-outline-variant rounded p-1.5 text-xs text-on-surface focus:border-primary font-body-md">
+                  <button id="add-shelf-product-btn" type="button" class="bg-primary text-on-primary font-bold text-xs px-3 py-1.5 rounded hover:bg-primary/80 transition-colors whitespace-nowrap">Thêm</button>
                 </div>
               </div>
             </div>
-            <div class="pt-4 border-t border-outline-variant mt-auto">
-              <button id="delete-shelf" type="button" class="w-full bg-error-container text-on-error-container font-button-text text-button-text px-4 py-3 rounded-xl border-b-4 border-error flex justify-center items-center gap-2 hover:bg-error hover:text-white transition-colors">
-                <span class="material-symbols-outlined">delete</span> Delete shelf
+
+            <div class="pt-3 border-t border-outline-variant mt-auto">
+              <button id="delete-shelf" type="button" class="w-full bg-error-container text-on-error-container font-button-text text-button-text px-4 py-2.5 rounded-xl border-b-4 border-error flex justify-center items-center gap-2 hover:bg-error hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">delete</span> Xóa kệ hàng
               </button>
             </div>
           </form>
@@ -373,16 +383,16 @@
              <div class="flex justify-between items-start border-b border-outline-variant pb-4">
               <div>
                 <h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight flex items-center gap-2">
-                  <span class="material-symbols-outlined text-outline">straighten</span> Wall Properties
+                  <span class="material-symbols-outlined text-outline">straighten</span> Thuộc tính Tường
                 </h3>
               </div>
             </div>
             <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">ID</label>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-1">Mã tường (ID)</label>
               <input id="wall-id" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-on-surface-variant focus:ring-0 font-body-md" disabled>
             </div>
             <div>
-              <label class="font-label-md text-label-md text-on-surface-variant block mb-2">Coordinates (Meters)</label>
+              <label class="font-label-md text-label-md text-on-surface-variant block mb-2">Tọa độ (Mét)</label>
               <div class="grid grid-cols-2 gap-3">
                 <div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant flex items-center justify-between">
                   <span class="font-label-md text-label-md text-on-surface-variant">X1</span>
@@ -402,10 +412,10 @@
                 </div>
               </div>
             </div>
-            <p class="font-label-md text-sm text-on-surface-variant opacity-80 mt-2">Drag the line to move it. Drag either endpoint handle to resize or rotate.</p>
+            <p class="font-label-md text-sm text-on-surface-variant opacity-80 mt-2">Kéo đường thẳng để di chuyển. Kéo điểm đầu/cuối để thay đổi kích thước hoặc xoay.</p>
             <div class="pt-4 border-t border-outline-variant mt-auto">
               <button id="delete-wall" type="button" class="w-full bg-error-container text-on-error-container font-button-text text-button-text px-4 py-3 rounded-xl border-b-4 border-error flex justify-center items-center gap-2 hover:bg-error hover:text-white transition-colors">
-                <span class="material-symbols-outlined">delete</span> Delete wall
+                <span class="material-symbols-outlined">delete</span> Xóa tường
               </button>
             </div>
           </form>
@@ -424,7 +434,7 @@
         <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
         <div>
           <h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim dark:text-primary-fixed drop-shadow-sm leading-none">AISLE</h1>
-          <p class="font-label-md text-label-md text-on-surface-variant font-bold">AISLE Sim</p>
+          <p class="font-label-md text-label-md text-on-surface-variant font-bold">Mô phỏng trực tiếp</p>
         </div>
       </div>
       
@@ -432,7 +442,7 @@
       <div class="flex-1 max-w-sm mx-4 flex items-center justify-center">
         <div class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl px-3.5 py-1.5 flex items-center justify-center gap-2 shadow-xs bg-surface">
           <span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span>
-          <span class="font-bold text-sm text-primary font-button-text">AISLE Sim Active</span>
+          <span class="font-bold text-sm text-primary font-button-text">Đang chạy mô phỏng</span>
         </div>
       </div>
 
@@ -440,7 +450,7 @@
       <div class="flex items-center gap-4 shrink-0">
         <button id="btn-back-setup" class="btn-tactile bg-surface text-primary border-2 border-primary/40 hover:border-primary font-button-text text-button-text px-6 py-3 rounded-full border-b-4 border-primary/60 flex items-center gap-2 shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer">
           <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">edit_square</span>
-          Setup Store
+          Thiết lập cửa hàng
         </button>
       </div>
     </header>
@@ -451,7 +461,7 @@
         <!-- Controls (Aligned to Left Canvas) -->
         <div class="flex items-center gap-2">
           <button id="play-btn" class="btn-tactile bg-primary text-on-primary rounded-full px-5 py-2 hover:brightness-110 shadow-xs flex items-center justify-center font-button-text cursor-pointer">
-            <span class="material-symbols-outlined mr-1.5" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Run live
+            <span class="material-symbols-outlined mr-1.5" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Chạy trực tiếp
           </button>
           <button id="reset-btn" title="Khởi động lại" class="btn-tactile bg-surface text-on-surface-variant hover:text-error border-2 border-outline-variant rounded-full p-2 hover:bg-error-container shadow-xs flex items-center justify-center cursor-pointer">
             <span class="material-symbols-outlined text-lg">refresh</span>
@@ -504,7 +514,7 @@
         <!-- Cashier Station (Top - Original Large Format) -->
         <div class="bg-surface-container-low rounded-2xl border-2 border-outline-variant p-3.5 flex flex-col relative overflow-hidden tactile-card shrink-0 shadow-sm">
           <div class="absolute top-0 right-0 w-28 h-28 bg-secondary-container rounded-bl-full opacity-40"></div>
-          <h3 class="font-button-text text-sm text-on-surface-variant text-center mb-2 relative z-10 font-bold">Cashier Station</h3>
+          <h3 class="font-button-text text-sm text-on-surface-variant text-center mb-2 relative z-10 font-bold">Quầy thu ngân</h3>
           
           <!-- Portrait Image Area (Original full height) -->
           <div id="cashier-avatar" class="w-full h-44 bg-surface-bright rounded-xl border-2 border-outline-variant mb-2 overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
@@ -515,20 +525,20 @@
             <img src="cashier_sad.jpg" alt="Cashier Sad" class="cashier-img cashier-img-sad object-cover w-full h-full absolute inset-0 z-10 hidden" onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuC1gLz0MhnMsi767qn6aHxwVG7oeAWNvKK3JY68W-DOE8fYYSc4eFGcYBDnHLafo8ABeGPU0E36hHugwdvVyzQ7w2QKWYbMqdxylM62s4l8JzOc9d_GM30gO53esv3XuXMtPHqKjJ9hK69oDBRlpGY0z0_DZoX-JQr62OTYSCo6ULRGbwRbnttr1Qn6BBSjOfMyCCwAbiWR3DPqvtsx_eT9VR1Uhq_HdQOTTEsuGl-AZ2c_37rv9GjqIg';">
             <div id="cashier-mood-icon-container" class="absolute bottom-1.5 right-1.5 z-20 bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded-full font-label-md text-[11px] flex items-center gap-1 shadow-sm border border-tertiary-fixed">
               <span class="material-symbols-outlined text-xs">sentiment_satisfied</span>
-              <span id="cashier-mood">Waiting...</span>
+              <span id="cashier-mood">Đang chờ...</span>
             </div>
           </div>
           
           <!-- Staff Details -->
           <div class="bg-surface rounded-xl p-3 border border-outline-variant relative z-10 shadow-sm flex flex-col gap-2">
             <div class="flex items-center justify-between">
-              <label class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wide">Staff</label>
+              <label class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wide">Nhân viên</label>
               <input id="cashier-name" class="w-32 bg-surface-container border border-outline-variant rounded px-2 py-0.5 text-xs font-button-text text-primary text-right focus:ring-1 focus:ring-primary outline-none transition-shadow" type="text" value="Linh ✿" spellcheck="false">
             </div>
             <div class="h-px w-full bg-surface-variant"></div>
             <div class="flex justify-between items-center text-xs">
-              <span class="font-label-md text-on-surface-variant">Served: <b id="cashier-served" class="text-primary font-bold text-sm">0</b></span>
-              <span class="font-label-md text-on-surface-variant">Revenue: <b id="cashier-revenue" class="text-secondary font-bold text-sm">0 ₫</b></span>
+              <span class="font-label-md text-on-surface-variant">Đã phục vụ: <b id="cashier-served" class="text-primary font-bold text-sm">0</b></span>
+              <span class="font-label-md text-on-surface-variant">Doanh thu: <b id="cashier-revenue" class="text-secondary font-bold text-sm">0 ₫</b></span>
             </div>
           </div>
         </div>
@@ -539,16 +549,16 @@
           <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/60 shrink-0">
             <h4 id="panel-toggle-title" class="font-button-text text-xs uppercase text-on-surface-variant flex items-center gap-1.5 font-bold">
               <span id="panel-toggle-icon" class="material-symbols-outlined text-sm text-primary">receipt_long</span>
-              <span id="panel-toggle-heading">Decision Trace</span>
+              <span id="panel-toggle-heading">Nhật ký quyết định</span>
             </h4>
             
             <!-- Segmented Pill Switch -->
             <div class="inline-flex bg-surface-container border border-outline-variant rounded-full p-0.5 gap-0.5 shadow-inner">
               <button id="toggle-view-metrics" type="button" title="Gạt sang xem 3 chỉ số Live Metrics" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-button-text transition-all duration-200 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center gap-1">
-                <span class="material-symbols-outlined text-[12px]">monitoring</span> Metrics
+                <span class="material-symbols-outlined text-[12px]">monitoring</span> Chỉ số
               </button>
               <button id="toggle-view-log" type="button" title="Gạt sang xem nhật ký Decision Trace" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-button-text transition-all duration-200 bg-primary text-on-primary shadow-xs cursor-pointer flex items-center gap-1">
-                <span class="material-symbols-outlined text-[12px]">receipt_long</span> Log
+                <span class="material-symbols-outlined text-[12px]">receipt_long</span> Nhật ký
               </button>
             </div>
           </div>
@@ -556,7 +566,7 @@
           <!-- View 1: Decision Trace Log -->
           <div id="view-log-container" class="flex-1 flex flex-col min-h-0 mt-2">
             <div id="event-log-list" class="flex-1 bg-inverse-surface text-inverse-on-surface font-mono text-xs p-2.5 rounded-xl overflow-y-auto scroll-hidden shadow-inner flex flex-col gap-1">
-              <span>Ready. Edit inputs, then press Run live.</span>
+              <span>Sẵn sàng. Nhấn Chạy trực tiếp để bắt đầu.</span>
             </div>
           </div>
 
@@ -564,19 +574,19 @@
           <div id="view-metrics-container" class="flex-1 flex flex-col min-h-0 mt-2 hidden overflow-hidden">
             <div id="metrics" class="flex flex-col gap-1.5 flex-1 h-full justify-between">
               <div class="metric-card bg-surface px-3 py-1 rounded-xl border border-outline-variant shadow-xs flex-1 flex flex-col justify-center">
-                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>CONVERSION LIVE</span></div>
+                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>TỶ LỆ MUA HÀNG</span></div>
                 <div class="text-sm font-extrabold text-tertiary leading-tight my-0.5"><b>0.0%</b></div>
-                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">0 converted</small>
+                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">0 đã mua</small>
               </div>
               <div class="metric-card bg-surface px-3 py-1 rounded-xl border border-outline-variant shadow-xs flex-1 flex flex-col justify-center">
-                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>PURCHASES</span></div>
+                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>LƯỢT MUA</span></div>
                 <div class="text-sm font-extrabold text-primary leading-tight my-0.5"><b>0</b></div>
-                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">main + impulse</small>
+                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">chính + ngẫu hứng</small>
               </div>
               <div class="metric-card bg-surface px-3 py-1 rounded-xl border border-outline-variant shadow-xs flex-1 flex flex-col justify-center">
-                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>NOT FOUND</span></div>
+                <div class="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none"><span>KHÔNG TÌM THẤY</span></div>
                 <div class="text-sm font-extrabold text-error leading-tight my-0.5"><b>0.0%</b></div>
-                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">outside catalog</small>
+                <small class="text-[9px] text-on-surface-variant opacity-70 leading-none">ngoài danh mục</small>
               </div>
             </div>
           </div>
@@ -593,7 +603,7 @@
     </div>
     
     <header class="bg-surface docked full-width top-0 shadow-[0_20px_40px_rgba(123,85,72,0.1)] z-40 relative border-b border-surface-container-low">
-      <div class="flex justify-between items-center px-6 py-3 w-full mx-auto">
+      <div class="flex justify-between items-center px-gutter py-4 w-full max-w-7xl mx-auto">
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">storefront</span>
           <span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary drop-shadow-sm font-bold">
@@ -601,24 +611,24 @@
           </span>
         </div>
         <div class="flex items-center gap-3">
-          <button id="btn-results-back-setup" type="button" class="btn-tactile bg-surface-container border border-outline text-on-surface font-button-text text-sm py-2 px-5 rounded-full hover:bg-surface-container-high flex items-center gap-1.5 cursor-pointer shadow-xs">
+          <button id="btn-results-back-setup" type="button" class="btn-tactile bg-surface-container border border-outline text-on-surface font-button-text text-sm py-2 px-4 rounded-full hover:bg-surface-container-high flex items-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined text-sm">edit</span> Về Setup
           </button>
-          <button id="btn-results-back-simulate" type="button" class="btn-tactile bg-primary text-on-primary font-button-text text-sm py-2 px-5 rounded-full hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-xs">
+          <button id="btn-results-back-simulate" type="button" class="btn-tactile bg-primary text-on-primary font-button-text text-sm py-2 px-4 rounded-full hover:brightness-110 flex items-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined text-sm">play_arrow</span> Mô phỏng
           </button>
         </div>
       </div>
     </header>
     
-    <main class="flex-grow w-full max-w-[96%] 2xl:max-w-[90%] mx-auto px-4 py-4 relative z-10 flex flex-col items-center justify-between min-h-[85vh]">
-      <div class="w-full flex-1 flex flex-col backdrop-blur-md rounded-[28px] p-4 md:p-6 border-[3px] border-surface-container shadow-[0_20px_50px_rgba(104,93,74,0.08)] relative overflow-hidden bg-surface">
+    <main class="flex-grow w-full max-w-7xl mx-auto px-container-padding-mobile md:px-container-padding-desktop py-4 relative z-10 flex flex-col items-center justify-between min-h-[80vh]">
+      <div class="w-full flex-1 backdrop-blur-md rounded-[32px] p-2 md:p-6 border-[3px] border-surface-container shadow-[0_30px_60px_rgba(104,93,74,0.08)] relative overflow-hidden md:px-10 bg-surface flex flex-col min-h-[420px]">
         <div class="absolute -top-10 -left-10 w-48 h-48 bg-primary-container rounded-full blur-3xl opacity-40 pointer-events-none"></div>
         <div class="absolute -bottom-10 -right-10 w-56 h-56 bg-secondary-container rounded-full blur-3xl opacity-40 pointer-events-none"></div>
-        
+
         <div class="relative z-10 w-full flex-1 flex flex-col overflow-hidden rounded-2xl bg-surface-container-lowest border-2 border-surface-container-high shadow-inner">
           <div class="grid grid-cols-4 gap-4 px-6 py-4 bg-surface-container-low border-b-2 border-surface-container border-dashed font-label-md text-label-md text-primary tracking-wide shrink-0">
-            <div>Period / Tên phiên</div>
+            <div>Phiên mô phỏng</div>
             <div>Thời gian</div>
             <div class="text-right">Khách hàng</div>
             <div class="text-right">Doanh thu</div>
@@ -668,12 +678,12 @@
         <div class="max-w-[1600px] mx-auto w-full">
           <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 relative">
             <div>
-              <h2 class="font-display-lg text-display-lg text-on-surface mb-2">Shop Evaluation</h2>
-              <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">A comprehensive view of your pantry's performance. Monitor seasonal trends, stock levels, and guest happiness.</p>
+              <h2 class="font-display-lg text-display-lg text-on-surface mb-2">Đánh giá hiệu quả cửa hàng</h2>
+              <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">Báo cáo phân tích hiệu suất không gian, doanh thu và hành vi khách hàng trong cửa hàng.</p>
             </div>
             <div class="flex gap-2">
               <button class="inline-flex items-center px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm hover:bg-primary-fixed transition-colors">
-                <span class="material-symbols-outlined text-sm mr-2">download</span> Export Report
+                <span class="material-symbols-outlined text-sm mr-2">download</span> Xuất báo cáo
               </button>
             </div>
           </header>
@@ -685,9 +695,9 @@
                 <span class="material-symbols-outlined text-2xl">local_mall</span>
               </div>
               <div>
-                <p class="font-label-md text-on-surface-variant mb-1">Total Revenue</p>
-                <h3 class="font-headline-lg text-primary">12,450 <span class="text-lg font-normal text-on-surface-variant">paw coins</span></h3>
-                <p class="font-label-md text-secondary mt-1 flex items-center"><span class="material-symbols-outlined text-sm mr-1">arrow_upward</span> +18% this season</p>
+                <p class="font-label-md text-on-surface-variant mb-1">Tổng doanh thu</p>
+                <h3 class="font-headline-lg text-primary">12.450.000 <span class="text-lg font-normal text-on-surface-variant">₫</span></h3>
+                <p class="font-label-md text-secondary mt-1 flex items-center"><span class="material-symbols-outlined text-sm mr-1">arrow_upward</span> +18% so với phiên trước</p>
               </div>
             </div>
             <!-- More KPIs can be added here -->
@@ -697,7 +707,7 @@
             <!-- Bar Chart -->
             <div class="tactile-card p-8 xl:col-span-2 flex flex-col relative overflow-hidden min-h-[500px]">
               <h3 class="font-headline-lg text-primary mb-6 flex items-center gap-3">
-                <span class="material-symbols-outlined text-3xl">bar_chart</span> Seasonal Harvest
+                <span class="material-symbols-outlined text-3xl">bar_chart</span> Doanh thu & Lượt mua theo phân loại
               </h3>
               <div class="flex flex-col lg:flex-row gap-8 flex-1">
                 <div class="flex-1 w-full relative min-h-[350px]">
@@ -709,7 +719,7 @@
             <!-- Pie Chart -->
             <div class="tactile-card p-8 flex flex-col relative overflow-hidden min-h-[450px]">
               <h3 class="font-headline-lg text-primary mb-6 flex items-center gap-3">
-                <span class="material-symbols-outlined text-3xl">pie_chart</span> Pantry Stock Distribution
+                <span class="material-symbols-outlined text-3xl">pie_chart</span> Cơ cấu phân bổ hàng hóa
               </h3>
               <div class="flex flex-col md:flex-row gap-8 flex-1">
                 <div class="flex-1 w-full relative flex items-center justify-center min-h-[250px]">
@@ -721,7 +731,7 @@
             <!-- Line Chart -->
             <div class="tactile-card p-8 flex flex-col relative overflow-hidden min-h-[450px]">
               <h3 class="font-headline-lg text-primary mb-6 flex items-center gap-3">
-                <span class="material-symbols-outlined text-3xl">show_chart</span> Weekly Happy Customers
+                <span class="material-symbols-outlined text-3xl">show_chart</span> Lưu lượng khách hàng theo thời gian
               </h3>
               <div class="flex flex-col gap-6 flex-1">
                 <div class="flex-1 w-full relative min-h-[250px]">
@@ -803,42 +813,85 @@
   
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface px-4 py-2 rounded-lg opacity-0 pointer-events-none transition-opacity z-50"></div>
 
-  <!-- Custom Setup Script for Charts -->
+  <!-- Custom Navigation & Setup Script (For charts & screen switching) -->
   <script>
-    window.initCharts = function() {
-      if(window.chartsInited) return;
-      const barCanvas = document.getElementById('barChart');
-      const pieCanvas = document.getElementById('pieChart');
-      const lineCanvas = document.getElementById('lineChart');
-      if(!barCanvas || !pieCanvas || !lineCanvas) return;
-      window.chartsInited = true;
-      
-      const colors = { primary: '#f7e7ce', secondary: '#ffccbb', tertiary: '#d4efdf' };
-      
-      new Chart(barCanvas, {
-        type: 'bar',
-        data: {
-          labels: ['Spring', 'Summer', 'Autumn', 'Winter'],
-          datasets: [{ label: 'Treats', data: [65, 85, 120, 90], backgroundColor: colors.primary }]
+    // Navigation logic (simple)
+    document.addEventListener('DOMContentLoaded', () => {
+        const screens = document.querySelectorAll('.screen');
+        const btnNew = document.getElementById('btn-new');
+        const btnLoad = document.getElementById('btn-load');
+        const btnRunSim = document.getElementById('btn-run-sim');
+        const btnEvaluate = document.getElementById('btn-evaluate');
+
+        function switchScreen(id) {
+            screens.forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(id);
+            if (target) target.classList.add('active');
+            
+            // Move canvas if needed
+            if (id === 'screen-setup' || id === 'screen-simulate') {
+                const canvas = document.getElementById('scene');
+                if(canvas) {
+                    if(id === 'screen-setup') {
+                        document.getElementById('canvas-wrapper')?.appendChild(canvas);
+                    } else if(id === 'screen-simulate') {
+                        document.getElementById('sim-canvas-container')?.appendChild(canvas);
+                    }
+                }
+                const tab = id === 'screen-setup' ? 'setup' : 'simulate';
+                if (typeof window.switchTab === 'function') {
+                    window.switchTab(tab);
+                }
+            }
+            
+            if (id === 'screen-analytics') {
+                initCharts();
+            }
         }
-      });
-      
-      new Chart(pieCanvas, {
-        type: 'doughnut',
-        data: {
-          labels: ['Yarn Balls', 'Catnip', 'Cozy Beds'],
-          datasets: [{ data: [45, 30, 25], backgroundColor: [colors.primary, colors.secondary, colors.tertiary] }]
+
+        if(btnNew) btnNew.addEventListener('click', () => switchScreen('screen-setup'));
+        if(btnLoad) btnLoad.addEventListener('click', () => switchScreen('screen-setup'));
+        if(btnRunSim) btnRunSim.addEventListener('click', () => switchScreen('screen-simulate'));
+        if(btnEvaluate) btnEvaluate.addEventListener('click', () => switchScreen('screen-analytics'));
+        const btnBackSetup = document.getElementById('btn-back-setup');
+        if(btnBackSetup) btnBackSetup.addEventListener('click', () => switchScreen('screen-setup'));
+
+        // Initialize Charts with retail simulation metrics
+        function initCharts() {
+            if(window.chartsInited) return;
+            const barCanvas = document.getElementById('barChart');
+            const pieCanvas = document.getElementById('pieChart');
+            const lineCanvas = document.getElementById('lineChart');
+            if(!barCanvas || !pieCanvas || !lineCanvas) return;
+            window.chartsInited = true;
+            
+            const colors = { primary: '#685d4a', secondary: '#7b5548', tertiary: '#4c6457' };
+            
+            new Chart(barCanvas, {
+                type: 'bar',
+                data: {
+                    labels: ['Sáng (6-10h)', 'Trưa (11-14h)', 'Chiều (15-18h)', 'Tối (19-22h)'],
+                    datasets: [{ label: 'Doanh thu (nghìn ₫)', data: [1250, 3450, 4800, 2950], backgroundColor: colors.primary }]
+                }
+            });
+            
+            new Chart(pieCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Đồ uống', 'Hàng khô / Snack', 'Hàng đông lạnh'],
+                    datasets: [{ data: [45, 30, 25], backgroundColor: [colors.primary, colors.secondary, colors.tertiary] }]
+                }
+            });
+            
+            new Chart(lineCanvas, {
+                type: 'line',
+                data: {
+                    labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+                    datasets: [{ label: 'Lượng khách', data: [120, 190, 150, 250, 320, 450, 500], backgroundColor: colors.tertiary }]
+                }
+            });
         }
-      });
-      
-      new Chart(lineCanvas, {
-        type: 'line',
-        data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [{ label: 'Visitors', data: [12, 19, 15, 25, 32, 45, 50], backgroundColor: colors.tertiary }]
-        }
-      });
-    };
+    });
   </script>
   
   <script type="module" src="app.js"></script>
