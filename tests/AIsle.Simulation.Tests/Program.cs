@@ -17,7 +17,7 @@ internal static class Program
             TestPoissonSpawn(); TestNeedAndAffect(); TestConfigValidation(); TestPathRules(); TestUtility(); TestShoppingDecisionSeparation();
             TestUnreachableAndPhantom(); TestBoundedRecoveryAndAbandon(); TestMovementAndArrival(); TestNoPurchaseJourney();
             TestFullJourneyAndResult(); TestStateProjection(); TestShelfInteractionSlots(); TestShelfReservationAndQueue(); TestShelfQueueJourney();
-            TestRvoHeadOn(); TestRvoCrossingAndCrowd(); TestRvoFallbackAndNoNeighbor();
+            TestRvoHeadOn(); TestRvoCrossingAndCrowd(); TestRvoFallbackAndNoNeighbor(); TestOversubscribedPopulationExcludesUnspawnedAgentsFromReplay();
             Console.WriteLine("PASS: C# simulation baseline verification completed."); return 0;
         }
         catch(Exception exception) { Console.Error.WriteLine("FAIL: " + exception); return 1; }
@@ -271,6 +271,31 @@ internal static class Program
         Assert(minimum>=config.CollisionRadius*.65,"R3 aisle crowd developed severe overlap; minimum="+minimum);Assert(crowd.Agents.Count(agent=>agent.X>starts[Array.IndexOf(crowd.Agents.ToArray(),agent)]+.2)>=9,"R3 aisle crowd made insufficient progress");
         Assert(crowd.Agents.All(agent=>crowd.Grid.IsPointWalkable(agent.Position())),"R4 crowd movement penetrated static geometry");
         Console.WriteLine("PASS R2-R4 crossing/crowd/wall invariants minimum="+minimum.ToString("F3"));
+    }
+
+    private static void TestOversubscribedPopulationExcludesUnspawnedAgentsFromReplay()
+    {
+        // With a low spawn rate and short duration, some profiles in a large population never
+        // receive a finite spawn time -- MakeSpawnTimes assigns double.PositiveInfinity to any
+        // arrival the Poisson process can't admit within the run. BuildResult must exclude those
+        // agents from Replay instead of leaking Spawn=Infinity into SimResult: that value is not
+        // valid JSON and used to crash SimResultJsonSerializer.Serialize for any population large
+        // enough relative to the spawn curve/duration (e.g. ~170+ NPCs on a 30-shelf default project).
+        var layout = OpenLayout(Array.Empty<ShelfDefinition>());
+        layout.SpawnRateCurve = new[] { new SpawnRatePoint { Minute = 0, Rate = 2 } };
+        var profiles = Enumerable.Range(0, 40).Select(index => Profile("over-" + index, "")).ToArray();
+        var config = new SimulationConfig { DurationMinutes = 1, TickSeconds = 0.2 };
+        var host = new SimulationHost(layout, Array.Empty<ProductDefinition>(), Population(profiles), config);
+        Assert(host.Agents.Any(agent => double.IsPositiveInfinity(agent.Spawn)), "Test setup must actually produce at least one never-spawned agent.");
+
+        host.RunToCompletion(500);
+        var result = host.BuildResult("oversubscribed");
+        Assert(result.Replay.Agents.All(agent => !double.IsPositiveInfinity(agent.Spawn) && !double.IsNaN(agent.Spawn)), "BuildResult leaked a never-spawned agent's Infinity Spawn time into Replay.");
+        Assert(result.Replay.Agents.Length < profiles.Length, "Never-spawned agents should be excluded from Replay.Agents.");
+
+        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { IncludeFields = true });
+        Assert(!json.Contains("Infinity", StringComparison.Ordinal) && !json.Contains("NaN", StringComparison.Ordinal), "SimResult JSON must not contain non-finite number literals.");
+        Console.WriteLine("PASS oversubscribed population excludes never-spawned agents from Replay and stays JSON-serializable");
     }
 
     private static void TestRvoFallbackAndNoNeighbor()

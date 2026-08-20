@@ -41,8 +41,9 @@ namespace AIsle.DesktopApp
             LocalUiAssets.Verify(uiRoot, bridgeScriptPath);
 
             var defaultProjectPath = DefaultProjectLocation.Ensure(Path.Combine(uiRoot, "default-project.json"));
+            var historySeedDirectory = Path.Combine(uiRoot, "history-seed");
             var projects = new ProjectApplicationService(new JsonProjectRepository(), new LayoutValidator());
-            _bridge = new BridgeMessageProcessor(projects, defaultProjectPath);
+            _bridge = new BridgeMessageProcessor(projects, defaultProjectPath, historySeedDirectory: historySeedDirectory);
 
             await StudioWebView.EnsureCoreWebView2Async();
             StudioWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(

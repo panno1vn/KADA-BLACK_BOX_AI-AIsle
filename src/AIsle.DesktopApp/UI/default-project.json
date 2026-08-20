@@ -11,17 +11,41 @@
       { "id": "w5", "x1": 7.2, "y1": 7.8, "x2": 11.8, "y2": 7.8 }
     ],
     "shelves": [
-      { "id": "s1", "label": "Đồ uống", "category": "beverage", "x": 2, "y": 2, "w": 2.5, "h": 0.7, "valence": 0.42 }
+      { "id": "s1", "label": "Đồ uống", "category": "beverage", "x": 1.0, "y": 1.5, "w": 2.2, "h": 0.7, "valence": 0.42 },
+      { "id": "s2", "label": "Bánh kẹo", "category": "snack", "x": 4.5, "y": 1.5, "w": 2.2, "h": 0.7, "valence": 0.5 },
+      { "id": "s3", "label": "Chăm sóc cá nhân", "category": "personal-care", "x": 8.0, "y": 1.5, "w": 2.2, "h": 0.7, "valence": 0.3 },
+      { "id": "s4", "label": "Hàng khô", "category": "dry-food", "x": 1.0, "y": 3.2, "w": 2.2, "h": 0.7, "valence": 0.2 },
+      { "id": "s5", "label": "Đồ ăn nhanh", "category": "instant-food", "x": 4.5, "y": 3.2, "w": 2.2, "h": 0.7, "valence": 0.35 },
+      { "id": "s6", "label": "Kẹo & Gum", "category": "candy", "x": 8.0, "y": 3.2, "w": 2.2, "h": 0.7, "valence": 0.55 },
+      { "id": "s7", "label": "Đồ gia dụng", "category": "household", "x": 1.0, "y": 4.9, "w": 2.2, "h": 0.7, "valence": 0.15 },
+      { "id": "s8", "label": "Dung dịch vệ sinh", "category": "cleaning", "x": 4.5, "y": 4.9, "w": 2.2, "h": 0.7, "valence": 0.15 }
     ],
     "entrance": { "x": 6, "y": 7.55 },
     "checkout": { "x": 9.5, "y": 6.85 },
     "spawnRateCurve": [
-      { "minute": 0, "rate": 3 },
-      { "minute": 15, "rate": 8 },
-      { "minute": 30, "rate": 2 }
+      { "minute": 0, "rate": 5 },
+      { "minute": 10, "rate": 7 },
+      { "minute": 20, "rate": 7 },
+      { "minute": 30, "rate": 5 },
+      { "minute": 40, "rate": 3 }
     ]
   },
   "catalog": [
-    { "id": "p001", "name": "Nước khoáng", "category": "beverage", "shelf": "s1", "price": 10000 }
+    { "id": "p001", "name": "Nước khoáng", "category": "beverage", "shelf": "s1", "price": 8000 },
+    { "id": "p002", "name": "Trà xanh đóng chai", "category": "beverage", "shelf": "s1", "price": 12000 },
+    { "id": "p003", "name": "Bánh quy", "category": "snack", "shelf": "s2", "price": 15000 },
+    { "id": "p004", "name": "Khoai tây chiên", "category": "snack", "shelf": "s2", "price": 18000 },
+    { "id": "p005", "name": "Dầu gội", "category": "personal-care", "shelf": "s3", "price": 45000 },
+    { "id": "p006", "name": "Sữa tắm", "category": "personal-care", "shelf": "s3", "price": 40000 },
+    { "id": "p007", "name": "Mì gói", "category": "dry-food", "shelf": "s4", "price": 5000 },
+    { "id": "p008", "name": "Gạo túi nhỏ", "category": "dry-food", "shelf": "s4", "price": 25000 },
+    { "id": "p009", "name": "Cơm hộp", "category": "instant-food", "shelf": "s5", "price": 35000 },
+    { "id": "p010", "name": "Xúc xích", "category": "instant-food", "shelf": "s5", "price": 10000 },
+    { "id": "p011", "name": "Kẹo dẻo", "category": "candy", "shelf": "s6", "price": 12000 },
+    { "id": "p012", "name": "Kẹo cao su", "category": "candy", "shelf": "s6", "price": 8000 },
+    { "id": "p013", "name": "Khăn giấy", "category": "household", "shelf": "s7", "price": 20000 },
+    { "id": "p014", "name": "Bao đựng rác", "category": "household", "shelf": "s7", "price": 15000 },
+    { "id": "p015", "name": "Nước rửa chén", "category": "cleaning", "shelf": "s8", "price": 22000 },
+    { "id": "p016", "name": "Bột giặt", "category": "cleaning", "shelf": "s8", "price": 55000 }
   ]
 }

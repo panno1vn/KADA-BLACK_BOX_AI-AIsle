@@ -17,6 +17,8 @@ namespace AIsle.Simulation.Results
             for (var agentIndex = 0; agentIndex < agents.Length; agentIndex++)
             {
                 var source = result.Replay.Agents[agentIndex] ?? throw new ArgumentException("Stored replay agent is null.", nameof(result));
+                if (!double.IsFinite(source.Spawn))
+                    throw new ArgumentException("Stored replay agent spawn time must be finite.", nameof(result));
                 var sourceSamples = source.Samples ?? Array.Empty<TrajectorySample>();
                 var samples = new TrajectorySample[sourceSamples.Length];
                 var previousTime = double.NegativeInfinity;

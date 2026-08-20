@@ -27,6 +27,7 @@ internal static class Program
             BridgePopulationGeneration();
             BridgeSimulationCommands();
             BridgeHistoryAndReplay(testDirectory);
+            SqliteHistoryStoreScenarios(testDirectory);
             StartupErrorHandling(testDirectory);
             PixelNpcAssetPackaging();
             ReleaseSmokeFlow(testDirectory);
@@ -296,6 +297,88 @@ internal static class Program
         using var corrupt = JsonDocument.Parse(bridge.Process("{\"requestId\":\"corrupt\",\"type\":\"history.read\",\"payload\":{\"id\":\"corrupt\"}}"));
         Assert(!corrupt.RootElement.GetProperty("ok").GetBoolean()
             && corrupt.RootElement.GetProperty("error").GetProperty("code").GetString() == "corrupted_history", "Corrupted history bridge error mapping changed.");
+    }
+
+    private static void SqliteHistoryStoreScenarios(string baseDirectory)
+    {
+        var directory = Path.Combine(baseDirectory, "sqlite-history");
+
+        static SimResult MakeResult(string id, DateTimeOffset createdAt, double revenue) => new SimResult
+        {
+            Id = id,
+            CreatedAt = createdAt,
+            Name = "Run " + id,
+            Summary = new SimulationSummary
+            {
+                DurationSeconds = 60, Spawned = 10, Converted = 4, Revenue = revenue, Purchases = 4,
+                MainBuyers = 3, ImpulseBuyers = 1, NotFound = 1, Unreachable = 0, StuckRecoveries = 0, Completed = true
+            },
+            Replay = new ReplayData()
+        };
+
+        using (var store = new SqliteHistoryStore(directory))
+        {
+            var a = MakeResult("sqlite-a", DateTimeOffset.UtcNow.AddMinutes(-1), 100);
+            var b = MakeResult("sqlite-b", DateTimeOffset.UtcNow, 200);
+            store.Save(a);
+            store.Save(b);
+
+            var list = store.List();
+            Assert(list.Items.Length == 2 && list.Items[0].Id == "sqlite-b" && list.Items[1].Id == "sqlite-a", "SqliteHistoryStore.List must return newest-first.");
+            Assert(list.Items[0].Summary.Revenue == 200, "SqliteHistoryStore.List summary fields did not round-trip.");
+
+            var read = store.Read("sqlite-a");
+            Assert(read.Summary.Revenue == 100 && read.Name == "Run sqlite-a", "SqliteHistoryStore.Read did not return the full stored result.");
+
+            ExpectThrows<DuplicateHistoryIdException>(() => store.Save(MakeResult("sqlite-a", DateTimeOffset.UtcNow, 0)), "Duplicate history id was not rejected.");
+            ExpectThrows<HistoryResultNotFoundException>(() => store.Read("missing-id"), "Reading a missing history id did not throw.");
+
+            Assert(store.Delete("sqlite-a"), "Delete did not report success for an existing id.");
+            Assert(store.List().Items.Length == 1, "Deleted item must disappear from the active list.");
+            Assert(store.ListTrash().Items.Single().Id == "sqlite-a", "Deleted item must appear in the trash list.");
+            Assert(!store.Delete("sqlite-a"), "Deleting an already-trashed id must return false.");
+
+            Assert(store.Restore("sqlite-a"), "Restore did not report success for a trashed id.");
+            Assert(store.List().Items.Length == 2, "Restored item must reappear in the active list.");
+            Assert(store.ListTrash().Items.Length == 0, "Trash list must be empty after restore.");
+
+            Assert(store.Delete("sqlite-a") && store.Delete("sqlite-b"), "Setup for Clear/RestoreAll failed.");
+            Assert(store.Clear() == 0, "Clear must only count active (non-trashed) items.");
+            Assert(store.RestoreAll() == 2, "RestoreAll did not restore every trashed item.");
+            Assert(store.Clear() == 2, "Clear did not trash every active item.");
+        }
+
+        using (var reopened = new SqliteHistoryStore(directory))
+        {
+            Assert(reopened.ListTrash().Items.Length == 2, "History must persist across SqliteHistoryStore instances (app restart).");
+        }
+
+        var migrationDirectory = Path.Combine(baseDirectory, "sqlite-migration");
+        var legacy = new JsonHistoryStore(migrationDirectory);
+        legacy.Save(MakeResult("legacy-active", DateTimeOffset.UtcNow.AddMinutes(-2), 50));
+        legacy.Save(MakeResult("legacy-trashed", DateTimeOffset.UtcNow.AddMinutes(-3), 75));
+        legacy.Delete("legacy-trashed");
+
+        using var migrated = new SqliteHistoryStore(migrationDirectory);
+        Assert(migrated.List().Items.Any(item => item.Id == "legacy-active"), "Migration did not import active legacy JSON history.");
+        Assert(migrated.ListTrash().Items.Any(item => item.Id == "legacy-trashed"), "Migration did not import trashed legacy JSON history.");
+        Assert(File.Exists(Path.Combine(migrationDirectory, "legacy-active.sim-result.json")), "Migration must not delete the original legacy JSON file.");
+
+        // Repo-committed seed data (e.g. UI/history-seed) must be imported automatically so a fresh
+        // clone/pull shows the same demo history without the user having to run anything first.
+        var seedSourceDirectory = Path.Combine(baseDirectory, "seed-source");
+        Directory.CreateDirectory(seedSourceDirectory);
+        File.WriteAllText(Path.Combine(seedSourceDirectory, "seeded-run.sim-result.json"), SimResultJsonSerializer.Serialize(MakeResult("seeded-run", DateTimeOffset.UtcNow.AddDays(-1), 999)));
+        var seededDbDirectory = Path.Combine(baseDirectory, "sqlite-seeded");
+        using var seeded = new SqliteHistoryStore(seededDbDirectory, seedDirectory: seedSourceDirectory);
+        Assert(seeded.List().Items.Any(item => item.Id == "seeded-run" && item.Summary.Revenue == 999), "Seed directory was not imported on first construction.");
+    }
+
+    private static void ExpectThrows<TException>(Action action, string message) where TException : Exception
+    {
+        try { action(); }
+        catch (TException) { return; }
+        throw new InvalidOperationException(message);
     }
 
     private static void StartupErrorHandling(string directory)

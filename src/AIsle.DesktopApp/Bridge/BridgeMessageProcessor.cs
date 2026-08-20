@@ -30,18 +30,23 @@ namespace AIsle.DesktopApp.Bridge
             string? defaultProjectPath = null,
             PopulationApplicationService? populations = null,
             SimulationApplicationService? simulations = null,
-            IHistoryStore? history = null)
+            IHistoryStore? history = null,
+            string? historySeedDirectory = null)
         {
             _projects = projects;
             _defaultProjectPath = defaultProjectPath;
             _populations = populations ?? new PopulationApplicationService();
             _simulations = simulations ?? new SimulationApplicationService();
-            _history = history ?? new JsonHistoryStore();
+            _history = history ?? new SqliteHistoryStore(seedDirectory: historySeedDirectory);
         }
 
         public string Process(string? messageJson) => ProcessAsync(messageJson).GetAwaiter().GetResult();
 
-        public void Dispose() => _simulations.Dispose();
+        public void Dispose()
+        {
+            _simulations.Dispose();
+            (_history as IDisposable)?.Dispose();
+        }
 
         public async Task<string> ProcessAsync(string? messageJson, CancellationToken cancellationToken = default)
         {

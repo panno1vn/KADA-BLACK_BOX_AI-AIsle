@@ -87,7 +87,7 @@ namespace AIsle.Simulation.Runtime
             {
                 Id = _resultId, CreatedAt = _createdAt, Name = name ?? string.Empty,
                 Summary = new SimulationSummary { DurationSeconds = Time, Revenue = Revenue, Purchases = Purchases.Count, Spawned = Spawned, Converted = Converted, MainBuyers = MainBuyers, ImpulseBuyers = ImpulseBuyers, NotFound = NotFound, Unreachable = Unreachable, StuckRecoveries = StuckRecoveries, Completed = Completed },
-                Events = Events.ToArray(), Purchases = Purchases.ToArray(), Replay = new ReplayData { SampleSeconds = SimulationMath.Clamp(_config.TrajectorySampleSeconds, 0.05, 10.0), Agents = Agents.Select(agent => new AgentTrajectory { Id = agent.Profile.Id, Spawn = agent.Spawn, Samples = agent.Trajectory.ToArray() }).ToArray() }
+                Events = Events.ToArray(), Purchases = Purchases.ToArray(), Replay = new ReplayData { SampleSeconds = SimulationMath.Clamp(_config.TrajectorySampleSeconds, 0.05, 10.0), Agents = Agents.Where(agent => !double.IsPositiveInfinity(agent.Spawn)).Select(agent => new AgentTrajectory { Id = agent.Profile.Id, Spawn = agent.Spawn, Samples = agent.Trajectory.ToArray() }).ToArray() }
             };
         }
 

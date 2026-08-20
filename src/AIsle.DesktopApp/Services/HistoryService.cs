@@ -35,7 +35,7 @@ namespace AIsle.DesktopApp.Services
 
         public HistoryService(IHistoryStore? store = null)
         {
-            _store = store ?? new JsonHistoryStore();
+            _store = store ?? new SqliteHistoryStore();
         }
 
         public List<SimRunSummary> ListAll()

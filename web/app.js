@@ -36,6 +36,7 @@ let layout,catalog,simulation=null,simResult=null,manualRows=[],parameters={...D
 let selected=null,tool='select',draft=null,drag=null,playing=false,lastFrame=0,dirty=true;
 let lastRunSeed=null;
 let liveHistory=[],maxRecordedTime=0,rewindTime=null;
+let historySortMode='date';
 const colors={WAITING:'#8b6b4a',DECIDING:'#a87bca',TRANSIT:'#5fa8d3',QUEUE:'#d59b45',DWELL:'#ffca58',PURCHASED:'#5dba4f',CHECKOUT:'#e05252',LEAVING:'#e05252'};
 const npcRenderer=new NpcSpriteRenderer({assets:NPC_SPRITE_ASSETS});
 let currentTab='welcome';
@@ -337,6 +338,8 @@ function bind(){
   const btnOpenTrash=$('#btn-open-trash');if(btnOpenTrash)btnOpenTrash.onclick=openTrashDialog;
   const btnCloseTrash=$('#btn-close-trash');if(btnCloseTrash)btnCloseTrash.onclick=()=>$('#trash-dialog')?.close();
   const btnCloseTrashFooter=$('#btn-close-trash-footer');if(btnCloseTrashFooter)btnCloseTrashFooter.onclick=()=>$('#trash-dialog')?.close();
+  const btnSortRevenue=$('#btn-sort-revenue');if(btnSortRevenue)btnSortRevenue.onclick=toggleHistorySort;
+  const btnCloseRunDiagram=$('#btn-close-run-diagram');if(btnCloseRunDiagram)btnCloseRunDiagram.onclick=()=>$('#run-diagram-dialog')?.close();
   const btnRestoreAllTrash=$('#btn-restore-all-trash');if(btnRestoreAllTrash)btnRestoreAllTrash.onclick=restoreAllTrashRuns;
   const btnWarnBack=$('#btn-warning-back-setup');if(btnWarnBack)btnWarnBack.onclick=()=>{$('#layout-warning-dialog')?.close();switchTab('setup');};
   const btnWarnCont=$('#btn-warning-continue');if(btnWarnCont)btnWarnCont.onclick=()=>{$('#layout-warning-dialog')?.close();};
@@ -648,7 +651,7 @@ async function frame(now){
   }else requestAnimationFrame(frame);
 }
 
-function renderHistoryRow(item){
+function renderHistoryRow(item,index=0,sortMode='date'){
   const name=item.name||item.Name||'Phiên mô phỏng';
   const date=new Date(item.createdAt||item.CreatedAt||Date.now());
   const timeStr=isNaN(date.getTime())?'--:--':date.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
@@ -660,12 +663,17 @@ function renderHistoryRow(item){
   const durationSec = summary.duration ?? summary.Duration ?? 1800;
   const durationMin = Math.round(durationSec / 60) || 30;
   const key=item.id||item.Id||(item.createdAt||item.CreatedAt||'')+(item.name||item.Name||'');
+  const rank=index+1;
+  const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':null;
+  const badgeInner=sortMode==='revenue'
+    ?(medal?`<span class="text-base leading-none">${medal}</span>`:`<span class="font-black text-xs">#${rank}</span>`)
+    :`<span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">storefront</span>`;
 
   return `
-    <div class="grid grid-cols-[1fr_120px_160px_130px_48px] gap-3 px-6 hover:bg-surface-bright transition-colors duration-300 items-center group cursor-default py-4 border-b border-surface-container-low/50">
+    <div class="history-row grid grid-cols-[1fr_120px_160px_130px_48px] gap-3 px-6 hover:bg-surface-bright transition-colors duration-300 items-center group cursor-pointer py-4 border-b border-surface-container-low/50" title="Bấm để xem sơ đồ phiên mô phỏng này">
       <div class="flex items-center gap-3 min-w-0">
         <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-primary group-hover:scale-110 transition-transform shadow-xs shrink-0">
-          <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">storefront</span>
+          ${badgeInner}
         </div>
         <div class="min-w-0 flex-1">
           <div class="font-label-md text-sm text-on-surface font-bold truncate">${escapeHTML(name)}</div>
@@ -691,6 +699,125 @@ function renderHistoryRow(item){
       </div>
     </div>
   `;
+}
+
+function toggleHistorySort(){
+  historySortMode = historySortMode==='revenue' ? 'date' : 'revenue';
+  const btn=$('#btn-sort-revenue');
+  if(btn){
+    btn.classList.toggle('text-primary',historySortMode==='revenue');
+    btn.classList.toggle('font-bold',historySortMode==='revenue');
+  }
+  loadHistoryList();
+}
+
+async function openRunDiagram(item){
+  const dialog=$('#run-diagram-dialog');
+  const canvas=$('#run-diagram-canvas');
+  const status=$('#run-diagram-status');
+  if(!dialog||!canvas)return;
+  const id=item.id||item.Id;
+  const name=item.name||item.Name||'Phiên mô phỏng';
+  const summary=item.summary||item.Summary||{};
+  const spawned=summary.spawned??summary.Spawned??0;
+  const converted=summary.converted??summary.Converted??0;
+  const revenueVal=summary.revenue??summary.Revenue??0;
+  const convRate=spawned?pct(converted/spawned):'0.0%';
+
+  $('#run-diagram-title').querySelector('span:last-child').textContent=name;
+  $('#run-diagram-meta').textContent=`${Math.round(spawned)} khách · ${Math.round(converted)} đã mua (${convRate}) · Doanh thu ${money(revenueVal)}`;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#1c1007';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(status)status.textContent='Đang tải sơ đồ…';
+  dialog.showModal();
+
+  if(!id||!window.aisleBridge||typeof window.aisleBridge.request!=='function'){
+    if(status)status.textContent='Không có kết nối tới ứng dụng để tải sơ đồ.';
+    return;
+  }
+  try{
+    const replay=await window.aisleBridge.request('replay.project',{id});
+    const agents=replay?.agents||replay?.Agents||[];
+    renderRunDiagramCanvas(canvas,layout,agents);
+    if(status)status.textContent=`${agents.length} khách hàng được vẽ đường đi trên sơ đồ.`;
+  }catch(error){
+    if(status)status.textContent='Không tải được sơ đồ: '+(error?.message||error);
+  }
+}
+
+function renderRunDiagramCanvas(canvas,layoutData,agents){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1c1007';
+  ctx.fillRect(0,0,W,H);
+  if(!layoutData||!layoutData.width||!layoutData.height)return;
+
+  const pad=28;
+  const scale=Math.min((W-pad*2)/layoutData.width,(H-pad*2)/layoutData.height);
+  const ox=(W-layoutData.width*scale)/2;
+  const oy=(H-layoutData.height*scale)/2;
+  const tx=x=>ox+x*scale;
+  const ty=y=>oy+y*scale;
+
+  ctx.strokeStyle='#c8844a';
+  ctx.lineWidth=5;
+  ctx.lineCap='round';
+  for(const wall of layoutData.walls||[]){
+    ctx.beginPath();
+    ctx.moveTo(tx(wall.x1),ty(wall.y1));
+    ctx.lineTo(tx(wall.x2),ty(wall.y2));
+    ctx.stroke();
+  }
+
+  ctx.font='700 10px "Nunito Sans", sans-serif';
+  ctx.textAlign='center';
+  for(const s of layoutData.shelves||[]){
+    ctx.fillStyle='#2e1509';
+    ctx.strokeStyle='#6b3519';
+    ctx.lineWidth=1.5;
+    ctx.fillRect(tx(s.x),ty(s.y),s.w*scale,s.h*scale);
+    ctx.strokeRect(tx(s.x),ty(s.y),s.w*scale,s.h*scale);
+    ctx.fillStyle='#f5e6c8';
+    ctx.fillText(s.label||'',tx(s.x+s.w/2),ty(s.y+s.h/2)+3);
+  }
+
+  const markerAt=(p,color)=>{
+    if(!p)return;
+    ctx.fillStyle='#120a04';
+    ctx.strokeStyle=color;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(tx(p.x),ty(p.y),8,0,Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+  };
+  markerAt(layoutData.entrance,'#5dba4f');
+  markerAt(layoutData.checkout,'#e05252');
+
+  const palette=['#5fa8d3','#e0a458','#8bc34a','#e05252','#b388eb','#ffca58','#4fd1c5','#f06292'];
+  agents.forEach((agent,index)=>{
+    const samples=agent.samples||agent.Samples||[];
+    if(samples.length<2)return;
+    const color=palette[index%palette.length];
+    ctx.strokeStyle=color;
+    ctx.globalAlpha=0.55;
+    ctx.lineWidth=1.4;
+    ctx.beginPath();
+    samples.forEach((p,i)=>{
+      const x=tx(p.x??p.X??0),y=ty(p.y??p.Y??0);
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha=1;
+    const last=samples[samples.length-1];
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.arc(tx(last.x??last.X??0),ty(last.y??last.Y??0),2.6,0,Math.PI*2);
+    ctx.fill();
+  });
 }
 
 function getDeletedHistoryIds(){
@@ -781,18 +908,23 @@ async function loadHistoryList(){
   }
   const merged=[...map.values()];
   merged.sort((a,b)=>{
+    if(historySortMode==='revenue'){
+      const ra=Number((a.summary||a.Summary||{}).revenue??(a.summary||a.Summary||{}).Revenue??0);
+      const rb=Number((b.summary||b.Summary||{}).revenue??(b.summary||b.Summary||{}).Revenue??0);
+      if(rb!==ra) return rb-ra;
+    }
     const da=new Date(a.createdAt||a.CreatedAt||0).getTime();
     const db=new Date(b.createdAt||b.CreatedAt||0).getTime();
     return db-da;
   });
 
   const countText=$('#results-count-text');
-  if(countText) countText.textContent=`${merged.length} phiên đã lưu`;
+  if(countText) countText.textContent=historySortMode==='revenue'?`${merged.length} phiên · xếp hạng theo doanh thu`:`${merged.length} phiên đã lưu`;
 
   const emptyState=$('#results-empty-state');
   if(merged.length>0){
     if(emptyState)emptyState.remove();
-    tableBody.innerHTML=merged.map(renderHistoryRow).join('');
+    tableBody.innerHTML=merged.map((item,index)=>renderHistoryRow(item,index,historySortMode)).join('');
     tableBody.querySelectorAll('.btn-delete-row').forEach((btn, index) => {
       btn.onclick = async (e) => {
         e.stopPropagation();
@@ -800,6 +932,9 @@ async function loadHistoryList(){
         const item = merged[index];
         await deleteHistoryRunByKey(deleteKey, item);
       };
+    });
+    tableBody.querySelectorAll('.history-row').forEach((row, index) => {
+      row.onclick = () => openRunDiagram(merged[index]);
     });
   }else{
     if(!emptyState){

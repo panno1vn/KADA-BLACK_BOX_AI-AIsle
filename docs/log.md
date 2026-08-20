@@ -1278,6 +1278,77 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: `dotnet build` 0 warning, 0 error; 14/14 Node.js tests PASS.
 - Phạm vi Git: Chỉ local trên `develop`.
 
+## 2026-08-20 23:38 (UTC+07:00) — Claude Code
+
+- Lý do: Chủ dự án yêu cầu trực tiếp trong lượt hiện tại: thay lớp lưu trữ phiên mô phỏng (history) từ file JSON rời rạc sang database thật, tham chiếu code cũ ở `origin/main` (`backend/analytics.mjs`, Streamlit `5_Lich_su.py`) cho phần visualize. Đúng theo lộ trình đã ghi ở `docs/rule.md` §13 Stage B ("JSON → SQLite/database adapter khi JSON thực sự không đủ") và `docs/task.md` S5.2, không phải scope creep tự phát.
+- Dependency mới (theo `docs/rule.md` §7.2):
+  - Tên: `Microsoft.Data.Sqlite` 10.0.11
+  - Link: https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/
+  - License: MIT (Microsoft, official .NET Data ADO.NET provider)
+  - Mục đích: lưu trữ history dạng database thay vì JSON rời rạc
+  - Module sử dụng: `AIsle.DesktopApp/Infrastructure` (ACTIVE layer)
+  - Lý do JSON không đủ: chủ dự án muốn dữ liệu bền vững, truy vấn/visualize được thay vì chỉ file rời rạc trên đĩa
+  - Integration test: `tests/AIsle.DesktopApp.Tests/Program.cs` → `SqliteHistoryStoreScenarios`
+- Đã thực hiện:
+  - `src/AIsle.DesktopApp/AIsle.DesktopApp.csproj`: thêm `PackageReference Microsoft.Data.Sqlite 10.0.11`.
+  - `src/AIsle.DesktopApp/Infrastructure/SqliteHistoryStore.cs` (mới): implement `IHistoryStore` bằng SQLite (WAL mode, `Pooling=false` để tránh giữ file lock sau khi Dispose trên Windows). Lưu đủ toàn bộ field của `SimulationSummary` (kể cả `notFound`/`unreachable`/`stuckRecoveries` mà HistoryService/HistoryViewModel XAML cần) cộng `result_json` đầy đủ cho Read/Replay. Soft-delete/trash dùng cột `is_trashed` thay vì thư mục `.trash` riêng. Tự động migrate một lần các file `.sim-result.json` cũ (active + `.trash/`) sang DB bằng `INSERT OR IGNORE`, không xoá file gốc.
+  - `src/AIsle.DesktopApp/Bridge/BridgeMessageProcessor.cs`: default `_history` đổi từ `new JsonHistoryStore()` sang `new SqliteHistoryStore()`; `Dispose()` gọi thêm `(_history as IDisposable)?.Dispose()`.
+  - `src/AIsle.DesktopApp/Services/HistoryService.cs`: default store đổi sang `new SqliteHistoryStore()`.
+  - `tests/AIsle.DesktopApp.Tests/Program.cs`: thêm `SqliteHistoryStoreScenarios` (save/list/read/duplicate-id/delete/trash/restore/clear/restoreAll, persistence qua nhiều instance, migration từ JSON cũ, không xoá file gốc khi migrate).
+  - `JsonHistoryStore.cs` giữ nguyên (không xoá) — vẫn dùng trong `ReleaseSmokeRunner` và làm nguồn migrate; `web/dashboard.js` (visualize) không cần sửa vì đã đọc qua `history.list` bridge sẵn có, tự động nhận dữ liệu từ store mới.
+- Kết quả: `dotnet build` toàn solution 0 warning/0 error. Toàn bộ 4 test suite (`AIsle.DesktopApp.Tests`, `AIsle.Simulation.Tests`, `AIsle.Population.Tests`, `AIsle.Results.Tests`) PASS, không regression. Verify thủ công qua app thật (`dotnet exec AIsleDesktop.dll`, .NET 10 SDK cài mới): chạy mô phỏng, `history.save`/`history.list` qua bridge xác nhận ghi/đọc đúng `%LOCALAPPDATA%\AIsle\history-v1\history.db` (kiểm tra bằng `sqlite3` CLI độc lập).
+- Ghi chú/rủi ro quan sát được (chưa sửa, cần chủ dự án xác nhận có muốn xử lý không): trong một lần test UI trực tiếp, `web/app.js` `saveSimulationSession()` vẫn hiển thị phiên trong "Bảng kết quả" dù `history.save` qua bridge có thể chưa kịp thành công, vì hàm này luôn ghi thêm vào cache `localStorage['aisle_history_runs']` và `loadHistoryList()` gộp (merge) cache đó với kết quả `history.list` thật — hành vi này có từ trước (không phải do thay đổi lần này), nhưng có thể khiến UI hiển thị phiên "ma" không thực sự có trong database nếu bridge save thất bại/bị ngắt giữa chừng.
+- Phạm vi Git: Chỉ local trên `main`, chưa commit/push.
+
+## 2026-08-21 00:35 (UTC+07:00) — Claude Code
+
+- Lý do: Chủ dự án yêu cầu trực tiếp: (1) chạy 30 phiên mô phỏng để có dữ liệu demo, (2) bảng xếp hạng các phiên theo doanh thu cao nhất, (3) bấm vào một phiên phải xem được sơ đồ (layout + đường đi khách hàng) của phiên đó, (4) đảm bảo dữ liệu này không mất khi commit lên GitHub — người khác `git pull` về vẫn thấy đúng lịch sử đã chạy.
+- Đã thực hiện:
+  - **Seed data đi kèm repo** (để giải quyết yêu cầu 4, vì `%LOCALAPPDATA%\AIsle\history-v1\history.db` nằm ngoài repo nên không bao giờ được commit):
+    - `src/AIsle.DesktopApp/Infrastructure/SqliteHistoryStore.cs`: thêm tham số `seedDirectory` — khi khởi tạo, ngoài migrate JSON cũ còn `ImportDirectory` (INSERT OR IGNORE, không đụng dữ liệu người dùng) từ một thư mục seed đóng gói cùng app.
+    - `src/AIsle.DesktopApp/Bridge/BridgeMessageProcessor.cs`: thêm tham số `historySeedDirectory`, truyền vào `SqliteHistoryStore`.
+    - `src/AIsle.DesktopApp/MainWindow.xaml.cs`: tính `historySeedDirectory = UI\history-seed` (cùng cấp với `default-project.json`) và truyền vào bridge lúc khởi động.
+    - `src/AIsle.DesktopApp/AIsle.DesktopApp.csproj`: bundle `UI\history-seed\*.sim-result.json` làm Content (giống cách `default-project.json`/`npc-renderer.mjs` đã đóng gói).
+    - `src/AIsle.DesktopApp/UI/history-seed/*.sim-result.json` (mới, 30 file, ~17MB): 30 kết quả mô phỏng thật, sinh bằng script độc lập gọi trực tiếp `SimulationHost`/`PopulationApplicationService` trên default-project.json, doanh thu trải từ 310.000₫ đến 1.100.000₫, ngày tạo rải trong 20 ngày gần nhất để giống lịch sử dùng thực tế. `TrajectorySampleSeconds=3.0` (thay vì mặc định 0.5) để giữ dung lượng file hợp lý khi commit git.
+    - Đã import 30 phiên này vào `history.db` thật trên máy hiện tại (qua đúng cơ chế seed ở trên, không phải insert tay).
+    - `tests/AIsle.DesktopApp.Tests/Program.cs`: thêm assertion trong `SqliteHistoryStoreScenarios` xác nhận seed directory được import đúng lúc khởi tạo lần đầu.
+  - **Bảng xếp hạng doanh thu + sơ đồ khi bấm vào phiên** (yêu cầu 2 và 3, chỉ sửa `web/` vì đây là phần Frontend/UI được phép theo `docs/rule.md` §5.4 — không đụng simulation core):
+    - `web/index.html`: thêm nút "Xếp hạng doanh thu" ở chân bảng kết quả; thêm `<dialog id="run-diagram-dialog">` (modal sơ đồ + canvas + thống kê).
+    - `web/app.js`: thêm `historySortMode`; `loadHistoryList()` sắp xếp theo doanh thu giảm dần khi bật ranking; `renderHistoryRow` hiển thị huy chương 🥇🥈🥉/số hạng thay icon cửa hàng và cho phép bấm vào cả dòng (không chỉ nút xoá) để mở sơ đồ; `openRunDiagram()` gọi bridge `replay.project` lấy quỹ đạo từng khách của đúng phiên đó; `renderRunDiagramCanvas()` vẽ tường/kệ hàng từ layout hiện tại + đường đi từng khách (không lưu layout riêng theo từng phiên trong `SimResult`, nên sơ đồ dùng layout hiện tại — dữ liệu seed dùng chung layout mặc định nên khớp).
+- Kết quả: `dotnet build` toàn solution 0 warning/0 error; `AIsle.DesktopApp.Tests` PASS (bao gồm test seed mới); 14/14 Node.js tests PASS (`node --test tests/*.test.mjs`). Verify tính năng ranking/sơ đồ qua Playwright headless (mock `window.aisleBridge` để không phải thao tác trên app thật/màn hình người dùng): xếp hạng đúng thứ tự doanh thu, modal sơ đồ vẽ đúng layout + đường đi + thống kê phiên.
+- Phát hiện bug có sẵn trong `AIsle.Simulation` (chưa sửa, ngoài phạm vi yêu cầu lần này — cần chủ dự án xác nhận có muốn mở task riêng không): với quần thể khách khoảng ~170-220 NPC trên default-project.json (chỉ 1 kệ hàng), một số tổ hợp tham số khiến `SimResult` chứa giá trị `double.Infinity`, làm `SimResultJsonSerializer.Serialize` ném `ArgumentException` (JSON không hỗ trợ Infinity). Script sinh dữ liệu demo đã tự động bỏ qua và thử lại các tổ hợp lỗi này (20/50 lần thử bị lỗi, đều ở count ≥ ~170) nên 30 phiên cuối cùng đều hợp lệ, nhưng đây là bug thật trong engine cần fix nếu chủ dự án muốn chạy quần thể lớn ổn định.
+- Phạm vi Git: Chỉ local trên `main`, chưa commit/push.
+
+## 2026-08-21 01:15 (UTC+07:00) — Claude Code
+
+- Lý do: Chủ dự án yêu cầu trực tiếp: (1) fix bug đã phát hiện ở lượt trước, (2) bộ test cover đầy đủ các trường hợp, (3) kiểm tra bảo mật dự án.
+- Root cause bug Infinity (điều tra bằng script chẩn đoán độc lập, reproduce chính xác bằng cùng seed `Random(20260820)` như script sinh seed data trước đó):
+  - `src/AIsle.Simulation/Runtime/SimulationHost.cs` hàm `MakeSpawnTimes`: khi quần thể lớn hơn khả năng nhận khách của spawn curve trong thời lượng mô phỏng, các NPC dư ra được gán `Spawn = double.PositiveInfinity` (sentinel "không bao giờ spawn") — đây là thiết kế đúng, và dòng 85 (`RecordTrajectory`) đã guard đúng bằng `!double.IsPositiveInfinity(...)`.
+  - Nhưng `BuildResult()` (dòng 90, trước fix) đưa TOÀN BỘ `Agents` (kể cả các NPC không bao giờ spawn) vào `Replay.Agents` mà không lọc, mang theo `Spawn = Infinity` — JSON không hỗ trợ `Infinity` nên `SimResultJsonSerializer.Serialize` luôn ném `ArgumentException` bất cứ khi nào có ít nhất 1 NPC dư ra kiểu này (không phải "quần thể lớn" theo nghĩa chung, mà là bất kỳ lúc nào `count` vượt sức chứa của spawn curve — đã reproduce ở cả count=88, 92, 139, không chỉ count≥170).
+- Đã thực hiện:
+  - `src/AIsle.Simulation/Runtime/SimulationHost.cs`: `BuildResult()` lọc bỏ agent có `Spawn` không hữu hạn khỏi `Replay.Agents` trước khi export (`.Where(agent => !double.IsPositiveInfinity(agent.Spawn))`).
+  - `src/AIsle.Simulation/Results/ReplayProjector.cs`: thêm defense-in-depth — validate `source.Spawn` phải finite (giống check đã có sẵn cho `sample.Time`), để dữ liệu lịch sử cũ (lưu từ trước khi có fix trên) không làm crash lệnh bridge `replay.project`; lỗi được bridge bắt sẵn qua `catch (ArgumentException)` trong `BridgeMessageProcessor.ProjectReplay` nên trả về lỗi thân thiện thay vì crash.
+  - `tests/AIsle.Simulation.Tests/Program.cs`: thêm `TestOversubscribedPopulationExcludesUnspawnedAgentsFromReplay` — dựng quần thể 40 NPC với spawn rate rất thấp để chắc chắn có NPC không bao giờ spawn, assert `Replay.Agents` không còn Infinity/NaN và JSON serialize thành công.
+  - Verify: chạy lại đúng script chẩn đoán (cùng seed, 50 lần thử) — 0/50 lỗi sau fix (trước fix là 20/50).
+- Bộ test: đã có sẵn từ lượt trước (`SqliteHistoryStoreScenarios` cho database) + test mới ở trên cho bug Infinity. Chạy toàn bộ: `dotnet build` solution 0 warning/0 error; cả 4 test suite C# (`AIsle.Simulation.Tests`, `AIsle.DesktopApp.Tests`, `AIsle.Population.Tests`, `AIsle.Results.Tests`) PASS; 14/14 test Node.js (`node --test tests/*.test.mjs`) PASS.
+- Security review (dùng skill `security-review`, sub-agent độc lập rà toàn bộ diff phiên này — `SqliteHistoryStore.cs`, bridge wiring, `web/app.js`/`index.html` tính năng ranking+sơ đồ, `web/npc-renderer.mjs`, `backend/server.mjs`): **không phát hiện lỗ hổng nào đạt ngưỡng tin cậy cao**. Đã kiểm tra: SQL toàn bộ parameterized, id luôn qua `IsSafeId` trước khi chạm SQL/file path, seed/migration chỉ quét thư mục cố định (không path traversal), không `innerHTML`/`eval` trong code mới, `escapeHTML` vẫn được áp dụng đúng, bridge WebView2 là kênh IPC cục bộ cùng máy (không phải network API).
+  - Phát hiện thật ngoài phạm vi diff (tự kiểm tra thêm vì chủ dự án sắp push GitHub công khai): `.env` (chứa `GEMINI_API_KEY`, hiện là placeholder) và `venv/` **chưa được gitignore** — nếu `git add .` sẽ commit nhầm lên GitHub. Đã thêm `venv/` và `.env` vào `.gitignore`. Xác nhận bằng `git status` sau khi sửa: cả hai không còn xuất hiện.
+- Phạm vi Git: Chỉ local trên `main`, chưa commit/push.
+
+## 2026-08-21 00:58 (UTC+07:00) — Claude Code
+
+- Lý do: Chủ dự án phản hồi các phiên mô phỏng demo bị giới hạn bởi layout hiện có (`default-project.json` chỉ 1 kệ/1 sản phẩm) và yêu cầu tự thiết kế layout mới, đảm bảo mô phỏng chạy đủ thời lượng cấu hình.
+- Đã thực hiện:
+  - `src/AIsle.DesktopApp/UI/default-project.json`: thiết kế lại layout — 8 kệ hàng thuộc 8 category khác nhau (`beverage, snack, personal-care, dry-food, instant-food, candy, household, cleaning`), 16 sản phẩm (2/kệ), giữ nguyên khung tường/lối vào/thu ngân đã hoạt động ổn định. Validate bằng `LayoutValidator` thật (không đoán): 8/8 kệ reachable, 0 lỗi/cảnh báo, mọi catalog product tham chiếu đúng shelf id.
+  - Phát hiện thêm nguyên nhân gốc của việc "chạy không đủ thời gian" — **không phải bug code**: `SimulationHost.Step` (dòng 48) coi mô phỏng `Completed` khi `Time >= DurationMinutes*60` **HOẶC** khi mọi NPC đã `Finished` (rời cửa hàng). Với `spawnRateCurve` cố định có sức chứa (~250-290 khách) vượt xa dân số điển hình (70-220), toàn bộ khách được nhận hết trong ~10-15 phút đầu, mua sắm xong và rời đi sớm, khiến mô phỏng "vãn khách" và dừng rất lâu trước khi hết thời lượng cấu hình dù chưa hề lỗi.
+  - Sửa bằng cách khớp cung/cầu thay vì đổi logic Completed (giữ đúng ý nghĩa "cửa hàng đóng khi hết khách" — hợp lý về mặt mô phỏng): script sinh dữ liệu tính `targetRate = count / durationMinutes * 0.9` và override `SpawnRateCurve` phẳng theo từng phiên (giống pattern `ReleaseSmokeRunner` đã dùng), đảm bảo khách vẫn tiếp tục vào cửa hàng tới gần cuối thời lượng.
+  - `src/AIsle.DesktopApp/UI/default-project.json` cũng chỉnh `spawnRateCurve` mặc định (đỉnh 10→7) để khớp hợp lý hơn với khoảng dân số điển hình 150-200 khách trong ~30 phút (trước đó đỉnh 10 dư thừa nhiều so với nhu cầu thực, ảnh hưởng cả người dùng thật chạy app, không riêng data demo).
+  - Sinh lại 30 phiên demo trên layout mới: 30/30 thành công (0 lỗi), mỗi phiên đạt ≥75% thời lượng cấu hình (đa số ≥95%, nhiều phiên chạm mốc 100%). Doanh thu 641.000₫–2.954.000₫, đủ cả 8 category trong lượt mua — đa dạng hơn hẳn bản cũ (chỉ có beverage).
+  - Xoá 30 file seed cũ + toàn bộ dữ liệu cũ trong `history.db` thật, thay bằng 30 phiên mới (31MB, tăng nhẹ so với 17MB cũ do khách mua nhiều hơn/hoàn thành hành trình đầy đủ hơn).
+  - Xoá `%LOCALAPPDATA%\AIsle\project-v1.json` (bản copy cũ của layout 1-kệ được tạo lúc mở app phiên trước) để app tự copy lại `default-project.json` mới ở lần chạy kế tiếp — đảm bảo layout đang hiển thị khớp với data demo (tính năng sơ đồ dùng layout hiện tại, không lưu riêng theo từng phiên).
+- Kết quả: `dotnet build` 0 warning/0 error; `AIsle.DesktopApp.Tests` và `AIsle.Simulation.Tests` PASS (không có test nào giả định cứng nội dung default-project.json cũ). Đã mở lại app thật để chủ dự án xem trực tiếp.
+- Phạm vi Git: Chỉ local trên `main`, chưa commit/push. `src/AIsle.DesktopApp/UI/history-seed/*.sim-result.json` là untracked (30 file mới thay 30 file cũ).
+
 
 
 
