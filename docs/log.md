@@ -1519,6 +1519,13 @@ File này lưu review tổng quát của bốn log chuyên môn và review tổn
 - Kiểm tra: Build PASS 0 warning/0 error; Desktop test PASS; JavaScript 29/29 PASS; syntax/diff check PASS; publish self-contained `win-x64` PASS và xác nhận release chứa zoom mặc định 300%, trần 500% cùng arrow-key pan.
 - Phạm vi Git: Chỉ local trên nhánh `develop`; không commit, không push, không fetch và không đổi nhánh.
 
+## 2026-08-21 04:20 (UTC+07:00) — Codex — Thay toàn bộ cây develop bằng simulator
+
+- Lý do: Chủ dự án yêu cầu đưa toàn bộ code tại `D:\Big\KADA\simulator` lên `origin/develop`, xóa mọi file remote không còn trong simulator và tuyệt đối không đẩy thư mục gốc `docx/`.
+- Đã làm: Tạo nhánh nguồn local `simulator-publish-20260821`; thêm `/docx/` vào `.gitignore`; commit ảnh chụp Task 11 bằng `a368ea2` (`feat: replace develop with simulator Task 11 source tree`); push fast-forward từ `8a1d6aa` lên `origin/develop`. Sáu file remote không còn trong simulator đã bị xóa: bốn `web/assets/npc/npc_0..3.png`, `web/cashier_idle.jpg` và `web/npc-renderer.mjs`.
+- Kiểm tra: Release build 0 warning/0 error; Desktop, Results, Simulation và Population test pass; 15/15 file JavaScript test pass; cây nguồn và commit không chứa file nào dưới `docx/`.
+- Kiểm soát lịch sử: Fetch ngay trước push xác nhận local/remote `4/0`; push fast-forward, không force-push và không ghi đè commit remote ngoài lịch sử.
+
 
 
 
