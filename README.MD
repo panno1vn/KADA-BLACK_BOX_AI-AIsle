@@ -10,7 +10,7 @@ Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chín
 
 - **Phan Trung Kiên** — Core simulation.
 - **Lê Bảo Khang** — Genetic Algorithm và NPC population.
-- **Trần Đăng Khôi** — Trích xuất đặc trưng từ video thực tế.
+- **Trần Đăng Khôi** — Backend.
 - **Phạm Tài Nguyên** — UI/UX.
 - **Đặng Hải Đăng** — UI/UX.
 
