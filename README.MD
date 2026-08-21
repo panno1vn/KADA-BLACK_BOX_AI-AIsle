@@ -12,8 +12,6 @@ Manager có thể thử nghiệm layout, vị trí kệ hàng, catalog và chín
 - **Lê Bảo Khang** — Genetic Algorithm và NPC population.
 - **Trần Đăng Khôi** — Backend.
 - **Phạm Tài Nguyên** — UI/UX.
-- **Đặng Hải Đăng** — UI/UX.
-
 ## Các module
 
 - [thu-2](https://github.com/panno1vn/KADA-BLACK_BOX_AI-AIsle/tree/thu-2)
