@@ -33,6 +33,7 @@ Trong simulator:
 
 ## Đối tượng sử dụng
 
+- Game thủ
 - Manager các chuỗi cửa hàng tiện lợi như Circle K, GS25 và 7-Eleven.
 - Chủ cửa hàng muốn kiểm tra phương án bố trí trước khi đầu tư triển khai.
 - Nhóm phân tích hành vi khách hàng và hiệu quả kinh doanh.
